@@ -13,17 +13,17 @@ interface ProductCardProps {
 export const ProductCard = ({ product, currentLanguage, onAddToCart }: ProductCardProps) => {
   const getName = () => {
     switch (currentLanguage) {
-      case 'vi': return product.nameVi;
-      case 'ja': return product.nameJa;
-      default: return product.name;
+      case 'vi': return product.name;
+      case 'ja': return product.nameJa || product.name;
+      default: return product.nameEn || product.name;
     }
   };
 
   const getDescription = () => {
     switch (currentLanguage) {
-      case 'vi': return product.descriptionVi;
-      case 'ja': return product.descriptionJa;
-      default: return product.description;
+      case 'vi': return product.description;
+      case 'ja': return product.descriptionJa || product.description;
+      default: return product.descriptionEn || product.description;
     }
   };
 
@@ -39,16 +39,16 @@ export const ProductCard = ({ product, currentLanguage, onAddToCart }: ProductCa
     <Card className="group overflow-hidden border-border/50 hover:shadow-medium transition-all duration-300">
       <div className="relative overflow-hidden">
         <img
-          src={product.image}
+          src={product.images[0] || product.image}
           alt={getName()}
           className="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {!product.inStock && (
+        {product.stock <= 0 && (
           <Badge variant="secondary" className="absolute top-3 left-3">
             {t.outOfStock}
           </Badge>
         )}
-        {product.featured && (
+        {product.isFeatured && (
           <Badge variant="default" className="absolute top-3 right-3">
             Featured
           </Badge>
@@ -63,7 +63,12 @@ export const ProductCard = ({ product, currentLanguage, onAddToCart }: ProductCa
           </p>
           
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold">${product.price}</span>
+            <span className="text-2xl font-bold">
+              {new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+              }).format(product.price)}
+            </span>
             <div className="flex gap-1">
               {product.colors.slice(0, 3).map((color) => (
                 <div
@@ -81,7 +86,7 @@ export const ProductCard = ({ product, currentLanguage, onAddToCart }: ProductCa
           <Button
             variant="zen"
             className="w-full"
-            disabled={!product.inStock}
+            disabled={product.stock <= 0}
             onClick={() => onAddToCart(product)}
           >
             <ShoppingBag className="mr-2 h-4 w-4" />

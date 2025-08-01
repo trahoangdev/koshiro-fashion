@@ -67,9 +67,9 @@ export const Cart = ({
 
   const getProductName = (item: CartItem) => {
     switch (currentLanguage) {
-      case 'vi': return item.product.nameVi;
-      case 'ja': return item.product.nameJa;
-      default: return item.product.name;
+      case 'vi': return item.product.name;
+      case 'ja': return item.product.nameJa || item.product.name;
+      default: return item.product.nameEn || item.product.name;
     }
   };
 
@@ -103,7 +103,7 @@ export const Cart = ({
           {cartItems.map((item) => (
             <div key={`${item.product.id}-${item.selectedColor}-${item.selectedSize}`} className="flex gap-4">
               <img
-                src={item.product.image}
+                src={item.product.images[0] || item.product.image}
                 alt={getProductName(item)}
                 className="w-20 h-20 object-cover rounded"
               />
@@ -115,7 +115,12 @@ export const Cart = ({
                   <Badge variant="secondary">{item.selectedSize}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">${item.product.price}</span>
+                  <span className="font-semibold">
+                    {new Intl.NumberFormat('vi-VN', {
+                      style: 'currency',
+                      currency: 'VND'
+                    }).format(item.product.price)}
+                  </span>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -155,7 +160,12 @@ export const Cart = ({
         <CardContent className="p-6 space-y-4">
           <div className="flex justify-between">
             <span>{t.subtotal}</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>
+              {new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+              }).format(subtotal)}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>{t.shipping}</span>
@@ -164,7 +174,12 @@ export const Cart = ({
           <Separator />
           <div className="flex justify-between text-lg font-semibold">
             <span>{t.total}</span>
-            <span>${total.toFixed(2)}</span>
+            <span>
+              {new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+              }).format(total)}
+            </span>
           </div>
           <Button variant="ink" className="w-full" onClick={onCheckout}>
             {t.checkout}

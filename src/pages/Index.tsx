@@ -7,7 +7,7 @@ import { Cart } from "@/components/Cart";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { products } from "@/data/products";
+import { mockProducts } from "@/data/products";
 import { Product, CartItem } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,17 +31,17 @@ const Index = () => {
 
   // Filter products based on current filters
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
+    return mockProducts.filter(product => {
       // Category filter
-      if (selectedCategory !== 'all' && product.category !== selectedCategory) {
+      if (selectedCategory !== 'all' && product.category?.slug !== selectedCategory) {
         return false;
       }
       
       // Price filter
       if (selectedPriceRange !== 'all') {
-        if (selectedPriceRange === 'under50' && product.price >= 50) return false;
-        if (selectedPriceRange === '50-100' && (product.price < 50 || product.price > 100)) return false;
-        if (selectedPriceRange === 'over100' && product.price <= 100) return false;
+        if (selectedPriceRange === 'under50' && product.price >= 50000) return false;
+        if (selectedPriceRange === '50-100' && (product.price < 50000 || product.price > 100000)) return false;
+        if (selectedPriceRange === 'over100' && product.price <= 100000) return false;
       }
       
       // Color filter
@@ -54,10 +54,10 @@ const Index = () => {
         const query = searchQuery.toLowerCase();
         const searchFields = [
           product.name,
-          product.nameVi, 
+          product.nameEn, 
           product.nameJa,
           product.description,
-          product.descriptionVi,
+          product.descriptionEn,
           product.descriptionJa
         ];
         return searchFields.some(field => field.toLowerCase().includes(query));
