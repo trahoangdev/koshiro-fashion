@@ -56,7 +56,7 @@ export default function AdminProducts() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -250,7 +250,7 @@ export default function AdminProducts() {
     }
     
     // Filter by category
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== "all") {
       filtered = filtered.filter(product => product.categoryId === selectedCategory);
     }
     
@@ -368,7 +368,7 @@ export default function AdminProducts() {
                 <SelectValue placeholder={t.filterByCategory} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t.allCategories}</SelectItem>
+                <SelectItem value="all">{t.allCategories}</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
