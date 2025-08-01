@@ -331,8 +331,8 @@ export default function AdminProducts() {
         </div>
 
         {/* Search and Filters */}
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="space-y-3">
+          <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -359,18 +359,18 @@ export default function AdminProducts() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredProducts.map((product) => (
-            <Card key={product.id}>
-              <CardHeader className="pb-3">
+            <Card key={product.id} className="h-fit">
+              <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg line-clamp-2 mb-1">{product.name}</CardTitle>
+                    <CardTitle className="text-base line-clamp-2 mb-1">{product.name}</CardTitle>
                     {product.nameEn && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">{product.nameEn}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{product.nameEn}</p>
                     )}
                     {product.nameJa && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">{product.nameJa}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{product.nameJa}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1 ml-2">
@@ -383,54 +383,53 @@ export default function AdminProducts() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <p className="text-sm line-clamp-2 text-muted-foreground">{product.description}</p>
+              <CardContent className="pt-0 pb-3">
+                <div className="space-y-2">
+                  <p className="text-xs line-clamp-2 text-muted-foreground">{product.description}</p>
                   
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-lg">{formatCurrencyForDisplay(product.price)}</span>
+                    <span className="font-bold text-base">{formatCurrencyForDisplay(product.price)}</span>
                     {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="text-sm text-muted-foreground line-through">
+                      <span className="text-xs text-muted-foreground line-through">
                         {formatCurrencyForDisplay(product.originalPrice)}
                       </span>
                     )}
                   </div>
                   
-                  <div className="text-sm text-muted-foreground">
-                    {t.category}: <span className="font-medium">{product.category?.name || "N/A"}</span>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{t.category}: <span className="font-medium">{product.category?.name || "N/A"}</span></span>
+                    <span>{t.stock}: <span className="font-medium">{product.stock}</span></span>
                   </div>
                   
-                  <div className="text-sm text-muted-foreground">
-                    {t.stock}: <span className="font-medium">{product.stock}</span>
-                  </div>
+                  {product.sizes.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {product.sizes.slice(0, 2).map((size) => (
+                        <Badge key={size} variant="outline" className="text-xs">
+                          {size}
+                        </Badge>
+                      ))}
+                      {product.sizes.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{product.sizes.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                   
-                  <div className="flex flex-wrap gap-1">
-                    {product.sizes.slice(0, 3).map((size) => (
-                      <Badge key={size} variant="outline" className="text-xs">
-                        {size}
-                      </Badge>
-                    ))}
-                    {product.sizes.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{product.sizes.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => openEditDialog(product)}
-                        className="h-8 w-8 p-0"
+                        className="h-7 w-7 p-0"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-3 w-3" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Trash2 className="h-4 w-4" />
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -460,10 +459,10 @@ export default function AdminProducts() {
 
         {filteredProducts.length === 0 && (
           <Card>
-            <CardContent className="text-center py-12">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg font-medium">{t.noProducts}</p>
-              <p className="text-muted-foreground text-sm mt-2">
+            <CardContent className="text-center py-8">
+              <Package className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground font-medium">{t.noProducts}</p>
+              <p className="text-muted-foreground text-xs mt-1">
                 {searchTerm || selectedCategory !== "all" 
                   ? "Try adjusting your search or filter criteria" 
                   : "Get started by adding your first product"}

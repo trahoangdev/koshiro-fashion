@@ -243,7 +243,7 @@ export default function AdminCategories() {
         </div>
 
         {/* Search and Filters */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -256,18 +256,18 @@ export default function AdminCategories() {
         </div>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredCategories.map((category) => (
-            <Card key={category.id}>
-              <CardHeader className="pb-3">
+            <Card key={category.id} className="h-fit">
+              <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg line-clamp-2 mb-1">{category.name}</CardTitle>
+                    <CardTitle className="text-base line-clamp-2 mb-1">{category.name}</CardTitle>
                     {category.nameEn && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">{category.nameEn}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{category.nameEn}</p>
                     )}
                     {category.nameJa && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">{category.nameJa}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{category.nameJa}</p>
                     )}
                   </div>
                   <Badge variant={category.isActive ? "default" : "secondary"} className="text-xs ml-2">
@@ -275,28 +275,28 @@ export default function AdminCategories() {
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <p className="text-sm line-clamp-2 text-muted-foreground">{category.description}</p>
+              <CardContent className="pt-0 pb-3">
+                <div className="space-y-2">
+                  <p className="text-xs line-clamp-2 text-muted-foreground">{category.description}</p>
                   
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     {t.productCount}: <span className="font-medium">{category.productCount}</span>
                   </div>
                   
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => openEditDialog(category)}
-                        className="h-8 w-8 p-0"
+                        className="h-7 w-7 p-0"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-3 w-3" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Trash2 className="h-4 w-4" />
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -326,10 +326,10 @@ export default function AdminCategories() {
 
         {filteredCategories.length === 0 && (
           <Card>
-            <CardContent className="text-center py-12">
-              <Tag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg font-medium">{t.noCategories}</p>
-              <p className="text-muted-foreground text-sm mt-2">
+            <CardContent className="text-center py-8">
+              <Tag className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground font-medium">{t.noCategories}</p>
+              <p className="text-muted-foreground text-xs mt-1">
                 {searchTerm 
                   ? "Try adjusting your search criteria" 
                   : "Get started by adding your first category"}
