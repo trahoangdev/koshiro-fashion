@@ -9,7 +9,8 @@ import {
   BarChart3,
   PieChart,
   LogOut,
-  Globe
+  Globe,
+  Tag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +61,7 @@ export default function AdminDashboard() {
       processing: "Processing",
       completed: "Completed",
       manageProducts: "Manage Products",
+      manageCategories: "Manage Categories",
       manageOrders: "Manage Orders",
       manageUsers: "Manage Users",
       logoutSuccess: "Logout successful",
@@ -82,6 +84,7 @@ export default function AdminDashboard() {
       processing: "Đang xử lý",
       completed: "Hoàn thành",
       manageProducts: "Quản lý sản phẩm",
+      manageCategories: "Quản lý danh mục",
       manageOrders: "Quản lý đơn hàng",
       manageUsers: "Quản lý người dùng",
       logoutSuccess: "Đăng xuất thành công",
@@ -104,6 +107,7 @@ export default function AdminDashboard() {
       processing: "処理中",
       completed: "完了",
       manageProducts: "商品管理",
+      manageCategories: "カテゴリ管理",
       manageOrders: "注文管理",
       manageUsers: "ユーザー管理",
       logoutSuccess: "ログアウト成功",
@@ -318,7 +322,7 @@ export default function AdminDashboard() {
           </Card>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Button 
               variant="outline" 
               className="h-20 flex flex-col"
@@ -326,6 +330,15 @@ export default function AdminDashboard() {
             >
               <Package className="h-6 w-6 mb-2" />
               {t.manageProducts}
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="h-20 flex flex-col"
+              onClick={() => navigate("/admin/categories")}
+            >
+              <Tag className="h-6 w-6 mb-2" />
+              {t.manageCategories}
             </Button>
             
             <Button 
