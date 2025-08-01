@@ -48,6 +48,7 @@ import { Category } from "@/types/category";
 import { mockProducts } from "@/data/products";
 import { mockCategories } from "@/data/categories";
 import { ProductForm } from "@/components/ProductForm";
+import { formatCurrency } from "@/lib/currency";
 
 export default function AdminProducts() {
   const { toast } = useToast();
@@ -305,11 +306,8 @@ export default function AdminProducts() {
     setIsEditDialogOpen(true);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
+  const formatCurrencyForDisplay = (amount: number) => {
+    return formatCurrency(amount, language);
   };
 
   return (
@@ -407,10 +405,10 @@ export default function AdminProducts() {
                   <p className="text-sm line-clamp-2">{product.description}</p>
                   
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-lg">{formatCurrency(product.price)}</span>
+                    <span className="font-bold text-lg">{formatCurrencyForDisplay(product.price)}</span>
                     {product.originalPrice && product.originalPrice > product.price && (
                       <span className="text-sm text-muted-foreground line-through">
-                        {formatCurrency(product.originalPrice)}
+                        {formatCurrencyForDisplay(product.originalPrice)}
                       </span>
                     )}
                   </div>

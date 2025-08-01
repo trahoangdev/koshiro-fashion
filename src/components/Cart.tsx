@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CartItem } from "@/types/product";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 
 interface CartProps {
   cartItems: CartItem[];
@@ -116,10 +117,7 @@ export const Cart = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">
-                    {new Intl.NumberFormat('vi-VN', {
-                      style: 'currency',
-                      currency: 'VND'
-                    }).format(item.product.price)}
+                    {formatCurrency(item.product.price, currentLanguage)}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -161,10 +159,7 @@ export const Cart = ({
           <div className="flex justify-between">
             <span>{t.subtotal}</span>
             <span>
-              {new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
-              }).format(subtotal)}
+              {formatCurrency(subtotal, currentLanguage)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -175,10 +170,7 @@ export const Cart = ({
           <div className="flex justify-between text-lg font-semibold">
             <span>{t.total}</span>
             <span>
-              {new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
-              }).format(total)}
+              {formatCurrency(total, currentLanguage)}
             </span>
           </div>
           <Button variant="ink" className="w-full" onClick={onCheckout}>

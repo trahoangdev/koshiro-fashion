@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Product } from "@/types/product";
 import { ShoppingBag } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 
 interface ProductCardProps {
   product: Product;
@@ -64,10 +65,7 @@ export const ProductCard = ({ product, currentLanguage, onAddToCart }: ProductCa
           
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold">
-              {new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
-              }).format(product.price)}
+              {formatCurrency(product.price, currentLanguage)}
             </span>
             <div className="flex gap-1">
               {product.colors.slice(0, 3).map((color) => (

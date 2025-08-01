@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { formatCurrency } from "@/lib/currency";
 
 // Mock data
 const mockStats = {
@@ -143,11 +144,8 @@ export default function AdminDashboard() {
     navigate("/admin/login");
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
+  const formatCurrencyForDisplay = (amount: number) => {
+    return formatCurrency(amount, language);
   };
 
   const getStatusBadge = (status: string) => {
@@ -256,7 +254,7 @@ export default function AdminDashboard() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(mockStats.totalRevenue)}</div>
+                <div className="text-2xl font-bold">{formatCurrencyForDisplay(mockStats.totalRevenue)}</div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   +{mockStats.revenueTrend}% {t.fromLastMonth}
@@ -312,7 +310,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <span className="font-medium">{formatCurrency(order.total)}</span>
+                      <span className="font-medium">{formatCurrencyForDisplay(order.total)}</span>
                       {getStatusBadge(order.status)}
                     </div>
                   </div>
