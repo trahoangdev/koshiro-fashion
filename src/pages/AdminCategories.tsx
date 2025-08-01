@@ -3,11 +3,7 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Eye, 
-  EyeOff,
-  ArrowLeft,
-  Search,
-  Filter
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,13 +28,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { Category, CreateCategoryRequest, UpdateCategoryRequest } from "@/types/category";
 import { mockCategories } from "@/data/categories";
+import AdminLayout from "@/components/AdminLayout";
 
 export default function AdminCategories() {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -149,11 +144,7 @@ export default function AdminCategories() {
   const t = translations[language as keyof typeof translations] || translations.vi;
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
     const savedLanguage = localStorage.getItem("adminLanguage");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
-    }
     if (savedLanguage) {
       setLanguage(savedLanguage);
     }
@@ -161,7 +152,7 @@ export default function AdminCategories() {
     // Load categories
     setCategories(mockCategories);
     setFilteredCategories(mockCategories);
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     const filtered = categories.filter(category =>
@@ -221,19 +212,13 @@ export default function AdminCategories() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t.back}
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-sm text-muted-foreground">{t.subtitle}</p>
-            </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{t.title}</h1>
+            <p className="text-sm text-muted-foreground">{t.subtitle}</p>
           </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -255,9 +240,8 @@ export default function AdminCategories() {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
 
-      <main className="container py-6">
+        {/* Search and Filters */}
         {/* Search and Filters */}
         <div className="mb-6">
           <div className="relative">
@@ -338,28 +322,28 @@ export default function AdminCategories() {
             <p className="text-muted-foreground">{t.noCategories}</p>
           </div>
         )}
-      </main>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{t.editCategory}</DialogTitle>
-          </DialogHeader>
-          {editingCategory && (
-            <CategoryForm 
-              category={editingCategory}
-              onSubmit={handleUpdateCategory}
-              onCancel={() => {
-                setIsEditDialogOpen(false);
-                setEditingCategory(null);
-              }}
-              translations={t}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{t.editCategory}</DialogTitle>
+            </DialogHeader>
+            {editingCategory && (
+              <CategoryForm 
+                category={editingCategory}
+                onSubmit={handleUpdateCategory}
+                onCancel={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingCategory(null);
+                }}
+                translations={t}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AdminLayout>
   );
 }
 

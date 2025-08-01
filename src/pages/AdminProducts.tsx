@@ -3,14 +3,7 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Eye, 
-  EyeOff,
-  ArrowLeft,
-  Search,
-  Filter,
-  Image as ImageIcon,
-  Tag,
-  Package
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,17 +35,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { Product, CreateProductRequest, UpdateProductRequest } from "@/types/product";
 import { Category } from "@/types/category";
 import { mockProducts } from "@/data/products";
 import { mockCategories } from "@/data/categories";
 import { ProductForm } from "@/components/ProductForm";
 import { formatCurrency } from "@/lib/currency";
+import AdminLayout from "@/components/AdminLayout";
 
 export default function AdminProducts() {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -222,11 +214,7 @@ export default function AdminProducts() {
   const t = translations[language as keyof typeof translations] || translations.vi;
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
     const savedLanguage = localStorage.getItem("adminLanguage");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
-    }
     if (savedLanguage) {
       setLanguage(savedLanguage);
     }
@@ -235,7 +223,7 @@ export default function AdminProducts() {
     setProducts(mockProducts);
     setCategories(mockCategories);
     setFilteredProducts(mockProducts);
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     let filtered = products;
@@ -311,19 +299,13 @@ export default function AdminProducts() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t.back}
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-sm text-muted-foreground">{t.subtitle}</p>
-            </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{t.title}</h1>
+            <p className="text-sm text-muted-foreground">{t.subtitle}</p>
           </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -346,9 +328,8 @@ export default function AdminProducts() {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
 
-      <main className="container py-6">
+        {/* Search and Filters */}
         {/* Search and Filters */}
         <div className="mb-6 space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -479,29 +460,29 @@ export default function AdminProducts() {
             <p className="text-muted-foreground">{t.noProducts}</p>
           </div>
         )}
-      </main>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t.editProduct}</DialogTitle>
-          </DialogHeader>
-          {editingProduct && (
-            <ProductForm 
-              product={editingProduct}
-              categories={categories}
-              onSubmit={handleUpdateProduct}
-              onCancel={() => {
-                setIsEditDialogOpen(false);
-                setEditingProduct(null);
-              }}
-              translations={t}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t.editProduct}</DialogTitle>
+            </DialogHeader>
+            {editingProduct && (
+              <ProductForm 
+                product={editingProduct}
+                categories={categories}
+                onSubmit={handleUpdateProduct}
+                onCancel={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingProduct(null);
+                }}
+                translations={t}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AdminLayout>
   );
 }
 
