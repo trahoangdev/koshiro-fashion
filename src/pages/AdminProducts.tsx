@@ -3,7 +3,8 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Search
+  Search,
+  Package
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -330,8 +331,7 @@ export default function AdminProducts() {
         </div>
 
         {/* Search and Filters */}
-        {/* Search and Filters */}
-        <div className="mb-6 space-y-4">
+        <div className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -359,31 +359,33 @@ export default function AdminProducts() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
             <Card key={product.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
-                  <div className="flex gap-1">
-                    <Badge variant={product.isActive ? "default" : "secondary"}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg line-clamp-2 mb-1">{product.name}</CardTitle>
+                    {product.nameEn && (
+                      <p className="text-sm text-muted-foreground line-clamp-1">{product.nameEn}</p>
+                    )}
+                    {product.nameJa && (
+                      <p className="text-sm text-muted-foreground line-clamp-1">{product.nameJa}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 ml-2">
+                    <Badge variant={product.isActive ? "default" : "secondary"} className="text-xs">
                       {product.isActive ? t.active : t.inactive}
                     </Badge>
                     {product.isFeatured && (
-                      <Badge variant="outline">{t.featured}</Badge>
+                      <Badge variant="outline" className="text-xs">{t.featured}</Badge>
                     )}
                   </div>
                 </div>
-                {product.nameEn && (
-                  <p className="text-sm text-muted-foreground">{product.nameEn}</p>
-                )}
-                {product.nameJa && (
-                  <p className="text-sm text-muted-foreground">{product.nameJa}</p>
-                )}
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <div className="space-y-3">
-                  <p className="text-sm line-clamp-2">{product.description}</p>
+                  <p className="text-sm line-clamp-2 text-muted-foreground">{product.description}</p>
                   
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-lg">{formatCurrencyForDisplay(product.price)}</span>
@@ -395,11 +397,11 @@ export default function AdminProducts() {
                   </div>
                   
                   <div className="text-sm text-muted-foreground">
-                    {t.category}: {product.category?.name || "N/A"}
+                    {t.category}: <span className="font-medium">{product.category?.name || "N/A"}</span>
                   </div>
                   
                   <div className="text-sm text-muted-foreground">
-                    {t.stock}: {product.stock}
+                    {t.stock}: <span className="font-medium">{product.stock}</span>
                   </div>
                   
                   <div className="flex flex-wrap gap-1">
@@ -415,18 +417,19 @@ export default function AdminProducts() {
                     )}
                   </div>
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => openEditDialog(product)}
+                        className="h-8 w-8 p-0"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
@@ -456,9 +459,17 @@ export default function AdminProducts() {
         </div>
 
         {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">{t.noProducts}</p>
-          </div>
+          <Card>
+            <CardContent className="text-center py-12">
+              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg font-medium">{t.noProducts}</p>
+              <p className="text-muted-foreground text-sm mt-2">
+                {searchTerm || selectedCategory !== "all" 
+                  ? "Try adjusting your search or filter criteria" 
+                  : "Get started by adding your first product"}
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {/* Edit Dialog */}

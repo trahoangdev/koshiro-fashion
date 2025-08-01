@@ -37,6 +37,8 @@ export default function AdminDashboard() {
 
   const translations = {
     en: {
+      title: "Dashboard",
+      subtitle: "Overview of your business",
       totalOrders: "Total Orders",
       products: "Products",
       users: "Users",
@@ -51,6 +53,8 @@ export default function AdminDashboard() {
       completed: "Completed"
     },
     vi: {
+      title: "Bảng điều khiển",
+      subtitle: "Tổng quan về doanh nghiệp của bạn",
       totalOrders: "Tổng đơn hàng",
       products: "Sản phẩm",
       users: "Người dùng",
@@ -65,6 +69,8 @@ export default function AdminDashboard() {
       completed: "Hoàn thành"
     },
     ja: {
+      title: "ダッシュボード",
+      subtitle: "ビジネスの概要",
       totalOrders: "総注文数",
       products: "商品",
       users: "ユーザー",
@@ -112,6 +118,14 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{t.title}</h1>
+            <p className="text-sm text-muted-foreground">{t.subtitle}</p>
+          </div>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
