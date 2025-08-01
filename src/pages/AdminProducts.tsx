@@ -301,7 +301,7 @@ export default function AdminProducts() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -359,7 +359,7 @@ export default function AdminProducts() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="h-fit">
               <CardHeader className="pb-2">
@@ -459,7 +459,7 @@ export default function AdminProducts() {
 
         {filteredProducts.length === 0 && (
           <Card>
-            <CardContent className="text-center py-8">
+            <CardContent className="text-center py-6">
               <Package className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground font-medium">{t.noProducts}</p>
               <p className="text-muted-foreground text-xs mt-1">

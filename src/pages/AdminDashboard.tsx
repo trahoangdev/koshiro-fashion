@@ -117,7 +117,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t.totalOrders}</CardTitle>
@@ -186,30 +186,30 @@ export default function AdminDashboard() {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="flex items-center">
                 <BarChart3 className="h-5 w-5 mr-2" />
                 {t.revenueChart}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
+              <div className="h-48 flex items-center justify-center text-muted-foreground">
                 {t.chartPlaceholder}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="flex items-center">
                 <PieChart className="h-5 w-5 mr-2" />
                 {t.productStats}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
+              <div className="h-48 flex items-center justify-center text-muted-foreground">
                 {t.chartPlaceholder}
               </div>
             </CardContent>
@@ -218,13 +218,13 @@ export default function AdminDashboard() {
 
         {/* Recent Orders */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>{t.recentOrders}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {mockRecentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center space-x-4">
                     <div>
                       <p className="font-medium">{order.id}</p>
