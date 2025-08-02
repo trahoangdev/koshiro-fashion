@@ -42,7 +42,28 @@ import { useNavigate } from "react-router-dom";
 import { Product, Category } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
+import ProductForm from "@/components/ProductForm";
 import { api } from "@/lib/api";
+
+interface ProductFormData {
+  name: string;
+  nameEn: string;
+  nameJa: string;
+  description: string;
+  descriptionEn: string;
+  descriptionJa: string;
+  price: number;
+  originalPrice: number;
+  categoryId: string;
+  images: string[];
+  sizes: string[];
+  colors: string[];
+  stock: number;
+  tags: string[];
+  isActive: boolean;
+  isFeatured: boolean;
+  onSale: boolean;
+}
 
 export default function AdminProducts() {
   const { toast } = useToast();
@@ -55,6 +76,7 @@ export default function AdminProducts() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -160,40 +182,40 @@ export default function AdminProducts() {
 
 
   // Load data from API
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Loading admin products data...');
-        
-        // Load products and categories
-        const [productsResponse, categoriesResponse] = await Promise.all([
-          api.getAdminProducts({ page: 1, limit: 50 }),
-          api.getAdminCategories({ isActive: true })
-        ]);
-        
-        console.log('Products response:', productsResponse);
-        console.log('Categories response:', categoriesResponse);
-        
-        const productsData = productsResponse.data || [];
-        const categoriesData = categoriesResponse.categories || [];
-        
-        setProducts(productsData);
-        setCategories(categoriesData);
-        setFilteredProducts(productsData);
-        
-      } catch (error) {
-        console.error('Error loading admin products data:', error);
-        toast({
-          title: t.errorLoading,
-          description: t.errorLoadingDesc,
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Loading admin products data...');
+      
+      // Load products and categories
+      const [productsResponse, categoriesResponse] = await Promise.all([
+        api.getAdminProducts({ page: 1, limit: 50 }),
+        api.getAdminCategories({ isActive: true })
+      ]);
+      
+      console.log('Products response:', productsResponse);
+      console.log('Categories response:', categoriesResponse);
+      
+      const productsData = productsResponse.data || [];
+      const categoriesData = categoriesResponse.categories || [];
+      
+      setProducts(productsData);
+      setCategories(categoriesData);
+      setFilteredProducts(productsData);
+      
+    } catch (error) {
+      console.error('Error loading admin products data:', error);
+      toast({
+        title: t.errorLoading,
+        description: t.errorLoadingDesc,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, [toast, t.errorLoading, t.errorLoadingDesc]);
 
@@ -219,54 +241,50 @@ export default function AdminProducts() {
     setFilteredProducts(filtered);
   }, [searchTerm, selectedCategory, products]);
 
-  const handleCreateProduct = async (formData: Record<string, unknown>) => {
+  const handleCreateProduct = async (formData: ProductFormData) => {
+    setIsSubmitting(true);
     try {
-      console.log('Creating product:', formData);
-      const response = await api.createProduct(formData);
-      console.log('Create product response:', response);
-      
-      // Reload products
-      const productsResponse = await api.getAdminProducts({ page: 1, limit: 50 });
-      setProducts(productsResponse.data || []);
-      
-      setIsCreateDialogOpen(false);
+      await api.createProduct(formData);
       toast({
-        title: t.productCreated,
+        title: "Success",
+        description: t.productCreated,
       });
+      setIsCreateDialogOpen(false);
+      loadData();
     } catch (error) {
-      console.error('Error creating product:', error);
+      console.error("Error creating product:", error);
       toast({
-        title: t.error,
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: "Error",
+        description: t.error,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleUpdateProduct = async (formData: Record<string, unknown>) => {
+  const handleUpdateProduct = async (formData: ProductFormData) => {
     if (!editingProduct) return;
     
+    setIsSubmitting(true);
     try {
-      console.log('Updating product:', editingProduct._id, formData);
-      const response = await api.updateProduct(editingProduct._id, formData);
-      console.log('Update product response:', response);
-      
-      // Reload products
-      const productsResponse = await api.getAdminProducts({ page: 1, limit: 50 });
-      setProducts(productsResponse.data || []);
-      
+      await api.updateProduct(editingProduct._id, formData);
+      toast({
+        title: "Success",
+        description: t.productUpdated,
+      });
       setIsEditDialogOpen(false);
       setEditingProduct(null);
-      toast({
-        title: t.productUpdated,
-      });
+      loadData();
     } catch (error) {
-      console.error('Error updating product:', error);
+      console.error("Error updating product:", error);
       toast({
-        title: t.error,
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: "Error",
+        description: t.error,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -331,17 +349,40 @@ export default function AdminProducts() {
                 {t.addProduct}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t.addProduct}</DialogTitle>
               </DialogHeader>
-              {/* ProductForm component will be added here */}
-              <div className="p-4">
-                <p className="text-muted-foreground">Product form will be implemented here</p>
-              </div>
+              <ProductForm
+                categories={categories}
+                onSubmit={handleCreateProduct}
+                onCancel={() => setIsCreateDialogOpen(false)}
+                isLoading={isSubmitting}
+              />
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t.editProduct}</DialogTitle>
+            </DialogHeader>
+            {editingProduct && (
+              <ProductForm
+                product={editingProduct}
+                categories={categories}
+                onSubmit={handleUpdateProduct}
+                onCancel={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingProduct(null);
+                }}
+                isLoading={isSubmitting}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Filters */}
         <div className="flex gap-4">
@@ -459,14 +500,22 @@ export default function AdminProducts() {
 
         {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t.editProduct}</DialogTitle>
             </DialogHeader>
-            {/* ProductForm component will be added here */}
-            <div className="p-4">
-              <p className="text-muted-foreground">Edit form will be implemented here</p>
-            </div>
+            {editingProduct && (
+              <ProductForm
+                product={editingProduct}
+                categories={categories}
+                onSubmit={handleUpdateProduct}
+                onCancel={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingProduct(null);
+                }}
+                isLoading={isSubmitting}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>

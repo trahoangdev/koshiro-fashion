@@ -34,7 +34,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { Category } from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
+import CategoryForm from "@/components/CategoryForm";
 import { api } from "@/lib/api";
+
+interface CategoryFormData {
+  name: string;
+  nameEn: string;
+  nameJa: string;
+  description: string;
+  slug: string;
+  isActive: boolean;
+}
 
 export default function AdminCategories() {
   const { toast } = useToast();
@@ -45,6 +55,7 @@ export default function AdminCategories() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -143,35 +154,32 @@ export default function AdminCategories() {
 
   const t = translations[language as keyof typeof translations] || translations.vi;
 
-  // Load language preference
-
-
   // Load data from API
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Loading admin categories data...');
-        
-        const categoriesResponse = await api.getAdminCategories({ isActive: true });
-        console.log('Categories response:', categoriesResponse);
-        
-        const categoriesData = categoriesResponse.categories || [];
-        setCategories(categoriesData);
-        setFilteredCategories(categoriesData);
-        
-      } catch (error) {
-        console.error('Error loading admin categories data:', error);
-        toast({
-          title: t.errorLoading,
-          description: t.errorLoadingDesc,
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Loading admin categories data...');
+      
+      const categoriesResponse = await api.getAdminCategories({ isActive: true });
+      console.log('Categories response:', categoriesResponse);
+      
+      const categoriesData = categoriesResponse.categories || [];
+      setCategories(categoriesData);
+      setFilteredCategories(categoriesData);
+      
+    } catch (error) {
+      console.error('Error loading admin categories data:', error);
+      toast({
+        title: t.errorLoading,
+        description: t.errorLoadingDesc,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, [toast, t.errorLoading, t.errorLoadingDesc]);
 
@@ -192,54 +200,50 @@ export default function AdminCategories() {
     setFilteredCategories(filtered);
   }, [searchTerm, categories]);
 
-  const handleCreateCategory = async (formData: Record<string, unknown>) => {
+  const handleCreateCategory = async (formData: CategoryFormData) => {
+    setIsSubmitting(true);
     try {
-      console.log('Creating category:', formData);
-      const response = await api.createCategory(formData);
-      console.log('Create category response:', response);
-      
-      // Reload categories
-      const categoriesResponse = await api.getAdminCategories({ isActive: true });
-      setCategories(categoriesResponse.categories || []);
-      
-      setIsCreateDialogOpen(false);
+      await api.createCategory(formData);
       toast({
-        title: t.categoryCreated,
+        title: "Success",
+        description: t.categoryCreated,
       });
+      setIsCreateDialogOpen(false);
+      loadData();
     } catch (error) {
-      console.error('Error creating category:', error);
+      console.error("Error creating category:", error);
       toast({
-        title: t.error,
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: "Error",
+        description: t.error,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleUpdateCategory = async (formData: Record<string, unknown>) => {
+  const handleUpdateCategory = async (formData: CategoryFormData) => {
     if (!editingCategory) return;
     
+    setIsSubmitting(true);
     try {
-      console.log('Updating category:', editingCategory._id, formData);
-      const response = await api.updateCategory(editingCategory._id, formData);
-      console.log('Update category response:', response);
-      
-      // Reload categories
-      const categoriesResponse = await api.getAdminCategories({ isActive: true });
-      setCategories(categoriesResponse.categories || []);
-      
+      await api.updateCategory(editingCategory._id, formData);
+      toast({
+        title: "Success",
+        description: t.categoryUpdated,
+      });
       setIsEditDialogOpen(false);
       setEditingCategory(null);
-      toast({
-        title: t.categoryUpdated,
-      });
+      loadData();
     } catch (error) {
-      console.error('Error updating category:', error);
+      console.error("Error updating category:", error);
       toast({
-        title: t.error,
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: "Error",
+        description: t.error,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -304,10 +308,11 @@ export default function AdminCategories() {
               <DialogHeader>
                 <DialogTitle>{t.addCategory}</DialogTitle>
               </DialogHeader>
-              {/* CategoryForm component will be added here */}
-              <div className="p-4">
-                <p className="text-muted-foreground">Category form will be implemented here</p>
-              </div>
+              <CategoryForm
+                onSubmit={handleCreateCategory}
+                onCancel={() => setIsCreateDialogOpen(false)}
+                isLoading={isSubmitting}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -413,10 +418,17 @@ export default function AdminCategories() {
             <DialogHeader>
               <DialogTitle>{t.editCategory}</DialogTitle>
             </DialogHeader>
-            {/* CategoryForm component will be added here */}
-            <div className="p-4">
-              <p className="text-muted-foreground">Edit form will be implemented here</p>
-            </div>
+            {editingCategory && (
+              <CategoryForm
+                category={editingCategory}
+                onSubmit={handleUpdateCategory}
+                onCancel={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingCategory(null);
+                }}
+                isLoading={isSubmitting}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>
