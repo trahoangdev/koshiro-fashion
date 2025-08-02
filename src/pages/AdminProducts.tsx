@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { Product, CreateProductRequest, UpdateProductRequest } from "@/types/product";
 import { Category } from "@/types/category";
 import { mockProducts } from "@/data/products";
@@ -46,6 +47,7 @@ import AdminLayout from "@/components/AdminLayout";
 
 export default function AdminProducts() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -215,7 +217,11 @@ export default function AdminProducts() {
   const t = translations[language as keyof typeof translations] || translations.vi;
 
   useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
     const savedLanguage = localStorage.getItem("adminLanguage");
+    if (!isLoggedIn) {
+      navigate("/admin/login");
+    }
     if (savedLanguage) {
       setLanguage(savedLanguage);
     }
@@ -224,7 +230,7 @@ export default function AdminProducts() {
     setProducts(mockProducts);
     setCategories(mockCategories);
     setFilteredProducts(mockProducts);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     let filtered = products;
@@ -301,12 +307,12 @@ export default function AdminProducts() {
 
   return (
     <AdminLayout>
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{t.title}</h1>
-            <p className="text-sm text-muted-foreground">{t.subtitle}</p>
+            <h1 className="text-3xl font-bold">{t.title}</h1>
+            <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -329,10 +335,9 @@ export default function AdminProducts() {
             </DialogContent>
           </Dialog>
         </div>
-
         {/* Search and Filters */}
-        <div className="space-y-3">
-          <div className="flex flex-col md:flex-row gap-3">
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -359,77 +364,75 @@ export default function AdminProducts() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => (
-            <Card key={product.id} className="h-fit">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base line-clamp-2 mb-1">{product.name}</CardTitle>
-                    {product.nameEn && (
-                      <p className="text-xs text-muted-foreground line-clamp-1">{product.nameEn}</p>
-                    )}
-                    {product.nameJa && (
-                      <p className="text-xs text-muted-foreground line-clamp-1">{product.nameJa}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1 ml-2">
-                    <Badge variant={product.isActive ? "default" : "secondary"} className="text-xs">
+            <Card key={product.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
+                  <div className="flex gap-1">
+                    <Badge variant={product.isActive ? "default" : "secondary"}>
                       {product.isActive ? t.active : t.inactive}
                     </Badge>
                     {product.isFeatured && (
-                      <Badge variant="outline" className="text-xs">{t.featured}</Badge>
+                      <Badge variant="outline">{t.featured}</Badge>
                     )}
                   </div>
                 </div>
+                {product.nameEn && (
+                  <p className="text-sm text-muted-foreground">{product.nameEn}</p>
+                )}
+                {product.nameJa && (
+                  <p className="text-sm text-muted-foreground">{product.nameJa}</p>
+                )}
               </CardHeader>
-              <CardContent className="pt-0 pb-3">
-                <div className="space-y-2">
-                  <p className="text-xs line-clamp-2 text-muted-foreground">{product.description}</p>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm line-clamp-2">{product.description}</p>
                   
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-base">{formatCurrencyForDisplay(product.price)}</span>
+                    <span className="font-bold text-lg">{formatCurrencyForDisplay(product.price)}</span>
                     {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="text-xs text-muted-foreground line-through">
+                      <span className="text-sm text-muted-foreground line-through">
                         {formatCurrencyForDisplay(product.originalPrice)}
                       </span>
                     )}
                   </div>
                   
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{t.category}: <span className="font-medium">{product.category?.name || "N/A"}</span></span>
-                    <span>{t.stock}: <span className="font-medium">{product.stock}</span></span>
+                  <div className="text-sm text-muted-foreground">
+                    {t.category}: {product.category?.name || "N/A"}
                   </div>
                   
-                  {product.sizes.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {product.sizes.slice(0, 2).map((size) => (
-                        <Badge key={size} variant="outline" className="text-xs">
-                          {size}
-                        </Badge>
-                      ))}
-                      {product.sizes.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{product.sizes.length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
+                  <div className="text-sm text-muted-foreground">
+                    {t.stock}: {product.stock}
+                  </div>
                   
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap gap-1">
+                    {product.sizes.slice(0, 3).map((size) => (
+                      <Badge key={size} variant="outline" className="text-xs">
+                        {size}
+                      </Badge>
+                    ))}
+                    {product.sizes.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{product.sizes.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => openEditDialog(product)}
-                        className="h-7 w-7 p-0"
                       >
-                        <Edit className="h-3 w-3" />
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                            <Trash2 className="h-3 w-3" />
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -458,17 +461,9 @@ export default function AdminProducts() {
         </div>
 
         {filteredProducts.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-6">
-              <Package className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground font-medium">{t.noProducts}</p>
-              <p className="text-muted-foreground text-xs mt-1">
-                {searchTerm || selectedCategory !== "all" 
-                  ? "Try adjusting your search or filter criteria" 
-                  : "Get started by adding your first product"}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">{t.noProducts}</p>
+          </div>
         )}
 
         {/* Edit Dialog */}

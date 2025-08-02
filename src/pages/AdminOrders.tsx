@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Search, Eye, Package, Clock, CheckCircle } from "lucide-react";
+import { Search, Eye, Package, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import AdminLayout from "@/components/AdminLayout";
+import { formatCurrency } from "@/lib/currency";
 
 // Mock orders data
 const mockOrders = [
@@ -113,11 +115,17 @@ export default function AdminOrders() {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
+  const [language, setLanguage] = useState("vi");
+
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem("adminLanguage");
+    if (savedLanguage) {
+      setLanguage(savedLanguage);
+    }
+  }, []);
+
+  const formatCurrencyForDisplay = (amount: number) => {
+    return formatCurrency(amount, language);
   };
 
   const formatDate = (dateString: string) => {
@@ -156,24 +164,13 @@ export default function AdminOrders() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
-              <p className="text-sm text-muted-foreground">Xem và cập nhật trạng thái đơn hàng</p>
-            </div>
-          </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">Quản lý đơn hàng</h1>
+          <p className="text-muted-foreground">Xem và cập nhật trạng thái đơn hàng</p>
         </div>
-      </header>
-
-      <main className="container py-6">
-        <div className="space-y-6">
           {/* Filters */}
           <Card>
             <CardHeader>
@@ -253,7 +250,7 @@ export default function AdminOrders() {
                       <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
                         <div className="text-right">
                           <div className="text-2xl font-bold text-primary">
-                            {formatCurrency(order.total)}
+                            {formatCurrencyForDisplay(order.total)}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {order.items.length} sản phẩm
@@ -297,73 +294,72 @@ export default function AdminOrders() {
               )}
             </CardContent>
           </Card>
-        </div>
-      </main>
 
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Chi tiết đơn hàng {selectedOrder.id}
-                <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)}>
-                  ✕
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold mb-2">Thông tin khách hàng</h4>
-                  <div className="space-y-1 text-sm">
-                    <div><span className="text-muted-foreground">Tên:</span> {selectedOrder.customer}</div>
-                    <div><span className="text-muted-foreground">Email:</span> {selectedOrder.email}</div>
-                    <div><span className="text-muted-foreground">Điện thoại:</span> {selectedOrder.phone}</div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Thông tin đơn hàng</h4>
-                  <div className="space-y-1 text-sm">
-                    <div><span className="text-muted-foreground">Mã đơn:</span> {selectedOrder.id}</div>
-                    <div><span className="text-muted-foreground">Ngày đặt:</span> {formatDate(selectedOrder.createdAt)}</div>
-                    <div><span className="text-muted-foreground">Trạng thái:</span> {getStatusBadge(selectedOrder.status)}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-2">Địa chỉ giao hàng</h4>
-                <p className="text-sm">{selectedOrder.shippingAddress}</p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-2">Sản phẩm</h4>
-                <div className="space-y-2">
-                  {selectedOrder.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b">
-                      <div>
-                        <div className="font-medium">{item.nameVi}</div>
-                        <div className="text-sm text-muted-foreground">Số lượng: {item.quantity}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(item.price * item.quantity)}</div>
-                        <div className="text-sm text-muted-foreground">{formatCurrency(item.price)}/sp</div>
-                      </div>
+        {/* Order Detail Modal */}
+        {selectedOrder && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Chi tiết đơn hàng {selectedOrder.id}
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)}>
+                    ✕
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Thông tin khách hàng</h4>
+                    <div className="space-y-1 text-sm">
+                      <div><span className="text-muted-foreground">Tên:</span> {selectedOrder.customer}</div>
+                      <div><span className="text-muted-foreground">Email:</span> {selectedOrder.email}</div>
+                      <div><span className="text-muted-foreground">Điện thoại:</span> {selectedOrder.phone}</div>
                     </div>
-                  ))}
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Thông tin đơn hàng</h4>
+                    <div className="space-y-1 text-sm">
+                      <div><span className="text-muted-foreground">Mã đơn:</span> {selectedOrder.id}</div>
+                      <div><span className="text-muted-foreground">Ngày đặt:</span> {formatDate(selectedOrder.createdAt)}</div>
+                      <div><span className="text-muted-foreground">Trạng thái:</span> {getStatusBadge(selectedOrder.status)}</div>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="flex justify-between items-center pt-4 border-t font-bold text-lg">
-                  <span>Tổng cộng:</span>
-                  <span className="text-primary">{formatCurrency(selectedOrder.total)}</span>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Địa chỉ giao hàng</h4>
+                  <p className="text-sm">{selectedOrder.shippingAddress}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Sản phẩm</h4>
+                  <div className="space-y-2">
+                    {selectedOrder.items.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center py-2 border-b">
+                        <div>
+                          <div className="font-medium">{item.nameVi}</div>
+                          <div className="text-sm text-muted-foreground">Số lượng: {item.quantity}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">{formatCurrencyForDisplay(item.price * item.quantity)}</div>
+                          <div className="text-sm text-muted-foreground">{formatCurrencyForDisplay(item.price)}/sp</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="flex justify-between items-center pt-4 border-t font-bold text-lg">
+                    <span>Tổng cộng:</span>
+                    <span className="text-primary">{formatCurrencyForDisplay(selectedOrder.total)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </AdminLayout>
   );
 }

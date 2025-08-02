@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Search, Ban, CheckCircle, UserCheck, Mail, Phone, MapPin } from "lucide-react";
+import { Search, Ban, CheckCircle, UserCheck, Mail, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import AdminLayout from "@/components/AdminLayout";
+import { formatCurrency } from "@/lib/currency";
 
 // Mock users data
 const mockUsers = [
@@ -233,11 +235,8 @@ export default function AdminUsers() {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
+  const formatCurrencyForDisplay = (amount: number) => {
+    return formatCurrency(amount, language);
   };
 
   const formatDate = (dateString: string) => {
@@ -274,24 +273,13 @@ export default function AdminUsers() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">{t.title}</h1>
-              <p className="text-sm text-muted-foreground">{t.subtitle}</p>
-            </div>
-          </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">{t.title}</h1>
+          <p className="text-muted-foreground">{t.subtitle}</p>
         </div>
-      </header>
-
-      <main className="container py-6">
-        <div className="space-y-6">
           {/* Filters */}
           <Card>
             <CardHeader>
@@ -372,7 +360,7 @@ export default function AdminUsers() {
                       <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
                         <div className="text-right space-y-1">
                           <div className="text-lg font-bold text-primary">
-                            {formatCurrency(user.totalSpent)}
+                            {formatCurrencyForDisplay(user.totalSpent)}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {user.totalOrders} {t.orders}
@@ -418,76 +406,75 @@ export default function AdminUsers() {
               )}
             </CardContent>
           </Card>
-        </div>
-      </main>
 
-      {/* User Detail Modal */}
-      {selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                {t.userDetails}: {selectedUser.name}
-                <Button variant="ghost" size="sm" onClick={() => setSelectedUser(null)}>
-                  ✕
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src="" />
-                  <AvatarFallback className="text-lg">
-                    {selectedUser.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-xl font-bold">{selectedUser.name}</h3>
-                  {getStatusBadge(selectedUser.status)}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-3">{t.customerInfo}</h4>
-                  <div className="space-y-2 text-sm">
-                    <div><span className="text-muted-foreground">{t.email}:</span> {selectedUser.email}</div>
-                    <div><span className="text-muted-foreground">{t.phone}:</span> {selectedUser.phone}</div>
-                    <div><span className="text-muted-foreground">{t.address}:</span> {selectedUser.address}</div>
+        {/* User Detail Modal */}
+        {selectedUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  {t.userDetails}: {selectedUser.name}
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedUser(null)}>
+                    ✕
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="text-lg">
+                      {selectedUser.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="text-xl font-bold">{selectedUser.name}</h3>
+                    {getStatusBadge(selectedUser.status)}
                   </div>
                 </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-3">{t.accountInfo}</h4>
-                  <div className="space-y-2 text-sm">
-                    <div><span className="text-muted-foreground">{t.status}:</span> {getStatusBadge(selectedUser.status)}</div>
-                    <div><span className="text-muted-foreground">{t.joinDate}:</span> {formatDate(selectedUser.joinDate)}</div>
-                    <div><span className="text-muted-foreground">{t.lastActive}:</span> {selectedUser.lastActive ? formatDate(selectedUser.lastActive) : t.never}</div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold mb-3">{t.customerInfo}</h4>
+                    <div className="space-y-2 text-sm">
+                      <div><span className="text-muted-foreground">{t.email}:</span> {selectedUser.email}</div>
+                      <div><span className="text-muted-foreground">{t.phone}:</span> {selectedUser.phone}</div>
+                      <div><span className="text-muted-foreground">{t.address}:</span> {selectedUser.address}</div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-3">{t.accountInfo}</h4>
+                    <div className="space-y-2 text-sm">
+                      <div><span className="text-muted-foreground">{t.status}:</span> {getStatusBadge(selectedUser.status)}</div>
+                      <div><span className="text-muted-foreground">{t.joinDate}:</span> {formatDate(selectedUser.joinDate)}</div>
+                      <div><span className="text-muted-foreground">{t.lastActive}:</span> {selectedUser.lastActive ? formatDate(selectedUser.lastActive) : t.never}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <h4 className="font-semibold mb-3">{t.orderStats}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold text-primary">{selectedUser.totalOrders}</div>
-                      <div className="text-sm text-muted-foreground">{t.totalOrders}</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold text-primary">{formatCurrency(selectedUser.totalSpent)}</div>
-                      <div className="text-sm text-muted-foreground">{t.totalSpent}</div>
-                    </CardContent>
-                  </Card>
+                <div>
+                  <h4 className="font-semibold mb-3">{t.orderStats}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-primary">{selectedUser.totalOrders}</div>
+                        <div className="text-sm text-muted-foreground">{t.totalOrders}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-primary">{formatCurrencyForDisplay(selectedUser.totalSpent)}</div>
+                        <div className="text-sm text-muted-foreground">{t.totalSpent}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </AdminLayout>
   );
 }
