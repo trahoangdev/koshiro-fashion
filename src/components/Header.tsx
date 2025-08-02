@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { Search, ShoppingBag, Menu, X, User, Globe, Heart } from "lucide-react";
+import { Search, ShoppingBag, Menu, X, User, Globe, Heart, LogOut, Settings, Package, CreditCard, MapPin, Bell, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
   cartItemsCount: number;
@@ -21,10 +25,24 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { language, setLanguage } = useLanguage();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(searchQuery);
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const translations = {
@@ -39,7 +57,17 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
       hakama: "Hakama",
       sale: "Sale",
       account: "Account",
-      cart: "Cart"
+      cart: "Cart",
+      profile: "Profile",
+      orders: "Orders",
+      addresses: "Addresses",
+      payment: "Payment",
+      notifications: "Notifications",
+      settings: "Settings",
+      logout: "Logout",
+      login: "Login",
+      register: "Register",
+      guest: "Guest"
     },
     vi: {
       search: "Tìm kiếm sản phẩm...",
@@ -52,7 +80,17 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
       hakama: "Hakama",
       sale: "Khuyến mãi",
       account: "Tài khoản",
-      cart: "Giỏ hàng"
+      cart: "Giỏ hàng",
+      profile: "Hồ sơ",
+      orders: "Đơn hàng",
+      addresses: "Địa chỉ",
+      payment: "Thanh toán",
+      notifications: "Thông báo",
+      settings: "Cài đặt",
+      logout: "Đăng xuất",
+      login: "Đăng nhập",
+      register: "Đăng ký",
+      guest: "Khách"
     },
     ja: {
       search: "商品を検索...",
@@ -65,7 +103,17 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
       hakama: "袴",
       sale: "セール",
       account: "アカウント", 
-      cart: "カート"
+      cart: "カート",
+      profile: "プロフィール",
+      orders: "注文",
+      addresses: "住所",
+      payment: "支払い",
+      notifications: "通知",
+      settings: "設定",
+      logout: "ログアウト",
+      login: "ログイン",
+      register: "登録",
+      guest: "ゲスト"
     }
   };
 
@@ -146,11 +194,70 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
           </Link>
 
           {/* Account */}
-          <Link to="/profile">
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <User className="h-4 w-4" />
-            </Button>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="hidden md:flex">
+                <User className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {isAuthenticated ? (
+                <>
+                  <DropdownMenuLabel>
+                    <div className="flex items-center">
+                      <Avatar className="mr-2">
+                        <AvatarFallback>{getUserInitials(user?.name || '')}</AvatarFallback>
+                      </Avatar>
+                      {user?.name}
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
+                    <Package className="mr-2 h-4 w-4" />
+                    {t.profile}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/orders'}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    {t.orders}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/addresses'}>
+                    <MapPin className="mr-2 h-4 w-4" />
+                    {t.addresses}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/payment'}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    {t.payment}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/notifications'}>
+                    <Bell className="mr-2 h-4 w-4" />
+                    {t.notifications}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    {t.settings}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {t.logout}
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuLabel>{t.guest}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.location.href = '/login'}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    {t.login}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/register'}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {t.register}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Cart */}
           <Link to="/cart">

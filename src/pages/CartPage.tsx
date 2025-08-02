@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { api, Product } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
+import { cartService, CartItem } from '@/lib/cartService';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -13,22 +13,20 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, ShoppingCart, Trash2, Plus, Minus, ArrowLeft, CreditCard, Truck } from 'lucide-react';
 
-interface CartItem {
-  product: Product;
-  quantity: number;
-  selectedSize?: string;
-  selectedColor?: string;
-}
-
-interface CartPageProps {}
-
-const CartPage: React.FC<CartPageProps> = () => {
+const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { language } = useLanguage();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+
+  const cartItemsCount = cartItems.reduce((count, item) => count + item.quantity, 0);
+
+  const handleSearch = (query: string) => {
+    // TODO: Implement search functionality
+    console.log('Search query:', query);
+  };
 
   const translations = {
     vi: {
@@ -100,8 +98,8 @@ const CartPage: React.FC<CartPageProps> = () => {
       continueShopping: '買い物を続ける',
       orderSummary: '注文サマリー',
       subtotal: '小計',
-      shipping: '送料',
-      tax: '税',
+      shipping: '配送料',
+      tax: '税金',
       total: '合計',
       checkout: 'チェックアウト',
       remove: '削除',
@@ -110,7 +108,7 @@ const CartPage: React.FC<CartPageProps> = () => {
       size: 'サイズ',
       color: '色',
       freeShipping: '送料無料',
-      estimatedDelivery: '配達予定',
+      estimatedDelivery: '配送予定日',
       deliveryDate: '3-5営業日',
       secureCheckout: '安全なチェックアウト',
       secureCheckoutDesc: 'あなたの情報は保護されています',
@@ -132,33 +130,8 @@ const CartPage: React.FC<CartPageProps> = () => {
     const loadCart = async () => {
       try {
         setLoading(true);
-        // TODO: Load cart from localStorage or API
-        // For now, using mock data
-        const mockCartItems: CartItem[] = [
-          {
-            product: {
-              _id: '1',
-              name: 'Áo Kimono Truyền Thống',
-              nameEn: 'Traditional Kimono',
-              nameJa: '伝統的な着物',
-              description: 'Áo Kimono truyền thống với họa tiết hoa anh đào',
-              price: 1500000,
-              originalPrice: 1800000,
-              categoryId: { _id: '1', name: 'Áo Kimono', slug: 'ao-kimono' },
-              images: ['/images/kimono-1.jpg'],
-              sizes: ['S', 'M', 'L', 'XL'],
-              colors: ['Đỏ', 'Xanh', 'Tím'],
-              stock: 10,
-              isActive: true,
-              isFeatured: true,
-              tags: ['kimono', 'truyền thống', 'hoa anh đào']
-            },
-            quantity: 1,
-            selectedSize: 'M',
-            selectedColor: 'Đỏ'
-          }
-        ];
-        setCartItems(mockCartItems);
+        const cart = cartService.getCart();
+        setCartItems(cart);
       } catch (error) {
         console.error('Error loading cart:', error);
         toast({
@@ -174,19 +147,13 @@ const CartPage: React.FC<CartPageProps> = () => {
     loadCart();
   }, [toast, t.errorLoading, t.errorLoadingDesc]);
 
-  const updateQuantity = async (productId: string, newQuantity: number) => {
+  const updateQuantity = async (productId: string, newQuantity: number, selectedSize?: string, selectedColor?: string) => {
     if (newQuantity < 1) return;
     
     setUpdating(productId);
     try {
-      // TODO: Update cart via API
-      setCartItems(prev => 
-        prev.map(item => 
-          item.product._id === productId 
-            ? { ...item, quantity: newQuantity }
-            : item
-        )
-      );
+      const updatedCart = cartService.updateQuantity(productId, newQuantity, selectedSize, selectedColor);
+      setCartItems(updatedCart);
       
       toast({
         title: t.updateQuantity,
@@ -199,11 +166,11 @@ const CartPage: React.FC<CartPageProps> = () => {
     }
   };
 
-  const removeItem = async (productId: string) => {
+  const removeItem = async (productId: string, selectedSize?: string, selectedColor?: string) => {
     setUpdating(productId);
     try {
-      // TODO: Remove item via API
-      setCartItems(prev => prev.filter(item => item.product._id !== productId));
+      const updatedCart = cartService.removeFromCart(productId, selectedSize, selectedColor);
+      setCartItems(updatedCart);
       
       toast({
         title: t.removeItem,
@@ -235,7 +202,7 @@ const CartPage: React.FC<CartPageProps> = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header cartItemsCount={cartItemsCount} onSearch={handleSearch} />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="flex items-center space-x-2">
@@ -252,12 +219,12 @@ const CartPage: React.FC<CartPageProps> = () => {
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header cartItemsCount={cartItemsCount} onSearch={handleSearch} />
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <div className="text-center">
+            <ShoppingCart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">{t.emptyCart}</h1>
-            <p className="text-muted-foreground mb-6">{t.emptyCartDesc}</p>
+            <p className="text-muted-foreground mb-8">{t.emptyCartDesc}</p>
             <Button onClick={() => navigate('/')}>
               {t.continueShopping}
             </Button>
@@ -270,7 +237,7 @@ const CartPage: React.FC<CartPageProps> = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header cartItemsCount={cartItemsCount} onSearch={handleSearch} />
       
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center space-x-4 mb-8">
@@ -306,7 +273,7 @@ const CartPage: React.FC<CartPageProps> = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeItem(item.product._id)}
+                        onClick={() => removeItem(item.product._id, item.selectedSize, item.selectedColor)}
                         disabled={updating === item.product._id}
                       >
                         {updating === item.product._id ? (
@@ -338,7 +305,7 @@ const CartPage: React.FC<CartPageProps> = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateQuantity(item.product._id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.product._id, item.quantity - 1, item.selectedSize, item.selectedColor)}
                           disabled={item.quantity <= 1 || updating === item.product._id}
                         >
                           <Minus className="h-3 w-3" />
@@ -349,7 +316,7 @@ const CartPage: React.FC<CartPageProps> = () => {
                           min="1"
                           max={item.product.stock}
                           value={item.quantity}
-                          onChange={(e) => updateQuantity(item.product._id, parseInt(e.target.value) || 1)}
+                          onChange={(e) => updateQuantity(item.product._id, parseInt(e.target.value) || 1, item.selectedSize, item.selectedColor)}
                           className="w-16 text-center"
                           disabled={updating === item.product._id}
                         />
@@ -357,7 +324,7 @@ const CartPage: React.FC<CartPageProps> = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.product._id, item.quantity + 1, item.selectedSize, item.selectedColor)}
                           disabled={item.quantity >= item.product.stock || updating === item.product._id}
                         >
                           <Plus className="h-3 w-3" />

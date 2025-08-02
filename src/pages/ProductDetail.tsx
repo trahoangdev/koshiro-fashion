@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, Product } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
+import { cartService } from '@/lib/cartService';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -15,9 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Loader2, ShoppingCart, Heart, Star, Truck, Shield, RotateCcw } from 'lucide-react';
 
-interface ProductDetailProps {}
-
-const ProductDetail: React.FC<ProductDetailProps> = () => {
+const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,6 +27,11 @@ const ProductDetail: React.FC<ProductDetailProps> = () => {
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+
+  const handleSearch = (query: string) => {
+    // TODO: Implement search functionality
+    console.log('Search query:', query);
+  };
 
   const translations = {
     vi: {
@@ -155,7 +159,8 @@ const ProductDetail: React.FC<ProductDetailProps> = () => {
   const handleAddToCart = () => {
     if (!product) return;
     
-    // TODO: Implement add to cart functionality
+    cartService.addToCart(product, quantity, selectedSize, selectedColor);
+
     toast({
       title: t.addToCartSuccess,
       description: t.addToCartSuccessDesc,
@@ -175,14 +180,15 @@ const ProductDetail: React.FC<ProductDetailProps> = () => {
   const handleBuyNow = () => {
     if (!product) return;
     
-    // TODO: Implement buy now functionality
+    // Add to cart first, then navigate to checkout
+    cartService.addToCart(product, quantity, selectedSize, selectedColor);
     navigate('/checkout');
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header cartItemsCount={0} onSearch={handleSearch} />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="flex items-center space-x-2">
@@ -199,7 +205,7 @@ const ProductDetail: React.FC<ProductDetailProps> = () => {
   if (!product) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header cartItemsCount={0} onSearch={handleSearch} />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Product not found</h1>
@@ -215,7 +221,7 @@ const ProductDetail: React.FC<ProductDetailProps> = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header cartItemsCount={0} onSearch={handleSearch} />
       
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

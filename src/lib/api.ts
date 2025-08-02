@@ -216,58 +216,94 @@ class ApiClient {
 
   // Auth methods
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await this.request<{ message: string; token: string; user: any }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    
-    if (response.token) {
-      this.token = response.token;
-      localStorage.setItem('token', response.token);
+    try {
+      const response = await this.request<{ message: string; token: string; user: any }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+      
+      if (response.token) {
+        this.token = response.token;
+        localStorage.setItem('token', response.token);
+      }
+      
+      return {
+        token: response.token,
+        user: response.user
+      };
+    } catch (error) {
+      console.error('Login API error:', error);
+      throw error;
     }
-    
-    return {
-      token: response.token,
-      user: response.user
-    };
   }
 
   async adminLogin(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await this.request<{ message: string; token: string; user: any }>('/auth/admin/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    
-    if (response.token) {
-      this.token = response.token;
-      localStorage.setItem('token', response.token);
+    try {
+      const response = await this.request<{ message: string; token: string; user: any }>('/auth/admin/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+      
+      if (response.token) {
+        this.token = response.token;
+        localStorage.setItem('token', response.token);
+      }
+      
+      return {
+        token: response.token,
+        user: response.user
+      };
+    } catch (error) {
+      console.error('Admin login API error:', error);
+      throw error;
     }
-    
-    return {
-      token: response.token,
-      user: response.user
-    };
   }
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await this.request<{ message: string; token: string; user: any }>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-    
-    if (response.token) {
-      this.token = response.token;
-      localStorage.setItem('token', response.token);
+    try {
+      const response = await this.request<{ message: string; token: string; user: any }>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+      
+      if (response.token) {
+        this.token = response.token;
+        localStorage.setItem('token', response.token);
+      }
+      
+      return {
+        token: response.token,
+        user: response.user
+      };
+    } catch (error) {
+      console.error('Register API error:', error);
+      throw error;
     }
-    
-    return {
-      token: response.token,
-      user: response.user
-    };
   }
 
   async getProfile(): Promise<{ user: any }> {
-    return this.request<{ user: any }>('/auth/profile');
+    try {
+      return await this.request<{ user: any }>('/auth/profile');
+    } catch (error) {
+      console.error('Get profile API error:', error);
+      throw error;
+    }
+  }
+
+  async updateProfile(userData: {
+    name?: string;
+    phone?: string;
+    address?: string;
+  }): Promise<{ message: string; user: any }> {
+    try {
+      return await this.request<{ message: string; user: any }>('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      });
+    } catch (error) {
+      console.error('Update profile API error:', error);
+      throw error;
+    }
   }
 
   logout(): void {

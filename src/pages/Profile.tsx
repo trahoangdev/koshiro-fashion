@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { User, MapPin, Phone, Mail, Edit2, Save, X, ShoppingBag, Heart, Settings, CreditCard, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProfileSidebar from "@/components/ProfileSidebar";
@@ -16,6 +18,8 @@ import ProfilePayment from "@/components/ProfilePayment";
 import ProfileNotifications from "@/components/ProfileNotifications";
 import ProfileSettings from "@/components/ProfileSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 interface ProfileData {
   name: string;
@@ -27,18 +31,64 @@ interface ProfileData {
 }
 
 export default function Profile() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
   const [activeSection, setActiveSection] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const { language } = useLanguage();
+  
   const [profileData, setProfileData] = useState<ProfileData>({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 234 567 890",
-    address: "123 Main Street",
-    city: "New York",
-    country: "United States"
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    country: "Vietnam"
   });
   const [editData, setEditData] = useState<ProfileData>(profileData);
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (user) {
+      const userData: ProfileData = {
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        city: "",
+        country: "Vietnam"
+      };
+      setProfileData(userData);
+      setEditData(userData);
+    }
+  }, [user, isAuthenticated, isLoading, navigate]);
+
+  // Redirect if not authenticated
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-zen">
+        <Header cartItemsCount={0} onSearch={() => {}} />
+        <main className="py-16">
+          <div className="container mx-auto text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4">Loading...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
 
   const translations = {
     en: {
@@ -102,9 +152,38 @@ export default function Profile() {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  const handleSave = () => {
-    setProfileData(editData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setSaving(true);
+    try {
+      // Update user profile via API
+      const updateData = {
+        name: editData.name,
+        phone: editData.phone,
+        address: editData.address
+      };
+      
+      await api.updateProfile(updateData);
+      
+      setProfileData(editData);
+      setIsEditing(false);
+      refreshUser(); // Refresh user data after successful update
+      
+      toast({
+        title: "Cập nhật thành công",
+        description: "Thông tin hồ sơ đã được cập nhật",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Lỗi cập nhật",
+        description: error instanceof Error ? error.message : "Có lỗi xảy ra khi cập nhật hồ sơ",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -247,8 +326,12 @@ export default function Profile() {
                       <Button variant="outline" onClick={handleCancel}>
                         {t.cancel}
                       </Button>
-                      <Button onClick={handleSave}>
-                        <Save className="h-4 w-4 mr-2" />
+                      <Button onClick={handleSave} disabled={saving}>
+                        {saving ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-2"></div>
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
                         {t.save}
                       </Button>
                     </div>

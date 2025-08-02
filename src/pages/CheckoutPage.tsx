@@ -1,5 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
+import { cartService, CartItem } from "@/lib/cartService";
+import { formatCurrency } from "@/lib/currency";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -15,20 +21,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { 
   CreditCard, 
   Truck, 
   CheckCircle, 
   ArrowLeft,
   Lock,
-  Shield
+  Shield,
+  Loader2
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CheckoutPage = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     // Shipping Information
     firstName: "",
@@ -39,7 +49,7 @@ const CheckoutPage = () => {
     city: "",
     state: "",
     zipCode: "",
-    country: "",
+    country: "Vietnam",
     // Payment Information
     cardNumber: "",
     cardName: "",
@@ -52,38 +62,57 @@ const CheckoutPage = () => {
   const { language } = useLanguage();
   const { toast } = useToast();
 
-  // Mock cart data
-  const cartItems = [
-    {
-      id: "1",
-      product: {
-        name: "Traditional Kimono",
-        price: 299.99,
-        originalPrice: 399.99,
-        image: "/src/assets/product-kimono-1.jpg"
-      },
-      quantity: 1,
-      size: "M",
-      color: "Red"
-    },
-    {
-      id: "2", 
-      product: {
-        name: "Modern Yukata",
-        price: 149.99,
-        originalPrice: 199.99,
-        image: "/src/assets/product-yukata-1.jpg"
-      },
-      quantity: 2,
-      size: "L",
-      color: "White"
+  // Load cart items
+  useEffect(() => {
+    const loadCart = () => {
+      try {
+        const cart = cartService.getCart();
+        setCartItems(cart);
+        
+        // Pre-fill form with user data if authenticated
+        if (isAuthenticated && user) {
+          setFormData(prev => ({
+            ...prev,
+            firstName: user.name.split(' ')[0] || '',
+            lastName: user.name.split(' ').slice(1).join(' ') || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            address: user.address || ''
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading cart:', error);
+        toast({
+          title: "Lỗi tải giỏ hàng",
+          description: "Không thể tải thông tin giỏ hàng",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCart();
+  }, [isAuthenticated, user, toast]);
+
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (!loading && cartItems.length === 0) {
+      navigate('/cart');
     }
-  ];
+  }, [loading, cartItems.length, navigate]);
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-  const shipping = 15.00;
-  const tax = subtotal * 0.08; // 8% tax
+  const shipping = subtotal > 2000000 ? 0 : 50000; // Free shipping over 2M VND
+  const tax = subtotal * 0.1; // 10% tax
   const total = subtotal + shipping + tax;
+
+  const cartItemsCount = cartItems.reduce((count, item) => count + item.quantity, 0);
+
+  const handleSearch = (query: string) => {
+    // TODO: Implement search functionality
+    console.log('Search query:', query);
+  };
 
   const translations = {
     en: {
@@ -201,23 +230,73 @@ const CheckoutPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isAuthenticated) {
+      toast({
+        title: "Cần đăng nhập",
+        description: "Vui lòng đăng nhập để tiếp tục thanh toán",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      // Prepare order data
+      const orderData = {
+        items: cartItems.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          size: item.selectedSize,
+          color: item.selectedColor
+        })),
+        shippingAddress: {
+          name: `${formData.firstName} ${formData.lastName}`,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          district: formData.state
+        },
+        billingAddress: {
+          name: `${formData.firstName} ${formData.lastName}`,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          district: formData.state
+        },
+        paymentMethod: "Credit Card",
+        notes: formData.notes
+      };
+
+      // Create order via API
+      const response = await api.createOrder(orderData);
+      
+      // Clear cart after successful order
+      cartService.clearCart();
+      
       setIsProcessing(false);
       setIsCompleted(true);
+      
       toast({
-        title: "Order Placed Successfully!",
-        description: "Your order has been confirmed and will be shipped soon.",
+        title: "Đặt hàng thành công!",
+        description: "Đơn hàng của bạn đã được xác nhận và sẽ được giao sớm.",
       });
-    }, 3000);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      setIsProcessing(false);
+      toast({
+        title: "Lỗi đặt hàng",
+        description: error instanceof Error ? error.message : "Có lỗi xảy ra khi đặt hàng",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isCompleted) {
     return (
       <div className="min-h-screen bg-gradient-zen">
-        <Header cartItemsCount={0} onSearch={() => {}} />
+        <Header cartItemsCount={0} onSearch={handleSearch} />
         <main className="py-16">
           <div className="container max-w-2xl mx-auto text-center">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
@@ -236,9 +315,24 @@ const CheckoutPage = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-zen">
+        <Header cartItemsCount={0} onSearch={handleSearch} />
+        <main className="py-16">
+          <div className="container max-w-2xl mx-auto text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Đang tải...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-zen">
-      <Header cartItemsCount={0} onSearch={() => {}} />
+      <Header cartItemsCount={cartItemsCount} onSearch={handleSearch} />
 
       <main className="py-16">
         <div className="container max-w-6xl mx-auto">
@@ -451,20 +545,20 @@ const CheckoutPage = () => {
                 <CardContent className="space-y-4">
                   {/* Cart Items */}
                   <div className="space-y-3">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="flex items-center space-x-3">
+                    {cartItems.map((item, index) => (
+                      <div key={`${item.productId}-${item.selectedSize}-${item.selectedColor}-${index}`} className="flex items-center space-x-3">
                         <img
-                          src={item.product.image}
+                          src={item.product.images[0] || '/placeholder.svg'}
                           alt={item.product.name}
                           className="w-12 h-12 object-cover rounded"
                         />
                         <div className="flex-1">
                           <p className="font-medium text-sm">{item.product.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {item.size} • {item.color} • Qty: {item.quantity}
+                            {item.selectedSize} • {item.selectedColor} • Qty: {item.quantity}
                           </p>
                         </div>
-                        <p className="font-medium">${(item.product.price * item.quantity).toFixed(2)}</p>
+                        <p className="font-medium">{formatCurrency(item.product.price * item.quantity)}</p>
                       </div>
                     ))}
                   </div>
@@ -475,20 +569,20 @@ const CheckoutPage = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>{t.subtotal}</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>{formatCurrency(subtotal)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>{t.shipping}</span>
-                      <span>${shipping.toFixed(2)}</span>
+                      <span>{formatCurrency(shipping)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>{t.tax}</span>
-                      <span>${tax.toFixed(2)}</span>
+                      <span>{formatCurrency(tax)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                       <span>{t.total}</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>{formatCurrency(total)}</span>
                     </div>
                   </div>
 

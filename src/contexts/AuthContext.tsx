@@ -7,6 +7,8 @@ interface User {
   email: string;
   name: string;
   role: string;
+  phone?: string;
+  address?: string;
 }
 
 interface AuthContextType {
@@ -51,6 +53,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const response: AuthResponse = await api.login({ email, password });
+      
+      // Update API client token
+      api.updateToken(response.token);
+      
       setUser(response.user);
       
       toast({
@@ -59,9 +65,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
     } catch (error) {
       console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Có lỗi xảy ra khi đăng nhập";
       toast({
         title: "Đăng nhập thất bại",
-        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
@@ -73,23 +80,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const adminLogin = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      console.log('Admin login attempt:', { email });
       const response: AuthResponse = await api.adminLogin({ email, password });
-      console.log('Admin login response:', response);
-      console.log('User object:', response.user);
-      console.log('User role:', response.user?.role);
-      console.log('Token received:', response.token ? `${response.token.substring(0, 20)}...` : 'No token');
-      
-      if (!response.user || !response.user.role) {
-        throw new Error('Invalid user data received from server');
-      }
-      
-      setUser(response.user);
       
       // Update API client token
       api.updateToken(response.token);
-      console.log('Token updated in API client');
-      console.log('localStorage token:', localStorage.getItem('token'));
+      
+      setUser(response.user);
       
       toast({
         title: "Đăng nhập Admin thành công",
@@ -103,9 +99,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
     } catch (error) {
       console.error('Admin login error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Có lỗi xảy ra khi đăng nhập Admin";
       toast({
         title: "Đăng nhập Admin thất bại",
-        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
@@ -124,6 +121,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const response: AuthResponse = await api.register(userData);
+      
+      // Update API client token
+      api.updateToken(response.token);
+      
       setUser(response.user);
       
       toast({
@@ -132,9 +133,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
     } catch (error) {
       console.error('Register error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Có lỗi xảy ra khi đăng ký";
       toast({
         title: "Đăng ký thất bại",
-        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
@@ -160,12 +162,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
+      // Update API client token
+      api.updateToken(token);
+      
       const response = await api.getProfile();
       setUser(response.user);
     } catch (error) {
       console.error('Refresh user error:', error);
       // If token is invalid, clear it
       localStorage.removeItem('token');
+      api.updateToken(null);
       setUser(null);
     }
   };
