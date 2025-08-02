@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Types
 interface RecentOrder {
@@ -49,7 +50,7 @@ const mockRecentOrders = [
 export default function AdminDashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [language, setLanguage] = useState("vi");
+  const { language } = useLanguage();
   const [stats, setStats] = useState(mockStats);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,11 +110,11 @@ export default function AdminDashboard() {
       products: "商品",
       users: "ユーザー",
       revenue: "売上",
-      fromLastMonth: "先月から",
-      revenueChart: "売上グラフ",
+      fromLastMonth: "先月比",
+      revenueChart: "売上チャート",
       productStats: "商品統計",
       recentOrders: "最近の注文",
-      chartPlaceholder: "[グラフはここに表示されます]",
+      chartPlaceholder: "[チャートがここに表示されます]",
       pending: "保留中",
       processing: "処理中",
       completed: "完了",
@@ -122,7 +123,7 @@ export default function AdminDashboard() {
       manageOrders: "注文管理",
       manageUsers: "ユーザー管理",
       logoutSuccess: "ログアウト成功",
-      seeYouSoon: "また会いましょう！"
+      seeYouSoon: "またお会いしましょう！"
     }
   };
 
@@ -135,7 +136,7 @@ export default function AdminDashboard() {
       navigate("/admin/login");
     }
     if (savedLanguage) {
-      setLanguage(savedLanguage);
+      // setLanguage(savedLanguage); // This line is removed as per the edit hint
     }
   }, [navigate]);
 
