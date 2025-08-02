@@ -119,6 +119,8 @@ const seedData = async () => {
         nameEn: 'Traditional Kimono',
         nameJa: '伝統的な着物',
         description: 'Áo Kimono truyền thống với họa tiết hoa anh đào',
+        descriptionEn: 'Traditional Kimono with cherry blossom pattern',
+        descriptionJa: '桜の模様の伝統的な着物',
         price: 1500000,
         originalPrice: 1800000,
         categoryId: createdCategories[0]._id,
@@ -128,6 +130,7 @@ const seedData = async () => {
         stock: 10,
         isActive: true,
         isFeatured: true,
+        onSale: true,
         tags: ['kimono', 'truyền thống', 'hoa anh đào']
       },
       {
@@ -135,6 +138,8 @@ const seedData = async () => {
         nameEn: 'Summer Yukata',
         nameJa: '夏の浴衣',
         description: 'Áo Yukata mùa hè với họa tiết hoa cúc',
+        descriptionEn: 'Summer Yukata with chrysanthemum pattern',
+        descriptionJa: '菊の模様の夏の浴衣',
         price: 800000,
         originalPrice: 1000000,
         categoryId: createdCategories[1]._id,
@@ -144,6 +149,7 @@ const seedData = async () => {
         stock: 15,
         isActive: true,
         isFeatured: true,
+        onSale: true,
         tags: ['yukata', 'mùa hè', 'hoa cúc']
       },
       {
@@ -151,14 +157,76 @@ const seedData = async () => {
         nameEn: 'Japanese Paper Fan',
         nameJa: '和紙の扇子',
         description: 'Quạt giấy truyền thống Nhật Bản',
+        descriptionEn: 'Traditional Japanese paper fan',
+        descriptionJa: '伝統的な和紙の扇子',
         price: 150000,
-        categoryId: createdCategories[2]._id,
+        originalPrice: 200000,
+        categoryId: createdCategories[5]._id, // Phụ kiện
         images: ['/images/fan-1.jpg'],
         sizes: ['One Size'],
         colors: ['Đỏ', 'Xanh', 'Vàng'],
         stock: 50,
         isActive: true,
+        isFeatured: false,
+        onSale: true,
         tags: ['quạt', 'giấy', 'truyền thống']
+      },
+      {
+        name: 'Áo Top Nhật Bản',
+        nameEn: 'Japanese Top',
+        nameJa: '日本のトップス',
+        description: 'Áo top thời trang Nhật Bản hiện đại',
+        descriptionEn: 'Modern Japanese fashion top',
+        descriptionJa: 'モダンな日本のファッショントップ',
+        price: 500000,
+        originalPrice: 600000,
+        categoryId: createdCategories[2]._id, // Tops
+        images: ['/images/top-1.jpg'],
+        sizes: ['S', 'M', 'L'],
+        colors: ['Trắng', 'Đen', 'Xanh'],
+        stock: 20,
+        isActive: true,
+        isFeatured: false,
+        onSale: false,
+        tags: ['top', 'hiện đại', 'thời trang']
+      },
+      {
+        name: 'Quần Bottoms Nhật Bản',
+        nameEn: 'Japanese Bottoms',
+        nameJa: '日本のボトムス',
+        description: 'Quần bottoms thời trang Nhật Bản',
+        descriptionEn: 'Japanese fashion bottoms',
+        descriptionJa: '日本のファッションボトムス',
+        price: 700000,
+        originalPrice: 800000,
+        categoryId: createdCategories[3]._id, // Bottoms
+        images: ['/images/bottoms-1.jpg'],
+        sizes: ['S', 'M', 'L', 'XL'],
+        colors: ['Đen', 'Xanh', 'Nâu'],
+        stock: 12,
+        isActive: true,
+        isFeatured: true,
+        onSale: false,
+        tags: ['bottoms', 'quần', 'thời trang']
+      },
+      {
+        name: 'Quần Hakama Truyền Thống',
+        nameEn: 'Traditional Hakama',
+        nameJa: '伝統的な袴',
+        description: 'Quần Hakama truyền thống Nhật Bản',
+        descriptionEn: 'Traditional Japanese Hakama pants',
+        descriptionJa: '伝統的な日本の袴',
+        price: 1200000,
+        originalPrice: 1500000,
+        categoryId: createdCategories[4]._id, // Hakama
+        images: ['/images/hakama-1.jpg'],
+        sizes: ['M', 'L', 'XL'],
+        colors: ['Đen', 'Xanh đậm'],
+        stock: 8,
+        isActive: true,
+        isFeatured: true,
+        onSale: true,
+        tags: ['hakama', 'truyền thống', 'lễ phục']
       }
     ];
 
