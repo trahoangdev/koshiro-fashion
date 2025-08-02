@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { ProductGrid } from "@/components/ProductGrid";
@@ -7,13 +7,19 @@ import { Cart } from "@/components/Cart";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { mockProducts } from "@/data/products";
-import { Product, CartItem } from "@/types/product";
+import { api, Product, Category } from "@/lib/api";
+import { CartItem } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   // Language state
   const [currentLanguage, setCurrentLanguage] = useState('en');
+  
+  // Data state
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -28,12 +34,51 @@ const Index = () => {
   const [showCart, setShowCart] = useState(false);
   
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
+
+  // Load data from API
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [productsResponse, categoriesResponse] = await Promise.all([
+          api.getProducts({ isActive: true, limit: 50 }),
+          api.getCategories({ isActive: true })
+        ]);
+        
+        console.log('Products response:', productsResponse);
+        console.log('Categories response:', categoriesResponse);
+        
+        // Handle response structures
+        const productsData = productsResponse.products || [];
+        const categoriesData = categoriesResponse.categories || [];
+        
+        setProducts(productsData);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast({
+          title: "Lỗi tải dữ liệu",
+          description: "Không thể tải sản phẩm và danh mục",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [toast]);
 
   // Filter products based on current filters
   const filteredProducts = useMemo(() => {
-    return mockProducts.filter(product => {
+    if (!products || products.length === 0) {
+      return [];
+    }
+    
+    return products.filter(product => {
       // Category filter
-      if (selectedCategory !== 'all' && product.category?.slug !== selectedCategory) {
+      if (selectedCategory !== 'all' && product.categoryId?.slug !== selectedCategory) {
         return false;
       }
       
@@ -59,13 +104,13 @@ const Index = () => {
           product.description,
           product.descriptionEn,
           product.descriptionJa
-        ];
+        ].filter(Boolean);
         return searchFields.some(field => field.toLowerCase().includes(query));
       }
       
       return true;
     });
-  }, [selectedCategory, selectedPriceRange, selectedColor, searchQuery]);
+  }, [products, selectedCategory, selectedPriceRange, selectedColor, searchQuery]);
 
   const addToCart = (product: Product) => {
     // For demo purposes, use default color and size
@@ -73,7 +118,7 @@ const Index = () => {
     const selectedSize = product.sizes[0];
     
     const existingItem = cartItems.find(item => 
-      item.product.id === product.id && 
+      item.product._id === product._id && 
       item.selectedColor === selectedColor && 
       item.selectedSize === selectedSize
     );
@@ -109,7 +154,7 @@ const Index = () => {
     
     setCartItems(items =>
       items.map(item =>
-        `${item.product.id}-${item.selectedColor}-${item.selectedSize}` === itemId
+        `${item.product._id}-${item.selectedColor}-${item.selectedSize}` === itemId
           ? { ...item, quantity }
           : item
       )
@@ -119,7 +164,7 @@ const Index = () => {
   const removeFromCart = (itemId: string) => {
     setCartItems(items =>
       items.filter(item => 
-        `${item.product.id}-${item.selectedColor}-${item.selectedSize}` !== itemId
+        `${item.product._id}-${item.selectedColor}-${item.selectedSize}` !== itemId
       )
     );
   };
@@ -195,11 +240,28 @@ const Index = () => {
               </section>
 
               <section>
-                <ProductGrid
-                  products={filteredProducts}
-                  currentLanguage={currentLanguage}
-                  onAddToCart={addToCart}
-                />
+                {isLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">
+                      {currentLanguage === 'vi' ? 'Đang tải sản phẩm...' :
+                       currentLanguage === 'ja' ? '商品を読み込み中...' : 'Loading products...'}
+                    </p>
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">
+                      {currentLanguage === 'vi' ? 'Không tìm thấy sản phẩm nào.' :
+                       currentLanguage === 'ja' ? '商品が見つかりません。' : 'No products found.'}
+                    </p>
+                  </div>
+                ) : (
+                  <ProductGrid
+                    products={filteredProducts}
+                    currentLanguage={currentLanguage}
+                    onAddToCart={addToCart}
+                  />
+                )}
               </section>
             </div>
           </main>

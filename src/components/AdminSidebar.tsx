@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -90,29 +92,18 @@ export function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [language, setLanguage] = useState("vi");
+  const { logout } = useAuth();
+  const { language, setLanguage } = useLanguage();
 
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem("adminLanguage");
-    if (savedLanguage) {
-      setLanguage(savedLanguage);
-    }
-  }, []);
+
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
-    localStorage.setItem("adminLanguage", lang);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("isAdminLoggedIn");
+    logout();
     localStorage.removeItem("adminLanguage");
-    toast({
-      title: language === "vi" ? "Đăng xuất thành công" : 
-            language === "en" ? "Logout successful" : "ログアウト成功",
-      description: language === "vi" ? "Hẹn gặp lại!" : 
-                  language === "en" ? "See you soon!" : "また会いましょう！",
-    });
     navigate("/admin/login");
   };
 

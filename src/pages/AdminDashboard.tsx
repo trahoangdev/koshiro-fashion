@@ -16,6 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
+import { api } from "@/lib/api";
+
+// Types
+interface RecentOrder {
+  id: string;
+  customer: string;
+  total: number;
+  status: string;
+}
 
 // Mock data
 const mockStats = {
@@ -41,6 +50,9 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [language, setLanguage] = useState("vi");
+  const [stats, setStats] = useState(mockStats);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const translations = {
     en: {
@@ -131,6 +143,47 @@ export default function AdminDashboard() {
     return formatCurrency(amount, language);
   };
 
+  // Load dashboard data
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        console.log('Loading admin dashboard data...');
+        
+        // Load admin stats
+        const statsResponse = await api.getAdminStats();
+        console.log('Admin stats loaded:', statsResponse);
+        setStats(statsResponse);
+        
+        // Load recent orders
+        const ordersResponse = await api.getAdminOrders({ page: 1, limit: 5 });
+        console.log('Recent orders loaded:', ordersResponse);
+        
+        // Transform Order data to RecentOrder format
+        const transformedOrders: RecentOrder[] = ordersResponse.data.map(order => ({
+          id: order.orderNumber,
+          customer: order.userId.name,
+          total: order.totalAmount,
+          status: order.status
+        }));
+        
+        setRecentOrders(transformedOrders);
+        
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        toast({
+          title: "Lỗi tải dữ liệu",
+          description: "Không thể tải dữ liệu dashboard",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, [toast]);
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { label: t.pending, class: "bg-yellow-100 text-yellow-800" },
@@ -163,10 +216,10 @@ export default function AdminDashboard() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockStats.totalOrders}</div>
+                <div className="text-2xl font-bold">{stats.totalOrders}</div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +{mockStats.ordersTrend}% {t.fromLastMonth}
+                  +{stats.ordersTrend}% {t.fromLastMonth}
                 </div>
               </CardContent>
             </Card>
@@ -177,10 +230,10 @@ export default function AdminDashboard() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockStats.totalProducts}</div>
+                <div className="text-2xl font-bold">{stats.totalProducts}</div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +{mockStats.productsTrend}% {t.fromLastMonth}
+                  +{stats.productsTrend}% {t.fromLastMonth}
                 </div>
               </CardContent>
             </Card>
@@ -191,10 +244,10 @@ export default function AdminDashboard() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockStats.totalUsers}</div>
+                <div className="text-2xl font-bold">{stats.totalUsers}</div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +{mockStats.usersTrend}% {t.fromLastMonth}
+                  +{stats.usersTrend}% {t.fromLastMonth}
                 </div>
               </CardContent>
             </Card>
@@ -205,10 +258,10 @@ export default function AdminDashboard() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyForDisplay(mockStats.totalRevenue)}</div>
+                <div className="text-2xl font-bold">{formatCurrencyForDisplay(stats.totalRevenue)}</div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +{mockStats.revenueTrend}% {t.fromLastMonth}
+                  +{stats.revenueTrend}% {t.fromLastMonth}
                 </div>
               </CardContent>
             </Card>
@@ -252,7 +305,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockRecentOrders.map((order) => (
+                {recentOrders.map((order) => (
                   <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div>

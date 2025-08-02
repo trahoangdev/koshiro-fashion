@@ -5,16 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState("vi");
-  const { toast } = useToast();
+  const { adminLogin, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const translations = {
@@ -63,27 +62,22 @@ export default function AdminLogin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    // Mock login - in real app, this would call Supabase auth
-    setTimeout(() => {
-      if (email === "admin@koshiro.com" && password === "admin123") {
-        localStorage.setItem("isAdminLoggedIn", "true");
-        localStorage.setItem("adminLanguage", language);
-        toast({
-          title: t.loginSuccess,
-          description: t.welcomeBack,
-        });
+    try {
+      console.log('Starting admin login...');
+      await adminLogin(email, password);
+      console.log('Admin login successful, navigating to /admin');
+      localStorage.setItem("adminLanguage", language);
+      
+      // Add a small delay to ensure state is updated
+      setTimeout(() => {
+        console.log('Navigating to admin dashboard...');
         navigate("/admin");
-      } else {
-        toast({
-          title: t.loginFailed,
-          description: t.invalidCredentials,
-          variant: "destructive",
-        });
-      }
-      setLoading(false);
-    }, 1000);
+      }, 100);
+    } catch (error) {
+      // Error handling is done in AuthContext
+      console.error('Admin login error:', error);
+    }
   };
 
   return (
@@ -160,8 +154,8 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? t.loggingIn : t.login}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? t.loggingIn : t.login}
             </Button>
           </form>
 

@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Documentation files (markdown)
+*.md
+!README.md
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Postman files
+*.postman_collection.json
+*.postman_environment.json
