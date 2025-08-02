@@ -65,6 +65,7 @@ export interface Product {
   stock: number;
   isActive: boolean;
   isFeatured: boolean;
+  onSale: boolean;
   tags: string[];
   createdAt: string;
   updatedAt: string;

@@ -16,6 +16,7 @@ export interface IProduct extends Document {
   stock: number;
   isActive: boolean;
   isFeatured: boolean;
+  onSale: boolean;
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -83,6 +84,10 @@ const productSchema = new Schema<IProduct>({
     default: true
   },
   isFeatured: {
+    type: Boolean,
+    default: false
+  },
+  onSale: {
     type: Boolean,
     default: false
   },

@@ -53,6 +53,7 @@ const WishlistPage = () => {
             tags: ["traditional", "kimono"],
             isActive: true,
             isFeatured: true,
+            onSale: true,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -78,6 +79,7 @@ const WishlistPage = () => {
             tags: ["modern", "yukata"],
             isActive: true,
             isFeatured: false,
+            onSale: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           }

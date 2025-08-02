@@ -1,8 +1,23 @@
 import { Request, Response } from 'express';
-import Order from '../models/Order';
-import Product from '../models/Product';
-import User from '../models/User';
-import Category from '../models/Category';
+import { Order } from '../models/Order';
+import { Product } from '../models/Product';
+import { User } from '../models/User';
+import { Category } from '../models/Category';
+
+// Helper function to update product count for categories
+const updateCategoryProductCount = async (categoryId: string) => {
+  try {
+    const productCount = await Product.countDocuments({ 
+      categoryId: categoryId,
+      isActive: true 
+    });
+    
+    await Category.findByIdAndUpdate(categoryId, { productCount });
+    console.log(`Updated product count for category ${categoryId}: ${productCount}`);
+  } catch (error) {
+    console.error('Error updating category product count:', error);
+  }
+};
 
 // Get admin dashboard stats
 export const getAdminStats = async (req: Request, res: Response) => {
@@ -94,7 +109,7 @@ export const getAdminOrders = async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
     
     // Build filter
-    const filter: any = {};
+    const filter: { status?: string } = {};
     if (status && status !== 'all') {
       filter.status = status;
     }
@@ -134,7 +149,7 @@ export const getAdminProducts = async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
     
     // Build filter
-    const filter: any = {};
+    const filter: { isActive?: boolean } = {};
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
     }
@@ -170,7 +185,7 @@ export const getAdminCategories = async (req: Request, res: Response) => {
     const isActive = req.query.isActive as string;
     
     // Build filter
-    const filter: any = {};
+    const filter: { isActive?: boolean } = {};
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
     }
@@ -199,7 +214,7 @@ export const getAdminUsers = async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
     
     // Build filter
-    const filter: any = {};
+    const filter: { role?: string; status?: string } = {};
     if (role && role !== 'all') {
       filter.role = role;
     }
@@ -252,6 +267,9 @@ export const createProduct = async (req: Request, res: Response) => {
     const product = new Product(productData);
     await product.save();
     
+    // Update category product count
+    await updateCategoryProductCount(productData.categoryId);
+    
     const populatedProduct = await Product.findById(product._id)
       .populate('categoryId', 'name nameEn nameJa slug');
     
@@ -270,6 +288,9 @@ export const updateProduct = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updateData = req.body;
     
+    // Get the old product to check if category changed
+    const oldProduct = await Product.findById(id);
+    
     const product = await Product.findByIdAndUpdate(
       id,
       updateData,
@@ -279,6 +300,12 @@ export const updateProduct = async (req: Request, res: Response) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+    
+    // Update product count for both old and new categories if category changed
+    if (oldProduct && oldProduct.categoryId.toString() !== updateData.categoryId) {
+      await updateCategoryProductCount(oldProduct.categoryId.toString());
+    }
+    await updateCategoryProductCount(updateData.categoryId);
     
     res.json({
       message: 'Product updated successfully',
@@ -294,11 +321,16 @@ export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    const product = await Product.findByIdAndDelete(id);
+    const product = await Product.findById(id);
     
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+    
+    await Product.findByIdAndDelete(id);
+    
+    // Update category product count
+    await updateCategoryProductCount(product.categoryId.toString());
     
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
@@ -391,8 +423,18 @@ export const createUser = async (req: Request, res: Response) => {
     const user = new User(userData);
     await user.save();
     
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    // Create response object without password
+    const userResponse = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
     
     res.status(201).json({
       message: 'User created successfully',
