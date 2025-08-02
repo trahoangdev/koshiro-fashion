@@ -5,6 +5,7 @@ import { Product } from "@/lib/api";
 import { ShoppingBag, Heart, Star } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 interface ProductCardProps {
@@ -16,6 +17,7 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist }: ProductCardProps) => {
   const { language } = useLanguage();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const getName = () => {
@@ -34,24 +36,43 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
     }
   };
 
+  // Calculate discount percentage
+  const getDiscountPercentage = () => {
+    if (product.originalPrice && product.originalPrice > product.price) {
+      return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+    }
+    return 0;
+  };
+
+  const discountPercentage = getDiscountPercentage();
+
   const translations = {
     en: { 
       outOfStock: "Out of Stock", 
       addToCart: "Add to Cart",
       addToWishlist: "Add to Wishlist",
-      viewDetails: "View Details"
+      viewDetails: "View Details",
+      off: "OFF",
+      addedToWishlist: "Added to wishlist",
+      removedFromWishlist: "Removed from wishlist"
     },
     vi: { 
       outOfStock: "Hết Hàng", 
       addToCart: "Thêm Vào Giỏ",
       addToWishlist: "Thêm Yêu Thích",
-      viewDetails: "Xem Chi Tiết"
+      viewDetails: "Xem Chi Tiết",
+      off: "GIẢM",
+      addedToWishlist: "Đã thêm vào danh sách yêu thích",
+      removedFromWishlist: "Đã xóa khỏi danh sách yêu thích"
     },
     ja: { 
       outOfStock: "在庫切れ", 
       addToCart: "カートに追加",
       addToWishlist: "お気に入りに追加",
-      viewDetails: "詳細を見る"
+      viewDetails: "詳細を見る",
+      off: "OFF",
+      addedToWishlist: "お気に入りに追加されました",
+      removedFromWishlist: "お気に入りから削除されました"
     }
   };
 
@@ -69,6 +90,12 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
   const handleAddToWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
     onAddToWishlist?.(product);
+    
+    // Show toast notification
+    toast({
+      title: "Success",
+      description: t.addedToWishlist,
+    });
   };
 
   if (viewMode === 'list') {
@@ -86,7 +113,12 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
                 {t.outOfStock}
               </Badge>
             )}
-            {product.isFeatured && (
+            {discountPercentage > 0 && (
+              <Badge variant="destructive" className="absolute top-3 left-3">
+                -{discountPercentage}% {t.off}
+              </Badge>
+            )}
+            {product.isFeatured && !discountPercentage && (
               <Badge variant="default" className="absolute top-3 right-3">
                 Featured
               </Badge>
@@ -125,9 +157,16 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
               </div>
               
               <div className="flex items-center justify-between pt-4">
-                <span className="text-2xl font-bold">
-                  {formatCurrency(product.price)}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl font-bold">
+                    {formatCurrency(product.price)}
+                  </span>
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <span className="text-lg text-muted-foreground line-through">
+                      {formatCurrency(product.originalPrice)}
+                    </span>
+                  )}
+                </div>
                 
                 <div className="flex items-center space-x-2">
                   <Button
@@ -169,7 +208,12 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
             {t.outOfStock}
           </Badge>
         )}
-        {product.isFeatured && (
+        {discountPercentage > 0 && (
+          <Badge variant="destructive" className="absolute top-3 left-3">
+            -{discountPercentage}% {t.off}
+          </Badge>
+        )}
+        {product.isFeatured && !discountPercentage && (
           <Badge variant="default" className="absolute top-3 right-3">
             Featured
           </Badge>
@@ -195,32 +239,27 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
           </p>
           
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold">
-              {formatCurrency(product.price)}
-            </span>
-            <div className="flex gap-1">
-              {product.colors.slice(0, 3).map((color) => (
-                <div
-                  key={color}
-                  className="w-4 h-4 rounded-full border border-border"
-                  style={{ 
-                    backgroundColor: color === 'natural' ? '#f5f5dc' : 
-                                   color === 'walnut' ? '#8b4513' : color 
-                  }}
-                />
-              ))}
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl font-bold">
+                {formatCurrency(product.price)}
+              </span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="text-lg text-muted-foreground line-through">
+                  {formatCurrency(product.originalPrice)}
+                </span>
+              )}
             </div>
+            
+            <Button
+              variant="default"
+              size="sm"
+              disabled={product.stock <= 0}
+              onClick={handleAddToCart}
+            >
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              {t.addToCart}
+            </Button>
           </div>
-
-          <Button
-            variant="default"
-            className="w-full"
-            disabled={product.stock <= 0}
-            onClick={handleAddToCart}
-          >
-            <ShoppingBag className="mr-2 h-4 w-4" />
-            {t.addToCart}
-          </Button>
         </div>
       </CardContent>
     </Card>

@@ -76,6 +76,30 @@ const seedData = async () => {
         isActive: true
       },
       {
+        name: 'Tops',
+        nameEn: 'Tops',
+        nameJa: 'トップス',
+        description: 'Áo và áo khoác thời trang',
+        slug: 'tops',
+        isActive: true
+      },
+      {
+        name: 'Bottoms',
+        nameEn: 'Bottoms',
+        nameJa: 'ボトムス',
+        description: 'Quần và váy thời trang',
+        slug: 'bottoms',
+        isActive: true
+      },
+      {
+        name: 'Hakama',
+        nameEn: 'Hakama',
+        nameJa: '袴',
+        description: 'Quần Hakama truyền thống Nhật Bản',
+        slug: 'hakama',
+        isActive: true
+      },
+      {
         name: 'Phụ kiện',
         nameEn: 'Accessories',
         nameJa: 'アクセサリー',
