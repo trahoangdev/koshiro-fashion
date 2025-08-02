@@ -1,10 +1,11 @@
 import { Separator } from "@/components/ui/separator";
+import { Link } from "react-router-dom";
 
 interface FooterProps {
-  currentLanguage: string;
+  currentLanguage?: string;
 }
 
-export const Footer = ({ currentLanguage }: FooterProps) => {
+const Footer = ({ currentLanguage }: FooterProps) => {
   const translations = {
     en: {
       brand: "KOSHIRO",
@@ -59,7 +60,7 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
     }
   };
 
-  const t = translations[currentLanguage as keyof typeof translations] || translations.en;
+  const t = translations[(currentLanguage || 'en') as keyof typeof translations] || translations.en;
 
   return (
     <footer className="bg-card border-t mt-20">
@@ -79,18 +80,18 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
           <div className="space-y-6">
             <h4 className="text-lg font-semibold">{t.quickLinks}</h4>
             <nav className="space-y-3">
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/about" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.about}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/contact" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.contact}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/info/shipping-info" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.shipping}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/info/returns" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.returns}
-              </a>
+              </Link>
             </nav>
           </div>
 
@@ -117,15 +118,15 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
           <div className="space-y-6">
             <h4 className="text-lg font-semibold">{t.support}</h4>
             <nav className="space-y-3">
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/info/faq" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.faq}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/info/privacy-policy" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.privacy}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/info/terms-of-service" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.terms}
-              </a>
+              </Link>
             </nav>
           </div>
         </div>
@@ -147,3 +148,5 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
     </footer>
   );
 };
+
+export default Footer;

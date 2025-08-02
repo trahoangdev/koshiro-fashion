@@ -1,28 +1,25 @@
 import { useState, useMemo, useEffect } from "react";
-import { Header } from "@/components/Header";
-import { Hero } from "@/components/Hero";
-import { ProductGrid } from "@/components/ProductGrid";
-import { FilterBar } from "@/components/FilterBar";
-import { Cart } from "@/components/Cart";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Footer } from "@/components/Footer";
+import Header from "@/components/Header";
+import Hero from "@/components/Hero";
+import ProductGrid from "@/components/ProductGrid";
+import FilterBar from "@/components/FilterBar";
+import Cart from "@/components/Cart";
+import ThemeToggle from "@/components/ThemeToggle";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { api, Product, Category } from "@/lib/api";
-import { CartItem } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
-  // Language state
-  const [currentLanguage, setCurrentLanguage] = useState('en');
-  
   // Data state
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Cart state
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<any[]>([]);
   
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -35,6 +32,7 @@ const Index = () => {
   
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
+  const { language } = useLanguage();
 
   // Load data from API
   useEffect(() => {
@@ -190,85 +188,63 @@ const Index = () => {
       <Header
         cartItemsCount={cartItemsCount}
         onSearch={setSearchQuery}
-        onLanguageChange={setCurrentLanguage}
-        currentLanguage={currentLanguage}
-        onCartClick={() => setShowCart(!showCart)}
-        showCartPanel={showCart}
       />
 
-      {showCart ? (
-        <main className="pt-8 pb-16">
-          <div className="container">
-            <Cart
-              cartItems={cartItems}
-              currentLanguage={currentLanguage}
-              onUpdateQuantity={updateCartQuantity}
-              onRemoveItem={removeFromCart}
-              onCheckout={handleCheckout}
-            />
-          </div>
-        </main>
-      ) : (
-        <>
-          <Hero currentLanguage={currentLanguage} />
-          
-          <main className="py-16">
-            <div className="container space-y-12">
-              <section>
-                <div className="text-center mb-12">
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                    {currentLanguage === 'vi' ? 'Bộ Sưu Tập' :
-                     currentLanguage === 'ja' ? 'コレクション' : 'Collection'}
-                  </h2>
-                  <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                    {currentLanguage === 'vi' ? 'Khám phá bộ sưu tập thời trang Nhật Bản được tuyển chọn cẩn thận' :
-                     currentLanguage === 'ja' ? '厳選された日本のファッションコレクションをご覧ください' :
-                     'Discover our carefully curated collection of Japanese fashion'}
-                  </p>
-                </div>
-
-                <FilterBar
-                  selectedCategory={selectedCategory}
-                  selectedPriceRange={selectedPriceRange}
-                  selectedColor={selectedColor}
-                  currentLanguage={currentLanguage}
-                  onCategoryChange={setSelectedCategory}
-                  onPriceRangeChange={setSelectedPriceRange}
-                  onColorChange={setSelectedColor}
-                  onClearFilters={clearFilters}
-                />
-              </section>
-
-              <section>
-                {isLoading ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">
-                      {currentLanguage === 'vi' ? 'Đang tải sản phẩm...' :
-                       currentLanguage === 'ja' ? '商品を読み込み中...' : 'Loading products...'}
-                    </p>
-                  </div>
-                ) : filteredProducts.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">
-                      {currentLanguage === 'vi' ? 'Không tìm thấy sản phẩm nào.' :
-                       currentLanguage === 'ja' ? '商品が見つかりません。' : 'No products found.'}
-                    </p>
-                  </div>
-                ) : (
-                  <ProductGrid
-                    products={filteredProducts}
-                    currentLanguage={currentLanguage}
-                    onAddToCart={addToCart}
-                  />
-                )}
-              </section>
+      <Hero />
+      
+      <main className="py-16">
+        <div className="container space-y-12">
+          <section>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                {language === 'vi' ? 'Bộ Sưu Tập' :
+                 language === 'ja' ? 'コレクション' : 'Collection'}
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                {language === 'vi' ? 'Khám phá bộ sưu tập thời trang Nhật Bản được tuyển chọn cẩn thận' :
+                 language === 'ja' ? '厳選された日本のファッションコレクションをご覧ください' :
+                 'Discover our carefully curated collection of Japanese fashion'}
+              </p>
             </div>
-          </main>
-          
-          <Footer currentLanguage={currentLanguage} />
-        </>
-      )}
+
+            <FilterBar
+              selectedCategory={selectedCategory}
+              selectedPriceRange={selectedPriceRange}
+              selectedColor={selectedColor}
+              onCategoryChange={setSelectedCategory}
+              onPriceRangeChange={setSelectedPriceRange}
+              onColorChange={setSelectedColor}
+              onClearFilters={clearFilters}
+            />
+          </section>
+
+          <section>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">
+                  {language === 'vi' ? 'Đang tải sản phẩm...' :
+                   language === 'ja' ? '商品を読み込み中...' : 'Loading products...'}
+                </p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  {language === 'vi' ? 'Không tìm thấy sản phẩm nào.' :
+                   language === 'ja' ? '商品が見つかりません。' : 'No products found.'}
+                </p>
+              </div>
+            ) : (
+              <ProductGrid
+                products={filteredProducts}
+                onAddToCart={addToCart}
+              />
+            )}
+          </section>
+        </div>
+      </main>
+      
+      <Footer />
     </div>
   );
 };

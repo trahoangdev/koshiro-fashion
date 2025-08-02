@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, ShoppingBag, Menu, X, User, Globe } from "lucide-react";
+import { Search, ShoppingBag, Menu, X, User, Globe, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -8,21 +8,19 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface HeaderProps {
   cartItemsCount: number;
   onSearch: (query: string) => void;
-  onLanguageChange: (lang: string) => void;
-  currentLanguage: string;
-  onCartClick: () => void;
-  showCartPanel: boolean;
 }
 
-export const Header = ({ cartItemsCount, onSearch, onLanguageChange, currentLanguage, onCartClick, showCartPanel }: HeaderProps) => {
+const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { language, setLanguage } = useLanguage();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +69,7 @@ export const Header = ({ cartItemsCount, onSearch, onLanguageChange, currentLang
     }
   };
 
-  const t = translations[currentLanguage as keyof typeof translations] || translations.en;
+  const t = translations[language as keyof typeof translations] || translations.en;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -85,22 +83,20 @@ export const Header = ({ cartItemsCount, onSearch, onLanguageChange, currentLang
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="font-medium">
-                {t.categories}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>{t.tops}</DropdownMenuItem>
-              <DropdownMenuItem>{t.bottoms}</DropdownMenuItem>
-              <DropdownMenuItem>{t.accessories}</DropdownMenuItem>
-              <DropdownMenuItem>{t.kimono}</DropdownMenuItem>
-              <DropdownMenuItem>{t.yukata}</DropdownMenuItem>
-              <DropdownMenuItem>{t.hakama}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="ghost" className="font-medium">{t.sale}</Button>
+          <Link to="/categories">
+            <Button variant="ghost" className="font-medium">
+              {t.categories}
+            </Button>
+          </Link>
+          <Link to="/sale">
+            <Button variant="ghost" className="font-medium">{t.sale}</Button>
+          </Link>
+          <Link to="/about">
+            <Button variant="ghost" className="font-medium">About</Button>
+          </Link>
+          <Link to="/contact">
+            <Button variant="ghost" className="font-medium">Contact</Button>
+          </Link>
         </nav>
 
         {/* Search */}
@@ -127,13 +123,13 @@ export const Header = ({ cartItemsCount, onSearch, onLanguageChange, currentLang
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => onLanguageChange('en')}>
+              <DropdownMenuItem onClick={() => setLanguage('en')}>
                 English
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onLanguageChange('vi')}>
+              <DropdownMenuItem onClick={() => setLanguage('vi')}>
                 Tiếng Việt
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onLanguageChange('ja')}>
+              <DropdownMenuItem onClick={() => setLanguage('ja')}>
                 日本語
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -141,6 +137,13 @@ export const Header = ({ cartItemsCount, onSearch, onLanguageChange, currentLang
 
           {/* Theme Toggle */}
           <ThemeToggle />
+
+          {/* Wishlist */}
+          <Link to="/wishlist">
+            <Button variant="ghost" size="icon" className="hidden md:flex">
+              <Heart className="h-4 w-4" />
+            </Button>
+          </Link>
 
           {/* Account */}
           <Link to="/profile">
@@ -150,19 +153,20 @@ export const Header = ({ cartItemsCount, onSearch, onLanguageChange, currentLang
           </Link>
 
           {/* Cart */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="relative"
-            onClick={onCartClick}
-          >
-            <ShoppingBag className="h-4 w-4" />
-            {cartItemsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cartItemsCount}
-              </span>
-            )}
-          </Button>
+          <Link to="/cart">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              {cartItemsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItemsCount}
+                </span>
+              )}
+            </Button>
+          </Link>
 
           {/* Mobile menu toggle */}
           <Button
@@ -210,3 +214,5 @@ export const Header = ({ cartItemsCount, onSearch, onLanguageChange, currentLang
     </header>
   );
 };
+
+export default Header;

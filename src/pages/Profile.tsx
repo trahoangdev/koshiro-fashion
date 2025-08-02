@@ -1,13 +1,21 @@
 import { useState } from "react";
-import { User, MapPin, Phone, Mail, Edit2, Save, X } from "lucide-react";
+import { User, MapPin, Phone, Mail, Edit2, Save, X, ShoppingBag, Heart, Settings, CreditCard, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { Badge } from "@/components/ui/badge";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import ProfileSidebar from "@/components/ProfileSidebar";
+import ProfileOrders from "@/components/ProfileOrders";
+import ProfileAddresses from "@/components/ProfileAddresses";
+import ProfilePayment from "@/components/ProfilePayment";
+import ProfileNotifications from "@/components/ProfileNotifications";
+import ProfileSettings from "@/components/ProfileSettings";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProfileData {
   name: string;
@@ -19,15 +27,16 @@ interface ProfileData {
 }
 
 export default function Profile() {
-  const [language, setLanguage] = useState("vi");
+  const [activeSection, setActiveSection] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
+  const { language } = useLanguage();
   const [profileData, setProfileData] = useState<ProfileData>({
-    name: "Nguyễn Văn An",
-    email: "nguyen.van.an@email.com",
-    phone: "+84 123 456 789",
-    address: "123 Đường ABC",
-    city: "Hồ Chí Minh",
-    country: "Việt Nam"
+    name: "John Doe",
+    email: "john.doe@example.com",
+    phone: "+1 234 567 890",
+    address: "123 Main Street",
+    city: "New York",
+    country: "United States"
   });
   const [editData, setEditData] = useState<ProfileData>(profileData);
 
@@ -91,7 +100,7 @@ export default function Profile() {
     }
   };
 
-  const t = translations[language as keyof typeof translations] || translations.vi;
+  const t = translations[language as keyof typeof translations] || translations.en;
 
   const handleSave = () => {
     setProfileData(editData);
@@ -104,25 +113,29 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-zen">
       <Header 
         cartItemsCount={0} 
         onSearch={() => {}} 
-        onLanguageChange={setLanguage}
-        currentLanguage={language}
-        onCartClick={() => {}}
-        showCartPanel={false}
       />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{t.title}</h1>
-          </div>
+      <main className="py-16">
+        <div className="container mx-auto">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar */}
+            <ProfileSidebar 
+              activeSection={activeSection}
+              onSectionChange={setActiveSection}
+            />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Profile Info */}
-            <div className="lg:col-span-2 space-y-6">
+            {/* Main Content */}
+            <div className="flex-1 space-y-8">
+              <div className="text-center lg:text-left">
+                <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
+                <p className="text-muted-foreground">Manage your account and preferences</p>
+              </div>
+
+              {/* Profile Info */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
@@ -242,26 +255,21 @@ export default function Profile() {
                   )}
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Order History */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t.orderHistory}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center text-muted-foreground py-8">
-                    {t.noOrders}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Additional Sections based on activeSection */}
+              <div className="space-y-6">
+                {activeSection === "orders" && <ProfileOrders />}
+                {activeSection === "addresses" && <ProfileAddresses />}
+                {activeSection === "payment" && <ProfilePayment />}
+                {activeSection === "notifications" && <ProfileNotifications />}
+                {activeSection === "settings" && <ProfileSettings />}
+              </div>
             </div>
           </div>
         </div>
       </main>
 
-      <Footer currentLanguage={language} />
+      <Footer />
     </div>
   );
 }

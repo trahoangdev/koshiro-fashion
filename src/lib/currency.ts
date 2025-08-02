@@ -26,19 +26,43 @@ export const currencyConfigs: Record<string, CurrencyConfig> = {
   }
 };
 
-export function formatCurrency(amount: number, language: string = 'vi'): string {
-  const config = currencyConfigs[language] || currencyConfigs.vi;
+export const formatCurrency = (amount: number, language: string = 'vi'): string => {
+  const formatters: { [key: string]: Intl.NumberFormat } = {
+    vi: new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }),
+    en: new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }),
+    ja: new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }),
+  };
+
+  const formatter = formatters[language] || formatters.vi;
+  return formatter.format(amount);
+};
+
+export const formatPrice = (amount: number, language: string = 'vi'): string => {
+  if (language === 'vi') {
+    return `${amount.toLocaleString('vi-VN')} ₫`;
+  } else if (language === 'en') {
+    return `$${(amount / 24000).toFixed(2)}`; // Convert VND to USD
+  } else if (language === 'ja') {
+    return `¥${(amount / 160).toFixed(0)}`; // Convert VND to JPY
+  }
   
-  // Chuyển đổi từ VND sang tiền tệ tương ứng
-  const convertedAmount = amount * config.exchangeRate;
-  
-  return new Intl.NumberFormat(config.locale, {
-    style: 'currency',
-    currency: config.currency,
-    minimumFractionDigits: config.currency === 'VND' ? 0 : 2,
-    maximumFractionDigits: config.currency === 'VND' ? 0 : 2
-  }).format(convertedAmount);
-}
+  return `${amount.toLocaleString('vi-VN')} ₫`;
+};
 
 export function getCurrencySymbol(language: string = 'vi'): string {
   const config = currencyConfigs[language] || currencyConfigs.vi;

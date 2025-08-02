@@ -1,11 +1,9 @@
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-image.jpg";
-interface HeroProps {
-  currentLanguage: string;
-}
-export const Hero = ({
-  currentLanguage
-}: HeroProps) => {
+import { useLanguage } from "@/contexts/LanguageContext";
+
+const Hero = () => {
+  const { language } = useLanguage();
   const translations = {
     en: {
       title: "Timeless Japanese Fashion",
@@ -23,7 +21,7 @@ export const Hero = ({
       cta: "コレクションを見る"
     }
   };
-  const t = translations[currentLanguage as keyof typeof translations] || translations.en;
+  const t = translations[language as keyof typeof translations] || translations.en;
   return <section className="relative min-h-[70vh] flex items-center">
       {/* Background Image */}
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
@@ -48,3 +46,5 @@ export const Hero = ({
       </div>
     </section>;
 };
+
+export default Hero;

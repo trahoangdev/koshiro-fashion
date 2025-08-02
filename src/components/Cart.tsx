@@ -3,25 +3,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CartItem } from "@/types/product";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CartProps {
-  cartItems: CartItem[];
-  currentLanguage: string;
+  cartItems: any[];
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onCheckout: () => void;
 }
 
-export const Cart = ({
+const Cart = ({
   cartItems,
-  currentLanguage,
   onUpdateQuantity,
   onRemoveItem,
   onCheckout
 }: CartProps) => {
+  const { language } = useLanguage();
   const translations = {
     en: {
       cart: "Shopping Cart",
@@ -64,10 +63,10 @@ export const Cart = ({
     }
   };
 
-  const t = translations[currentLanguage as keyof typeof translations] || translations.en;
+  const t = translations[language as keyof typeof translations] || translations.en;
 
-  const getProductName = (item: CartItem) => {
-    switch (currentLanguage) {
+  const getProductName = (item: any) => {
+    switch (language) {
       case 'vi': return item.product.name;
       case 'ja': return item.product.nameJa || item.product.name;
       default: return item.product.nameEn || item.product.name;
@@ -117,7 +116,7 @@ export const Cart = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">
-                    {formatCurrency(item.product.price, currentLanguage)}
+                    {formatCurrency(item.product.price)}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -159,7 +158,7 @@ export const Cart = ({
           <div className="flex justify-between">
             <span>{t.subtotal}</span>
             <span>
-              {formatCurrency(subtotal, currentLanguage)}
+              {formatCurrency(subtotal)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -170,7 +169,7 @@ export const Cart = ({
           <div className="flex justify-between text-lg font-semibold">
             <span>{t.total}</span>
             <span>
-              {formatCurrency(total, currentLanguage)}
+              {formatCurrency(total)}
             </span>
           </div>
           <Button variant="ink" className="w-full" onClick={onCheckout}>
@@ -181,3 +180,5 @@ export const Cart = ({
     </div>
   );
 };
+
+export default Cart;

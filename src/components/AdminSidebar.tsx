@@ -88,7 +88,7 @@ const menuItems: MenuItem[] = [
   }
 ];
 
-export function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
+function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -219,4 +219,6 @@ export function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
       </div>
     </>
   );
-} 
+}
+
+export default AdminSidebar; 

@@ -48,7 +48,7 @@ interface ProductFormProps {
   };
 }
 
-export function ProductForm({ product, categories, onSubmit, onCancel, translations }: ProductFormProps) {
+function ProductForm({ product, categories, onSubmit, onCancel, translations }: ProductFormProps) {
   const [formData, setFormData] = useState({
     name: product?.name || "",
     nameEn: product?.nameEn || "",
@@ -382,4 +382,6 @@ export function ProductForm({ product, categories, onSubmit, onCancel, translati
       </div>
     </form>
   );
-} 
+}
+
+export default ProductForm; 
