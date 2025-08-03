@@ -8,7 +8,7 @@ import { Order } from '../models/Order';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://trahoangdev:7RMlso6ZQp6OcTtQ@cluster0.zgzpftw.mongodb.net/koshiro-fashion';
+const MONGODB_URI = process.env.MONGODB_URI || 'MONGDB_URI';
 
 const seedData = async () => {
   try {
