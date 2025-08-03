@@ -127,19 +127,12 @@ export interface Order {
     _id: string;
     name: string;
     email: string;
-    phone?: string;
+    phone: string;
   };
-  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
   items: OrderItem[];
   totalAmount: number;
   shippingAddress: {
-    name: string;
-    phone: string;
-    address: string;
-    city: string;
-    district: string;
-  };
-  billingAddress?: {
     name: string;
     phone: string;
     address: string;
@@ -151,6 +144,18 @@ export interface Order {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PaymentMethod {
+  _id: string;
+  type: 'credit_card' | 'debit_card' | 'paypal';
+  name: string;
+  last4?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
+  isDefault: boolean;
+  brand?: string;
+  paypalEmail?: string;
 }
 
 // API Client
@@ -185,7 +190,7 @@ class ApiClient {
     };
 
     if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+      (headers as Record<string, string>).Authorization = `Bearer ${this.token}`;
       console.log(`API Request to ${endpoint} with token: ${this.token.substring(0, 20)}...`);
     } else {
       console.log(`API Request to ${endpoint} without token`);
@@ -302,6 +307,113 @@ class ApiClient {
       });
     } catch (error) {
       console.error('Update profile API error:', error);
+      throw error;
+    }
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    } catch (error) {
+      console.error('Forgot password API error:', error);
+      throw error;
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, newPassword }),
+      });
+    } catch (error) {
+      console.error('Reset password API error:', error);
+      throw error;
+    }
+  }
+
+
+
+  async getOrderById(orderId: string): Promise<Order> {
+    try {
+      return await this.request<Order>(`/orders/${orderId}`);
+    } catch (error) {
+      console.error('Get order by ID API error:', error);
+      throw error;
+    }
+  }
+
+  // Payment Methods
+  async getPaymentMethods(): Promise<PaymentMethod[]> {
+    try {
+      return await this.request<PaymentMethod[]>('/payment-methods');
+    } catch (error) {
+      console.error('Get payment methods API error:', error);
+      throw error;
+    }
+  }
+
+  async addPaymentMethod(paymentData: {
+    type: 'credit_card' | 'debit_card' | 'paypal';
+    name: string;
+    cardNumber?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+    cvv?: string;
+    paypalEmail?: string;
+  }): Promise<PaymentMethod> {
+    try {
+      return await this.request<PaymentMethod>('/payment-methods', {
+        method: 'POST',
+        body: JSON.stringify(paymentData),
+      });
+    } catch (error) {
+      console.error('Add payment method API error:', error);
+      throw error;
+    }
+  }
+
+  async updatePaymentMethod(id: string, paymentData: {
+    type: 'credit_card' | 'debit_card' | 'paypal';
+    name: string;
+    cardNumber?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+    cvv?: string;
+    paypalEmail?: string;
+  }): Promise<PaymentMethod> {
+    try {
+      return await this.request<PaymentMethod>(`/payment-methods/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(paymentData),
+      });
+    } catch (error) {
+      console.error('Update payment method API error:', error);
+      throw error;
+    }
+  }
+
+  async deletePaymentMethod(id: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>(`/payment-methods/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Delete payment method API error:', error);
+      throw error;
+    }
+  }
+
+  async setDefaultPaymentMethod(id: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>(`/payment-methods/${id}/default`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error('Set default payment method API error:', error);
       throw error;
     }
   }
@@ -647,21 +759,77 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Wishlist methods
+  async getWishlist(): Promise<Product[]> {
+    return this.request<Product[]>('/wishlist');
+  }
+
+  async addToWishlist(productId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/wishlist', {
+      method: 'POST',
+      body: JSON.stringify({ productId }),
+    });
+  }
+
+  async removeFromWishlist(productId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/wishlist/${productId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearWishlist(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/wishlist', {
+      method: 'DELETE',
+    });
+  }
+
+  // Cart methods
+  async getCart(): Promise<{ items: any[]; total: number }> {
+    return this.request<{ items: any[]; total: number }>('/cart');
+  }
+
+  async addToCart(productId: string, quantity: number = 1): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/cart', {
+      method: 'POST',
+      body: JSON.stringify({ productId, quantity }),
+    });
+  }
+
+  async updateCartItem(productId: string, quantity: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/cart/${productId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ quantity }),
+    });
+  }
+
+  async removeFromCart(productId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/cart/${productId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearCart(): Promise<{ message: string }> {
+    return this.request('/cart/clear', { method: 'DELETE' });
+  }
+
+  // Dashboard Analytics
+  async getRevenueData(): Promise<Array<{
+    month: string;
+    revenue: number;
+    orders: number;
+  }>> {
+    return this.request('/admin/revenue-data');
+  }
+
+  async getProductStats(): Promise<Array<{
+    category: string;
+    count: number;
+    revenue: number;
+  }>> {
+    return this.request('/admin/product-stats');
+  }
 }
 
 // Create and export API client instance
-export const api = new ApiClient(API_BASE_URL);
-
-// Export types
-export type {
-  ApiResponse,
-  PaginationResponse,
-  LoginRequest,
-  RegisterRequest,
-  AuthResponse,
-  Product,
-  Category,
-  User,
-  Order,
-  OrderItem,
-}; 
+export const api = new ApiClient(API_BASE_URL); 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { User, MapPin, Phone, Mail, Edit2, Save, X, ShoppingBag, Heart, Settings, CreditCard, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,12 +32,14 @@ interface ProfileData {
 
 export default function Profile() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
   const [activeSection, setActiveSection] = useState("profile");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { language } = useLanguage();
   
   const [profileData, setProfileData] = useState<ProfileData>({
     name: "",
@@ -48,6 +50,14 @@ export default function Profile() {
     country: "Vietnam"
   });
   const [editData, setEditData] = useState<ProfileData>(profileData);
+
+  // Handle URL parameters for active section
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (section && ['profile', 'orders', 'addresses', 'payment', 'notifications', 'settings'].includes(section)) {
+      setActiveSection(section);
+    }
+  }, [searchParams]);
 
   // Load user data when component mounts
   useEffect(() => {
@@ -191,6 +201,10 @@ export default function Profile() {
     setIsEditing(false);
   };
 
+  const refreshSidebarCounts = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-zen">
       <Header 
@@ -205,6 +219,7 @@ export default function Profile() {
             <ProfileSidebar 
               activeSection={activeSection}
               onSectionChange={setActiveSection}
+              refreshTrigger={refreshTrigger}
             />
 
             {/* Main Content */}

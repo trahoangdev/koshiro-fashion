@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,7 +21,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { language } = useLanguage();
   const { toast } = useToast();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate("/");
+    return null;
+  }
 
   const translations = {
     en: {
@@ -125,25 +133,14 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Use real authentication
+      await login(formData.email, formData.password);
       
-      // For demo purposes, accept any valid email/password
-      if (formData.email && formData.password) {
-        toast({
-          title: "Success",
-          description: t.loginSuccess
-        });
-        navigate("/");
-      } else {
-        throw new Error("Invalid credentials");
-      }
+      // Navigate to home page after successful login
+      navigate("/");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: t.loginError,
-        variant: "destructive"
-      });
+      // Error handling is already done in AuthContext
+      console.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }

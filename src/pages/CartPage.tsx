@@ -333,11 +333,11 @@ const CartPage: React.FC = () => {
                       
                       <div className="text-right">
                         <div className="text-lg font-bold">
-                          {formatCurrency(item.product.price * item.quantity)}
+                          {formatCurrency(item.product.price * item.quantity, language)}
                         </div>
                         {item.product.originalPrice && item.product.originalPrice > item.product.price && (
                           <div className="text-sm text-muted-foreground line-through">
-                            {formatCurrency(item.product.originalPrice * item.quantity)}
+                            {formatCurrency(item.product.originalPrice * item.quantity, language)}
                           </div>
                         )}
                       </div>
@@ -358,26 +358,26 @@ const CartPage: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{t.subtotal}</span>
-                    <span>{formatCurrency(calculateSubtotal())}</span>
+                    <span>{formatCurrency(calculateSubtotal(), language)}</span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span>{t.shipping}</span>
                     <span className={calculateShipping() === 0 ? 'text-green-600' : ''}>
-                      {calculateShipping() === 0 ? t.freeShipping : formatCurrency(calculateShipping())}
+                      {calculateShipping() === 0 ? t.freeShipping : formatCurrency(calculateShipping(), language)}
                     </span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span>{t.tax}</span>
-                    <span>{formatCurrency(calculateTax())}</span>
+                    <span>{formatCurrency(calculateTax(), language)}</span>
                   </div>
                   
                   <Separator />
                   
                   <div className="flex justify-between text-lg font-bold">
                     <span>{t.total}</span>
-                    <span>{formatCurrency(calculateTotal())}</span>
+                    <span>{formatCurrency(calculateTotal(), language)}</span>
                   </div>
                 </div>
                 

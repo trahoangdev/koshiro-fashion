@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, ShoppingBag, Menu, X, User, Globe, Heart, LogOut, Settings, Package, CreditCard, MapPin, Bell, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { api, Product } from "@/lib/api";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -12,20 +14,54 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
   cartItemsCount: number;
   onSearch: (query: string) => void;
+  refreshWishlistTrigger?: number; // Add this to trigger wishlist count refresh
 }
 
-const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
+const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [wishlistCount, setWishlistCount] = useState(0);
   const { language, setLanguage } = useLanguage();
   const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // Load wishlist count
+  useEffect(() => {
+    const loadWishlistCount = async () => {
+      if (!isAuthenticated) {
+        setWishlistCount(0);
+        return;
+      }
+
+      try {
+        const response = await api.getWishlist();
+        let wishlistData: Product[] = [];
+        if (Array.isArray(response)) {
+          wishlistData = response;
+        } else if (response && typeof response === 'object') {
+          const responseObj = response as unknown as Record<string, unknown>;
+          if ('data' in responseObj && Array.isArray(responseObj.data)) {
+            wishlistData = responseObj.data as Product[];
+          } else if ('wishlist' in responseObj && Array.isArray(responseObj.wishlist)) {
+            wishlistData = responseObj.wishlist as Product[];
+          }
+        }
+        setWishlistCount(wishlistData.length);
+      } catch (error) {
+        console.error('Failed to load wishlist count:', error);
+        setWishlistCount(0);
+      }
+    };
+
+    loadWishlistCount();
+  }, [isAuthenticated, refreshWishlistTrigger]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +103,8 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
       logout: "Logout",
       login: "Login",
       register: "Register",
-      guest: "Guest"
+      guest: "Guest",
+      wishlist: "Wishlist"
     },
     vi: {
       search: "Tìm kiếm sản phẩm...",
@@ -90,7 +127,8 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
       logout: "Đăng xuất",
       login: "Đăng nhập",
       register: "Đăng ký",
-      guest: "Khách"
+      guest: "Khách",
+      wishlist: "Danh sách yêu thích"
     },
     ja: {
       search: "商品を検索...",
@@ -113,7 +151,8 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
       logout: "ログアウト",
       login: "ログイン",
       register: "登録",
-      guest: "ゲスト"
+      guest: "ゲスト",
+      wishlist: "ほしい物リスト"
     }
   };
 
@@ -188,8 +227,16 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
 
           {/* Wishlist */}
           <Link to="/wishlist">
-            <Button variant="ghost" size="icon" className="hidden md:flex">
+            <Button variant="ghost" size="icon" className="hidden md:flex relative">
               <Heart className="h-4 w-4" />
+              {wishlistCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs"
+                >
+                  {wishlistCount}
+                </Badge>
+              )}
             </Button>
           </Link>
 
@@ -212,27 +259,36 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <Package className="mr-2 h-4 w-4" />
                     {t.profile}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/orders'}>
+                  <DropdownMenuItem onClick={() => navigate('/wishlist')}>
+                    <Heart className="mr-2 h-4 w-4" />
+                    {t.wishlist}
+                    {wishlistCount > 0 && (
+                      <Badge variant="secondary" className="ml-auto">
+                        {wishlistCount}
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/profile?section=orders')}>
                     <CreditCard className="mr-2 h-4 w-4" />
                     {t.orders}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/addresses'}>
+                  <DropdownMenuItem onClick={() => navigate('/profile?section=addresses')}>
                     <MapPin className="mr-2 h-4 w-4" />
                     {t.addresses}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/payment'}>
+                  <DropdownMenuItem onClick={() => navigate('/profile?section=payment')}>
                     <CreditCard className="mr-2 h-4 w-4" />
                     {t.payment}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/notifications'}>
+                  <DropdownMenuItem onClick={() => navigate('/profile?section=notifications')}>
                     <Bell className="mr-2 h-4 w-4" />
                     {t.notifications}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
+                  <DropdownMenuItem onClick={() => navigate('/profile?section=settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     {t.settings}
                   </DropdownMenuItem>
@@ -246,11 +302,11 @@ const Header = ({ cartItemsCount, onSearch }: HeaderProps) => {
                 <>
                   <DropdownMenuLabel>{t.guest}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => window.location.href = '/login'}>
+                  <DropdownMenuItem onClick={() => navigate('/login')}>
                     <LogIn className="mr-2 h-4 w-4" />
                     {t.login}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = '/register'}>
+                  <DropdownMenuItem onClick={() => navigate('/register')}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     {t.register}
                   </DropdownMenuItem>

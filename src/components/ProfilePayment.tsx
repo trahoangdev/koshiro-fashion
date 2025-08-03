@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { api, PaymentMethod } from "@/lib/api";
 import { 
   CreditCard, 
   Plus, 
@@ -16,36 +17,9 @@ import {
   Shield
 } from "lucide-react";
 
-interface PaymentMethod {
-  _id: string;
-  type: 'credit_card' | 'debit_card' | 'paypal';
-  name: string;
-  last4?: string;
-  expiryMonth?: string;
-  expiryYear?: string;
-  isDefault: boolean;
-  brand?: string;
-}
-
 const ProfilePayment = () => {
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
-    {
-      _id: "1",
-      type: 'credit_card',
-      name: "John Doe",
-      last4: "1234",
-      expiryMonth: "12",
-      expiryYear: "2025",
-      isDefault: true,
-      brand: "Visa"
-    },
-    {
-      _id: "2",
-      type: 'paypal',
-      name: "john.doe@example.com",
-      isDefault: false
-    }
-  ]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -59,6 +33,27 @@ const ProfilePayment = () => {
   });
   const { language } = useLanguage();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      try {
+        setIsLoading(true);
+        const paymentMethodsData = await api.getPaymentMethods();
+        setPaymentMethods(paymentMethodsData);
+      } catch (error) {
+        console.error('Failed to load payment methods:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load payment methods. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPaymentMethods();
+  }, [toast]);
 
   const translations = {
     en: {
@@ -88,7 +83,10 @@ const ProfilePayment = () => {
       paymentDeleted: "Payment method deleted successfully",
       defaultSet: "Default payment method updated",
       secure: "Secure & Encrypted",
-      secureDesc: "Your payment information is protected with bank-level security"
+      secureDesc: "Your payment information is protected with bank-level security",
+      nameRequired: "Please enter a name for the payment method.",
+      cardDetailsRequired: "Please enter card number, expiry month, year, and CVV.",
+      paypalEmailRequired: "Please enter a PayPal email address."
     },
     vi: {
       title: "Phương Thức Thanh Toán",
@@ -117,7 +115,10 @@ const ProfilePayment = () => {
       paymentDeleted: "Đã xóa phương thức thanh toán thành công",
       defaultSet: "Đã cập nhật phương thức thanh toán mặc định",
       secure: "Bảo Mật & Mã Hóa",
-      secureDesc: "Thông tin thanh toán của bạn được bảo vệ với bảo mật cấp độ ngân hàng"
+      secureDesc: "Thông tin thanh toán của bạn được bảo vệ với bảo mật cấp độ ngân hàng",
+      nameRequired: "Vui lòng nhập tên cho phương thức thanh toán.",
+      cardDetailsRequired: "Vui lòng nhập số thẻ, tháng, năm và CVV.",
+      paypalEmailRequired: "Vui lòng nhập địa chỉ email PayPal."
     },
     ja: {
       title: "支払い方法",
@@ -146,7 +147,10 @@ const ProfilePayment = () => {
       paymentDeleted: "支払い方法が正常に削除されました",
       defaultSet: "デフォルト支払い方法が更新されました",
       secure: "セキュア＆暗号化",
-      secureDesc: "お支払い情報は銀行レベルのセキュリティで保護されています"
+      secureDesc: "お支払い情報は銀行レベルのセキュリティで保護されています",
+      nameRequired: "支払い方法に名前を入力してください。",
+      cardDetailsRequired: "カード番号、有効期限月、年、CVVを入力してください。",
+      paypalEmailRequired: "PayPalメールアドレスを入力してください。"
     }
   };
 
@@ -205,74 +209,86 @@ const ProfilePayment = () => {
     });
   };
 
-  const handleSave = () => {
-    if (formData.type === 'paypal') {
-      if (!formData.paypalEmail) {
+  const handleSave = async () => {
+    if (!formData.name) {
+      toast({
+        title: "Error",
+        description: t.nameRequired,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.type === 'credit_card' || formData.type === 'debit_card') {
+      if (!formData.cardNumber || !formData.expiryMonth || !formData.expiryYear || !formData.cvv) {
         toast({
-          title: "Lỗi",
-          description: "Vui lòng nhập email PayPal",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else {
-      if (!formData.name || !formData.cardNumber || !formData.expiryMonth || !formData.expiryYear || !formData.cvv) {
-        toast({
-          title: "Lỗi",
-          description: "Vui lòng điền đầy đủ thông tin thẻ",
-          variant: "destructive",
+          title: "Error",
+          description: t.cardDetailsRequired,
+          variant: "destructive"
         });
         return;
       }
     }
 
-    if (editingId) {
-      // Update existing payment method
-      setPaymentMethods(prev => prev.map(payment => 
-        payment._id === editingId 
-          ? { 
-              ...payment, 
-              name: formData.type === 'paypal' ? formData.paypalEmail : formData.name,
-              last4: formData.type !== 'paypal' ? formData.cardNumber.slice(-4) : undefined,
-              expiryMonth: formData.type !== 'paypal' ? formData.expiryMonth : undefined,
-              expiryYear: formData.type !== 'paypal' ? formData.expiryYear : undefined
-            }
-          : payment
-      ));
+    if (formData.type === 'paypal' && !formData.paypalEmail) {
       toast({
-        title: "Thành công",
-        description: t.paymentUpdated,
+        title: "Error",
+        description: t.paypalEmailRequired,
+        variant: "destructive"
       });
-    } else {
-      // Add new payment method
-      const newPayment: PaymentMethod = {
-        _id: Date.now().toString(),
-        type: formData.type,
-        name: formData.type === 'paypal' ? formData.paypalEmail : formData.name,
-        last4: formData.type !== 'paypal' ? formData.cardNumber.slice(-4) : undefined,
-        expiryMonth: formData.type !== 'paypal' ? formData.expiryMonth : undefined,
-        expiryYear: formData.type !== 'paypal' ? formData.expiryYear : undefined,
-        isDefault: paymentMethods.length === 0,
-        brand: formData.type !== 'paypal' ? 'Visa' : undefined
-      };
-      setPaymentMethods(prev => [...prev, newPayment]);
-      toast({
-        title: "Thành công",
-        description: t.paymentAdded,
-      });
+      return;
     }
 
-    setIsAdding(false);
-    setEditingId(null);
-    setFormData({
-      type: 'credit_card',
-      name: "",
-      cardNumber: "",
-      expiryMonth: "",
-      expiryYear: "",
-      cvv: "",
-      paypalEmail: ""
-    });
+    try {
+      if (editingId) {
+        // Update existing payment method
+        const updatedPayment = await api.updatePaymentMethod(editingId, {
+          type: formData.type,
+          name: formData.name,
+          cardNumber: formData.cardNumber,
+          expiryMonth: formData.expiryMonth,
+          expiryYear: formData.expiryYear,
+          cvv: formData.cvv,
+          paypalEmail: formData.paypalEmail
+        });
+
+        setPaymentMethods(prev => 
+          prev.map(pm => pm._id === editingId ? updatedPayment : pm)
+        );
+
+        toast({
+          title: "Success",
+          description: t.paymentUpdated
+        });
+      } else {
+        // Add new payment method
+        const newPayment = await api.addPaymentMethod({
+          type: formData.type,
+          name: formData.name,
+          cardNumber: formData.cardNumber,
+          expiryMonth: formData.expiryMonth,
+          expiryYear: formData.expiryYear,
+          cvv: formData.cvv,
+          paypalEmail: formData.paypalEmail
+        });
+
+        setPaymentMethods(prev => [...prev, newPayment]);
+
+        toast({
+          title: "Success",
+          description: t.paymentAdded
+        });
+      }
+
+      handleCancel();
+    } catch (error) {
+      console.error('Failed to save payment method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save payment method. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleCancel = () => {
@@ -289,23 +305,45 @@ const ProfilePayment = () => {
     });
   };
 
-  const handleDelete = (id: string) => {
-    setPaymentMethods(prev => prev.filter(payment => payment._id !== id));
-    toast({
-      title: "Thành công",
-      description: t.paymentDeleted,
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await api.deletePaymentMethod(id);
+      setPaymentMethods(prev => prev.filter(pm => pm._id !== id));
+      toast({
+        title: "Success",
+        description: t.paymentDeleted
+      });
+    } catch (error) {
+      console.error('Failed to delete payment method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete payment method. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleSetDefault = (id: string) => {
-    setPaymentMethods(prev => prev.map(payment => ({
-      ...payment,
-      isDefault: payment._id === id
-    })));
-    toast({
-      title: "Thành công",
-      description: t.defaultSet,
-    });
+  const handleSetDefault = async (id: string) => {
+    try {
+      await api.setDefaultPaymentMethod(id);
+      setPaymentMethods(prev => 
+        prev.map(pm => ({
+          ...pm,
+          isDefault: pm._id === id
+        }))
+      );
+      toast({
+        title: "Success",
+        description: t.defaultSet
+      });
+    } catch (error) {
+      console.error('Failed to set default payment method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to set default payment method. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -437,7 +475,11 @@ const ProfilePayment = () => {
       )}
 
       {/* Payment Methods List */}
-      {paymentMethods.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p>Loading payment methods...</p>
+        </div>
+      ) : paymentMethods.length === 0 ? (
         <div className="text-center py-12">
           <CreditCard className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-xl font-semibold mb-2">{t.noPaymentMethods}</h3>

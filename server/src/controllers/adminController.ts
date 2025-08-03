@@ -260,6 +260,103 @@ export const getAdminUsers = async (req: Request, res: Response) => {
   }
 };
 
+// Get revenue data for chart
+export const getRevenueData = async (req: Request, res: Response) => {
+  try {
+    console.log('Getting revenue data for chart...');
+    
+    // Get last 6 months of revenue data
+    const months = [];
+    const revenueData = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - i);
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+      endDate.setDate(0);
+      endDate.setHours(23, 59, 59, 999);
+      
+      const monthName = startDate.toLocaleDateString('en-US', { month: 'short' });
+      
+      // Get orders for this month
+      const monthOrders = await Order.find({
+        status: 'completed',
+        createdAt: { $gte: startDate, $lte: endDate }
+      });
+      
+      const monthRevenue = monthOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+      const monthOrderCount = monthOrders.length;
+      
+      revenueData.push({
+        month: monthName,
+        revenue: monthRevenue,
+        orders: monthOrderCount
+      });
+    }
+    
+    console.log('Revenue data:', revenueData);
+    res.json(revenueData);
+  } catch (error) {
+    console.error('Error getting revenue data:', error);
+    res.status(500).json({ message: 'Error getting revenue data' });
+  }
+};
+
+// Get product statistics by category
+export const getProductStats = async (req: Request, res: Response) => {
+  try {
+    console.log('Getting product statistics...');
+    
+    // Get all categories with their products and revenue
+    const categories = await Category.find({ isActive: true });
+    const productStats = [];
+    
+    for (const category of categories) {
+      // Get products in this category
+      const products = await Product.find({ 
+        categoryId: category._id,
+        isActive: true 
+      });
+      
+      // Get orders with products from this category
+      const orders = await Order.find({ 
+        status: 'completed',
+        'items.productId': { $in: products.map(p => (p._id as any).toString()) }
+      });
+      
+      // Calculate revenue for this category
+      let categoryRevenue = 0;
+      for (const order of orders) {
+        for (const item of order.items) {
+          const product = products.find(p => (p._id as any).toString() === item.productId.toString());
+          if (product) {
+            categoryRevenue += item.price * item.quantity;
+          }
+        }
+      }
+      
+      productStats.push({
+        category: category.name,
+        count: products.length,
+        revenue: categoryRevenue
+      });
+    }
+    
+    // Sort by revenue descending
+    productStats.sort((a, b) => b.revenue - a.revenue);
+    
+    console.log('Product stats:', productStats);
+    res.json(productStats);
+  } catch (error) {
+    console.error('Error getting product statistics:', error);
+    res.status(500).json({ message: 'Error getting product statistics' });
+  }
+};
+
 // Product CRUD operations
 export const createProduct = async (req: Request, res: Response) => {
   try {

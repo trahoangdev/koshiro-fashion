@@ -29,102 +29,28 @@ const ProfileOrders = () => {
     const loadOrders = async () => {
       try {
         setIsLoading(true);
-        // Mock orders data - in real app, this would come from API
-        const mockOrders: Order[] = [
-          {
-            _id: "1",
-            orderNumber: "ORD-2024-001",
-            userId: {
-              _id: "user1",
-              name: "John Doe",
-              email: "john.doe@example.com",
-              phone: "+1 234 567 890"
-            },
-            status: "completed",
-            items: [
-              {
-                productId: {
-                  _id: "prod1",
-                  name: "Traditional Kimono",
-                  nameEn: "Traditional Kimono",
-                  nameJa: "伝統的な着物",
-                  images: ["/src/assets/product-kimono-1.jpg"],
-                  price: 299.99
-                },
-                name: "Traditional Kimono",
-                nameVi: "Kimono Truyền Thống",
-                quantity: 1,
-                price: 299.99,
-                size: "M",
-                color: "Red"
-              }
-            ],
-            totalAmount: 299.99,
-            shippingAddress: {
-              name: "John Doe",
-              phone: "+1 234 567 890",
-              address: "123 Main Street",
-              city: "New York",
-              district: "Manhattan"
-            },
-            paymentMethod: "Credit Card",
-            paymentStatus: "paid",
-            notes: "Please deliver in the morning",
-            createdAt: "2024-01-15T10:30:00Z",
-            updatedAt: "2024-01-18T14:20:00Z"
-          },
-          {
-            _id: "2",
-            orderNumber: "ORD-2024-002",
-            userId: {
-              _id: "user1",
-              name: "John Doe",
-              email: "john.doe@example.com",
-              phone: "+1 234 567 890"
-            },
-            status: "processing",
-            items: [
-              {
-                productId: {
-                  _id: "prod2",
-                  name: "Modern Yukata",
-                  nameEn: "Modern Yukata",
-                  nameJa: "モダンな浴衣",
-                  images: ["/src/assets/product-yukata-1.jpg"],
-                  price: 149.99
-                },
-                name: "Modern Yukata",
-                nameVi: "Yukata Hiện Đại",
-                quantity: 2,
-                price: 149.99,
-                size: "L",
-                color: "White"
-              }
-            ],
-            totalAmount: 299.98,
-            shippingAddress: {
-              name: "John Doe",
-              phone: "+1 234 567 890",
-              address: "123 Main Street",
-              city: "New York",
-              district: "Manhattan"
-            },
-            paymentMethod: "PayPal",
-            paymentStatus: "paid",
-            notes: "",
-            createdAt: "2024-01-20T09:15:00Z",
-            updatedAt: "2024-01-20T09:15:00Z"
+        const response = await api.getUserOrders();
+        // Handle different response structures
+        let ordersData: Order[] = [];
+        if (Array.isArray(response)) {
+          ordersData = response;
+        } else if (response && typeof response === 'object') {
+          // Check if it's a pagination response
+          if ('data' in response && Array.isArray(response.data)) {
+            ordersData = response.data;
+          } else if ('orders' in response && Array.isArray(response.orders)) {
+            ordersData = response.orders;
           }
-        ];
-        
-        setOrders(mockOrders);
+        }
+        setOrders(ordersData);
       } catch (error) {
-        console.error('Error loading orders:', error);
+        console.error('Failed to load orders:', error);
         toast({
-          title: "Lỗi tải dữ liệu",
-          description: "Không thể tải lịch sử đơn hàng",
-          variant: "destructive",
+          title: "Error",
+          description: "Failed to load orders. Please try again.",
+          variant: "destructive"
         });
+        setOrders([]); // Set empty array on error
       } finally {
         setIsLoading(false);
       }
@@ -254,97 +180,105 @@ const ProfileOrders = () => {
       </div>
 
       <div className="space-y-4">
-        {orders.map((order) => (
-          <Card key={order._id} className="overflow-hidden">
-            <CardHeader className="bg-muted/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(order.status)}
-                    <span className="font-semibold">
-                      {t.orderNumber}{order.orderNumber}
-                    </span>
-                  </div>
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status}
-                  </Badge>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">{t.orderDate}</p>
-                  <p className="font-medium">{formatDate(order.createdAt)}</p>
-                </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="p-6">
-              {/* Order Items */}
-              <div className="space-y-3 mb-4">
-                {order.items.map((item, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <img
-                      src={item.productId.images[0]}
-                      alt={item.name}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.size} • {item.color} • Qty: {item.quantity}
-                      </p>
+        {Array.isArray(orders) && orders.length > 0 ? (
+          orders.map((order) => (
+            <Card key={order._id} className="overflow-hidden">
+              <CardHeader className="bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(order.status)}
+                      <span className="font-semibold">
+                        {t.orderNumber}{order.orderNumber}
+                      </span>
                     </div>
-                    <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                    <Badge className={getStatusColor(order.status)}>
+                      {order.status}
+                    </Badge>
                   </div>
-                ))}
-              </div>
-
-              <Separator className="my-4" />
-
-              {/* Order Details */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">
-                    {t.shippingAddress}
-                  </p>
-                  <div className="text-sm">
-                    <p>{order.shippingAddress.name}</p>
-                    <p>{order.shippingAddress.address}</p>
-                    <p>{order.shippingAddress.city}, {order.shippingAddress.district}</p>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">{t.orderDate}</p>
+                    <p className="font-medium">{formatDate(order.createdAt)}</p>
                   </div>
                 </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">
-                    {t.paymentMethod}
-                  </p>
-                  <p className="text-sm">{order.paymentMethod}</p>
+              </CardHeader>
+              
+              <CardContent className="p-6">
+                {/* Order Items */}
+                <div className="space-y-3 mb-4">
+                  {order.items.map((item, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <img
+                        src={item.productId.images[0]}
+                        alt={item.name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.size} • {item.color} • Qty: {item.quantity}
+                        </p>
+                      </div>
+                      <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <Separator className="my-4" />
+
+                {/* Order Details */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
+                      {t.shippingAddress}
+                    </p>
+                    <div className="text-sm">
+                      <p>{order.shippingAddress.name}</p>
+                      <p>{order.shippingAddress.address}</p>
+                      <p>{order.shippingAddress.city}, {order.shippingAddress.district}</p>
+                    </div>
+                  </div>
                   
-                  <p className="text-sm font-medium text-muted-foreground mb-1 mt-2">
-                    {t.paymentStatus}
-                  </p>
-                  <Badge variant={order.paymentStatus === 'paid' ? 'default' : 'secondary'}>
-                    {order.paymentStatus}
-                  </Badge>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
+                      {t.paymentMethod}
+                    </p>
+                    <p className="text-sm">{order.paymentMethod}</p>
+                    
+                    <p className="text-sm font-medium text-muted-foreground mb-1 mt-2">
+                      {t.paymentStatus}
+                    </p>
+                    <Badge variant={order.paymentStatus === 'paid' ? 'default' : 'secondary'}>
+                      {order.paymentStatus}
+                    </Badge>
+                  </div>
+                  
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground mb-1">{t.total}</p>
+                    <p className="text-2xl font-bold">${order.totalAmount.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {order.items.length} {t.items}
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground mb-1">{t.total}</p>
-                  <p className="text-2xl font-bold">${order.totalAmount.toFixed(2)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {order.items.length} {t.items}
-                  </p>
-                </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" size="sm">
-                  <Eye className="h-4 w-4 mr-2" />
-                  {t.viewDetails}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    {t.viewDetails}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">{t.noOrders}</h3>
+            <p className="text-muted-foreground">{t.noOrdersDesc}</p>
+          </div>
+        )}
       </div>
     </div>
   );

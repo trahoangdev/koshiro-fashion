@@ -27,6 +27,7 @@ const ProductDetail: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [refreshWishlistTrigger, setRefreshWishlistTrigger] = useState(0);
 
   const handleSearch = (query: string) => {
     // TODO: Implement search functionality
@@ -167,14 +168,25 @@ const ProductDetail: React.FC = () => {
     });
   };
 
-  const handleAddToWishlist = () => {
+  const handleAddToWishlist = async () => {
     if (!product) return;
     
-    // TODO: Implement add to wishlist functionality
-    toast({
-      title: t.addToWishlistSuccess,
-      description: t.addToWishlistSuccessDesc,
-    });
+    try {
+      await api.addToWishlist(product._id);
+      toast({
+        title: t.addToWishlistSuccess,
+        description: t.addToWishlistSuccessDesc,
+      });
+      // Refresh wishlist count in header
+      setRefreshWishlistTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to add to wishlist:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add to wishlist. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleBuyNow = () => {
@@ -188,7 +200,7 @@ const ProductDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header cartItemsCount={0} onSearch={handleSearch} />
+        <Header cartItemsCount={0} onSearch={handleSearch} refreshWishlistTrigger={refreshWishlistTrigger} />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="flex items-center space-x-2">
@@ -205,7 +217,7 @@ const ProductDetail: React.FC = () => {
   if (!product) {
     return (
       <div className="min-h-screen bg-background">
-        <Header cartItemsCount={0} onSearch={handleSearch} />
+        <Header cartItemsCount={0} onSearch={handleSearch} refreshWishlistTrigger={refreshWishlistTrigger} />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Product not found</h1>
@@ -221,7 +233,7 @@ const ProductDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header cartItemsCount={0} onSearch={handleSearch} />
+      <Header cartItemsCount={0} onSearch={handleSearch} refreshWishlistTrigger={refreshWishlistTrigger} />
       
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -275,10 +287,10 @@ const ProductDetail: React.FC = () => {
               </div>
 
               <div className="flex items-center space-x-4 mb-6">
-                <span className="text-3xl font-bold">{formatCurrency(product.price)}</span>
+                <span className="text-3xl font-bold">{formatCurrency(product.price, language)}</span>
                 {product.originalPrice && product.originalPrice > product.price && (
                   <span className="text-lg text-muted-foreground line-through">
-                    {formatCurrency(product.originalPrice)}
+                    {formatCurrency(product.originalPrice, language)}
                   </span>
                 )}
               </div>

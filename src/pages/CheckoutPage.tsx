@@ -558,7 +558,7 @@ const CheckoutPage = () => {
                             {item.selectedSize} • {item.selectedColor} • Qty: {item.quantity}
                           </p>
                         </div>
-                        <p className="font-medium">{formatCurrency(item.product.price * item.quantity)}</p>
+                        <p className="font-medium">{formatCurrency(item.product.price * item.quantity, language)}</p>
                       </div>
                     ))}
                   </div>
@@ -569,20 +569,20 @@ const CheckoutPage = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>{t.subtotal}</span>
-                      <span>{formatCurrency(subtotal)}</span>
+                      <span>{formatCurrency(subtotal, language)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>{t.shipping}</span>
-                      <span>{formatCurrency(shipping)}</span>
+                      <span>{formatCurrency(shipping, language)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>{t.tax}</span>
-                      <span>{formatCurrency(tax)}</span>
+                      <span>{formatCurrency(tax, language)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                       <span>{t.total}</span>
-                      <span>{formatCurrency(total)}</span>
+                      <span>{formatCurrency(total, language)}</span>
                     </div>
                   </div>
 

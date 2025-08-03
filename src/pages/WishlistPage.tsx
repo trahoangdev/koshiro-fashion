@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ProductGrid from "@/components/ProductGrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { api, Product } from "@/lib/api";
+import { Heart, ShoppingCart, Trash2, ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Trash2, ShoppingCart, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { api, Product } from "@/lib/api";
+import { formatCurrency } from "@/lib/currency";
 
 interface CartItem {
   id: string;
@@ -21,71 +21,31 @@ const WishlistPage = () => {
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [refreshWishlistTrigger, setRefreshWishlistTrigger] = useState(0);
   const { language } = useLanguage();
   const { toast } = useToast();
 
-  // Load wishlist items (mock data for now)
+  // Load wishlist items from API
   useEffect(() => {
     const loadWishlist = async () => {
       try {
         setIsLoading(true);
-        // Mock wishlist data - in real app, this would come from API
-        const mockWishlist: Product[] = [
-          {
-            _id: "1",
-            name: "Traditional Kimono",
-            nameEn: "Traditional Kimono",
-            nameJa: "伝統的な着物",
-            description: "Beautiful traditional Japanese kimono",
-            price: 299.99,
-            originalPrice: 399.99,
-            images: ["/src/assets/product-kimono-1.jpg"],
-            categoryId: {
-              _id: "kimono-1",
-              name: "Kimono",
-              nameEn: "Kimono",
-              nameJa: "着物",
-              slug: "kimono"
-            },
-            sizes: ["S", "M", "L"],
-            colors: ["Red", "Blue", "Black"],
-            stock: 10,
-            tags: ["traditional", "kimono"],
-            isActive: true,
-            isFeatured: true,
-            onSale: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          },
-          {
-            _id: "2",
-            name: "Modern Yukata",
-            nameEn: "Modern Yukata",
-            nameJa: "モダンな浴衣",
-            description: "Contemporary yukata design",
-            price: 149.99,
-            originalPrice: 199.99,
-            images: ["/src/assets/product-yukata-1.jpg"],
-            categoryId: {
-              _id: "yukata-1",
-              name: "Yukata",
-              nameEn: "Yukata",
-              nameJa: "浴衣",
-              slug: "yukata"
-            },
-            sizes: ["S", "M", "L"],
-            colors: ["White", "Pink", "Purple"],
-            stock: 15,
-            tags: ["modern", "yukata"],
-            isActive: true,
-            isFeatured: false,
-            onSale: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
-        ];
+        // Load real wishlist data from API
+        const response = await api.getWishlist();
+        let wishlistData: Product[] = [];
         
-        setWishlistItems(mockWishlist);
+        if (Array.isArray(response)) {
+          wishlistData = response;
+        } else if (response && typeof response === 'object') {
+          const responseObj = response as Record<string, unknown>;
+          if ('data' in responseObj && Array.isArray(responseObj.data)) {
+            wishlistData = responseObj.data as Product[];
+          } else if ('wishlist' in responseObj && Array.isArray(responseObj.wishlist)) {
+            wishlistData = responseObj.wishlist as Product[];
+          }
+        }
+        
+        setWishlistItems(wishlistData);
       } catch (error) {
         console.error('Error loading wishlist:', error);
         toast({
@@ -93,6 +53,7 @@ const WishlistPage = () => {
           description: "Không thể tải danh sách yêu thích",
           variant: "destructive",
         });
+        setWishlistItems([]); // Set empty array on error
       } finally {
         setIsLoading(false);
       }
@@ -101,39 +62,101 @@ const WishlistPage = () => {
     loadWishlist();
   }, [toast]);
 
-  const addToCart = (product: Product) => {
-    setCartItems(prev => {
-      const existingItem = prev.find(item => item.id === product._id);
-      if (existingItem) {
-        return prev.map(item =>
-          item.id === product._id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+  // Load cart items from API
+  useEffect(() => {
+    const loadCart = async () => {
+      try {
+        const response = await api.getCart();
+        if (response && response.items) {
+          const cartItemsData = response.items.map((item: { productId: Product; quantity: number }) => ({
+            id: item.productId._id,
+            product: item.productId,
+            quantity: item.quantity
+          }));
+          setCartItems(cartItemsData);
+        }
+      } catch (error) {
+        console.error('Error loading cart:', error);
+        // Don't show error toast for cart loading as it's not critical
       }
-      return [...prev, { id: product._id, product, quantity: 1 }];
-    });
+    };
 
-    toast({
-      title: "Đã thêm vào giỏ hàng",
-      description: `${product.name} đã được thêm vào giỏ hàng`,
-    });
+    loadCart();
+  }, []);
+
+  const addToCart = async (product: Product) => {
+    try {
+      // Add to cart via API
+      await api.addToCart(product._id, 1);
+      
+      setCartItems(prev => {
+        const existingItem = prev.find(item => item.id === product._id);
+        if (existingItem) {
+          return prev.map(item =>
+            item.id === product._id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          );
+        }
+        return [...prev, { id: product._id, product, quantity: 1 }];
+      });
+
+      toast({
+        title: "Đã thêm vào giỏ hàng",
+        description: `${product.name} đã được thêm vào giỏ hàng`,
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể thêm vào giỏ hàng",
+        variant: "destructive",
+      });
+    }
   };
 
-  const removeFromWishlist = (productId: string) => {
-    setWishlistItems(prev => prev.filter(item => item._id !== productId));
-    toast({
-      title: "Đã xóa khỏi danh sách yêu thích",
-      description: "Sản phẩm đã được xóa khỏi wishlist",
-    });
+  const removeFromWishlist = async (productId: string) => {
+    try {
+      // Remove from wishlist via API
+      await api.removeFromWishlist(productId);
+      
+      setWishlistItems(prev => prev.filter(item => item._id !== productId));
+      // Refresh wishlist count in header
+      setRefreshWishlistTrigger(prev => prev + 1);
+      toast({
+        title: "Đã xóa khỏi danh sách yêu thích",
+        description: "Sản phẩm đã được xóa khỏi wishlist",
+      });
+    } catch (error) {
+      console.error('Error removing from wishlist:', error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa khỏi danh sách yêu thích",
+        variant: "destructive",
+      });
+    }
   };
 
-  const clearWishlist = () => {
-    setWishlistItems([]);
-    toast({
-      title: "Đã xóa tất cả",
-      description: "Danh sách yêu thích đã được làm trống",
-    });
+  const clearWishlist = async () => {
+    try {
+      // Clear wishlist via API
+      await api.clearWishlist();
+      
+      setWishlistItems([]);
+      // Refresh wishlist count in header
+      setRefreshWishlistTrigger(prev => prev + 1);
+      toast({
+        title: "Đã xóa tất cả",
+        description: "Danh sách yêu thích đã được làm trống",
+      });
+    } catch (error) {
+      console.error('Error clearing wishlist:', error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa danh sách yêu thích",
+        variant: "destructive",
+      });
+    }
   };
 
   const cartItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -187,6 +210,7 @@ const WishlistPage = () => {
       <Header
         cartItemsCount={cartItemsCount}
         onSearch={() => {}}
+        refreshWishlistTrigger={refreshWishlistTrigger}
       />
 
       <main className="py-16">
@@ -278,11 +302,11 @@ const WishlistPage = () => {
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center space-x-2">
                             <span className="text-lg font-bold text-primary">
-                              ${product.price}
+                              {formatCurrency(product.price, language)}
                             </span>
                             {product.originalPrice > product.price && (
                               <span className="text-sm text-muted-foreground line-through">
-                                ${product.originalPrice}
+                                {formatCurrency(product.originalPrice, language)}
                               </span>
                             )}
                           </div>

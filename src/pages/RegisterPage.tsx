@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -27,7 +28,14 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { language } = useLanguage();
   const { toast } = useToast();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate("/");
+    return null;
+  }
 
   const translations = {
     en: {
@@ -197,7 +205,7 @@ export default function RegisterPage() {
       });
       return false;
     }
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
     if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
       toast({
         title: "Error",
@@ -233,20 +241,21 @@ export default function RegisterPage() {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Prepare user data for registration
+      const userData = {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone
+      };
       
-      toast({
-        title: "Success",
-        description: t.registerSuccess
-      });
-      navigate("/login");
+      await register(userData);
+      
+      // Navigate to home page after successful registration
+      navigate("/");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: t.registerError,
-        variant: "destructive"
-      });
+      // Error handling is already done in AuthContext
+      console.error('Register error:', error);
     } finally {
       setIsLoading(false);
     }

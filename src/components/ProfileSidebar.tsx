@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { api, Order, Product } from "@/lib/api";
 import { 
   User, 
   ShoppingBag, 
@@ -17,10 +19,69 @@ import { Link } from "react-router-dom";
 interface ProfileSidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  refreshTrigger?: number; // Add this to trigger refresh from parent
 }
 
-const ProfileSidebar = ({ activeSection, onSectionChange }: ProfileSidebarProps) => {
+const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: ProfileSidebarProps) => {
   const { language } = useLanguage();
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load real data for counts
+  const loadCounts = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load orders count
+      try {
+        const ordersResponse = await api.getUserOrders();
+        let ordersData: Order[] = [];
+        if (Array.isArray(ordersResponse)) {
+          ordersData = ordersResponse;
+        } else if (ordersResponse && typeof ordersResponse === 'object') {
+          const responseObj = ordersResponse as unknown as Record<string, unknown>;
+          if ('data' in responseObj && Array.isArray(responseObj.data)) {
+            ordersData = responseObj.data as Order[];
+          } else if ('orders' in responseObj && Array.isArray(responseObj.orders)) {
+            ordersData = responseObj.orders as Order[];
+          }
+        }
+        setOrdersCount(ordersData.length);
+      } catch (error) {
+        console.error('Failed to load orders count:', error);
+        setOrdersCount(0);
+      }
+
+      // Load wishlist count
+      try {
+        const wishlistResponse = await api.getWishlist();
+        let wishlistData: Product[] = [];
+        if (Array.isArray(wishlistResponse)) {
+          wishlistData = wishlistResponse;
+        } else if (wishlistResponse && typeof wishlistResponse === 'object') {
+          const responseObj = wishlistResponse as unknown as Record<string, unknown>;
+          if ('data' in responseObj && Array.isArray(responseObj.data)) {
+            wishlistData = responseObj.data as Product[];
+          } else if ('wishlist' in responseObj && Array.isArray(responseObj.wishlist)) {
+            wishlistData = responseObj.wishlist as Product[];
+          }
+        }
+        setWishlistCount(wishlistData.length);
+      } catch (error) {
+        console.error('Failed to load wishlist count:', error);
+        setWishlistCount(0);
+      }
+    } catch (error) {
+      console.error('Failed to load counts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCounts();
+  }, [refreshTrigger]); // Re-run when refreshTrigger changes
 
   const translations = {
     en: {
@@ -76,13 +137,13 @@ const ProfileSidebar = ({ activeSection, onSectionChange }: ProfileSidebarProps)
       id: "orders",
       label: t.orders,
       icon: ShoppingBag,
-      badge: "5"
+      badge: isLoading ? "..." : ordersCount.toString()
     },
     {
       id: "wishlist",
       label: t.wishlist,
       icon: Heart,
-      badge: "3"
+      badge: isLoading ? "..." : wishlistCount.toString()
     },
     {
       id: "addresses",
@@ -131,11 +192,11 @@ const ProfileSidebar = ({ activeSection, onSectionChange }: ProfileSidebarProps)
           <div className="flex items-center space-x-4 text-xs">
             <span className="flex items-center">
               <Package className="h-3 w-3 mr-1" />
-              5 {t.ordersCount}
+              {isLoading ? "..." : ordersCount} {t.ordersCount}
             </span>
             <span className="flex items-center">
               <Heart className="h-3 w-3 mr-1" />
-              3 {t.wishlistCount}
+              {isLoading ? "..." : wishlistCount} {t.wishlistCount}
             </span>
           </div>
         </div>
@@ -157,7 +218,7 @@ const ProfileSidebar = ({ activeSection, onSectionChange }: ProfileSidebarProps)
                 >
                   <Icon className="h-4 w-4 mr-3" />
                   <span className="flex-1 text-left">{item.label}</span>
-                  {item.badge && (
+                  {item.badge && item.badge !== "0" && item.badge !== "..." && (
                     <Badge variant="secondary" className="ml-2">
                       {item.badge}
                     </Badge>
@@ -176,7 +237,7 @@ const ProfileSidebar = ({ activeSection, onSectionChange }: ProfileSidebarProps)
             >
               <Icon className="h-4 w-4 mr-3" />
               <span className="flex-1 text-left">{item.label}</span>
-              {item.badge && (
+              {item.badge && item.badge !== "0" && item.badge !== "..." && (
                 <Badge variant="secondary" className="ml-2">
                   {item.badge}
                 </Badge>

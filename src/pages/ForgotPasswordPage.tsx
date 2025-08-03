@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -96,8 +97,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.forgotPassword(email);
       
       toast({
         title: "Success",
@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: t.resetError,
+        description: error instanceof Error ? error.message : t.resetError,
         variant: "destructive"
       });
     } finally {
@@ -121,8 +121,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.forgotPassword(email);
       
       toast({
         title: "Success",
@@ -131,7 +130,7 @@ export default function ForgotPasswordPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: t.resetError,
+        description: error instanceof Error ? error.message : t.resetError,
         variant: "destructive"
       });
     } finally {

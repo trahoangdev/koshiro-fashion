@@ -16,7 +16,7 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist }: ProductCardProps) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -46,37 +46,16 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
 
   const discountPercentage = getDiscountPercentage();
 
-  const translations = {
-    en: { 
-      outOfStock: "Out of Stock", 
-      addToCart: "Add to Cart",
-      addToWishlist: "Add to Wishlist",
-      viewDetails: "View Details",
-      off: "OFF",
-      addedToWishlist: "Added to wishlist",
-      removedFromWishlist: "Removed from wishlist"
-    },
-    vi: { 
-      outOfStock: "Hết Hàng", 
-      addToCart: "Thêm Vào Giỏ",
-      addToWishlist: "Thêm Yêu Thích",
-      viewDetails: "Xem Chi Tiết",
-      off: "GIẢM",
-      addedToWishlist: "Đã thêm vào danh sách yêu thích",
-      removedFromWishlist: "Đã xóa khỏi danh sách yêu thích"
-    },
-    ja: { 
-      outOfStock: "在庫切れ", 
-      addToCart: "カートに追加",
-      addToWishlist: "お気に入りに追加",
-      viewDetails: "詳細を見る",
-      off: "OFF",
-      addedToWishlist: "お気に入りに追加されました",
-      removedFromWishlist: "お気に入りから削除されました"
-    }
+  const handleAddToWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAddToWishlist?.(product);
+    
+    // Show toast notification using centralized translation
+    toast({
+      title: t('success'),
+      description: t('addedToWishlist'),
+    });
   };
-
-  const t = translations[language as keyof typeof translations] || translations.en;
 
   const handleCardClick = () => {
     navigate(`/product/${product._id}`);
@@ -85,17 +64,6 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     onAddToCart?.(product);
-  };
-
-  const handleAddToWishlist = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onAddToWishlist?.(product);
-    
-    // Show toast notification
-    toast({
-      title: "Success",
-      description: t.addedToWishlist,
-    });
   };
 
   if (viewMode === 'list') {
@@ -110,12 +78,12 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
             />
             {product.stock <= 0 && (
               <Badge variant="secondary" className="absolute top-3 left-3">
-                {t.outOfStock}
+                {t('outOfStock')}
               </Badge>
             )}
             {discountPercentage > 0 && (
               <Badge variant="destructive" className="absolute top-3 left-3">
-                -{discountPercentage}% {t.off}
+                -{discountPercentage}% {t('off')}
               </Badge>
             )}
             {product.isFeatured && !discountPercentage && (
@@ -159,11 +127,11 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
               <div className="flex items-center justify-between pt-4">
                 <div className="flex items-center space-x-2">
                   <span className="text-2xl font-bold">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(product.price, language)}
                   </span>
                   {product.originalPrice && product.originalPrice > product.price && (
                     <span className="text-lg text-muted-foreground line-through">
-                      {formatCurrency(product.originalPrice)}
+                      {formatCurrency(product.originalPrice, language)}
                     </span>
                   )}
                 </div>
@@ -184,7 +152,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
                     onClick={handleAddToCart}
                   >
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    {t.addToCart}
+                    {t('addToCart')}
                   </Button>
                 </div>
               </div>
@@ -205,12 +173,12 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
         />
         {product.stock <= 0 && (
           <Badge variant="secondary" className="absolute top-3 left-3">
-            {t.outOfStock}
+            {t('outOfStock')}
           </Badge>
         )}
         {discountPercentage > 0 && (
           <Badge variant="destructive" className="absolute top-3 left-3">
-            -{discountPercentage}% {t.off}
+            -{discountPercentage}% {t('off')}
           </Badge>
         )}
         {product.isFeatured && !discountPercentage && (
@@ -241,11 +209,11 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-2xl font-bold">
-                {formatCurrency(product.price)}
+                {formatCurrency(product.price, language)}
               </span>
               {product.originalPrice && product.originalPrice > product.price && (
                 <span className="text-lg text-muted-foreground line-through">
-                  {formatCurrency(product.originalPrice)}
+                  {formatCurrency(product.originalPrice, language)}
                 </span>
               )}
             </div>
@@ -257,7 +225,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
               onClick={handleAddToCart}
             >
               <ShoppingBag className="mr-2 h-4 w-4" />
-              {t.addToCart}
+              {t('addToCart')}
             </Button>
           </div>
         </div>

@@ -27,107 +27,36 @@ interface RecentOrder {
   status: string;
 }
 
-// Mock data
-const mockStats = {
-  totalOrders: 145,
-  totalProducts: 23,
-  totalUsers: 1247,
-  totalRevenue: 85420000, // VND
-  ordersTrend: +12.5,
-  productsTrend: +3.2,
-  usersTrend: +8.1,
-  revenueTrend: +15.3,
-};
+interface RevenueData {
+  month: string;
+  revenue: number;
+  orders: number;
+}
 
-const mockRecentOrders = [
-  { id: "ORD001", customer: "Nguyễn Văn A", total: 1250000, status: "processing" },
-  { id: "ORD002", customer: "Trần Thị B", total: 890000, status: "completed" },
-  { id: "ORD003", customer: "Lê Văn C", total: 2100000, status: "pending" },
-  { id: "ORD004", customer: "Phạm Thị D", total: 750000, status: "completed" },
-  { id: "ORD005", customer: "Hoàng Văn E", total: 1800000, status: "processing" },
-];
+interface ProductStats {
+  category: string;
+  count: number;
+  revenue: number;
+}
 
 export default function AdminDashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { language } = useLanguage();
-  const [stats, setStats] = useState(mockStats);
+  const { language, t } = useLanguage();
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalProducts: 0,
+    totalUsers: 0,
+    totalRevenue: 0,
+    ordersTrend: 0,
+    productsTrend: 0,
+    usersTrend: 0,
+    revenueTrend: 0,
+  });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
+  const [productStats, setProductStats] = useState<ProductStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const translations = {
-    en: {
-      title: "KOSHIRO Admin",
-      subtitle: "Administration Dashboard",
-      logout: "Logout",
-      totalOrders: "Total Orders",
-      products: "Products",
-      users: "Users",
-      revenue: "Revenue",
-      fromLastMonth: "from last month",
-      revenueChart: "Revenue Chart",
-      productStats: "Product Statistics",
-      recentOrders: "Recent Orders",
-      chartPlaceholder: "[Chart will be displayed here]",
-      pending: "Pending",
-      processing: "Processing",
-      completed: "Completed",
-      manageProducts: "Manage Products",
-      manageCategories: "Manage Categories",
-      manageOrders: "Manage Orders",
-      manageUsers: "Manage Users",
-      logoutSuccess: "Logout successful",
-      seeYouSoon: "See you soon!"
-    },
-    vi: {
-      title: "KOSHIRO Admin",
-      subtitle: "Bảng điều khiển quản trị",
-      logout: "Đăng xuất",
-      totalOrders: "Tổng đơn hàng",
-      products: "Sản phẩm",
-      users: "Người dùng",
-      revenue: "Doanh thu",
-      fromLastMonth: "từ tháng trước",
-      revenueChart: "Biểu đồ doanh thu",
-      productStats: "Thống kê sản phẩm",
-      recentOrders: "Đơn hàng gần đây",
-      chartPlaceholder: "[Biểu đồ sẽ được hiển thị ở đây]",
-      pending: "Chờ xử lý",
-      processing: "Đang xử lý",
-      completed: "Hoàn thành",
-      manageProducts: "Quản lý sản phẩm",
-      manageCategories: "Quản lý danh mục",
-      manageOrders: "Quản lý đơn hàng",
-      manageUsers: "Quản lý người dùng",
-      logoutSuccess: "Đăng xuất thành công",
-      seeYouSoon: "Hẹn gặp lại!"
-    },
-    ja: {
-      title: "KOSHIRO Admin",
-      subtitle: "管理ダッシュボード",
-      logout: "ログアウト",
-      totalOrders: "総注文数",
-      products: "商品",
-      users: "ユーザー",
-      revenue: "売上",
-      fromLastMonth: "先月比",
-      revenueChart: "売上チャート",
-      productStats: "商品統計",
-      recentOrders: "最近の注文",
-      chartPlaceholder: "[チャートがここに表示されます]",
-      pending: "保留中",
-      processing: "処理中",
-      completed: "完了",
-      manageProducts: "商品管理",
-      manageCategories: "カテゴリ管理",
-      manageOrders: "注文管理",
-      manageUsers: "ユーザー管理",
-      logoutSuccess: "ログアウト成功",
-      seeYouSoon: "またお会いしましょう！"
-    }
-  };
-
-  const t = translations[language as keyof typeof translations] || translations.vi;
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
@@ -170,11 +99,19 @@ export default function AdminDashboard() {
         
         setRecentOrders(transformedOrders);
         
+        // Load revenue data for chart
+        const revenueResponse = await api.getRevenueData();
+        setRevenueData(revenueResponse);
+        
+        // Load product statistics
+        const productStatsResponse = await api.getProductStats();
+        setProductStats(productStatsResponse);
+        
       } catch (error) {
         console.error('Error loading dashboard data:', error);
         toast({
-          title: "Lỗi tải dữ liệu",
-          description: "Không thể tải dữ liệu dashboard",
+          title: t('errorLoading'),
+          description: t('errorLoading'),
           variant: "destructive",
         });
       } finally {
@@ -183,13 +120,13 @@ export default function AdminDashboard() {
     };
 
     loadDashboardData();
-  }, [toast]);
+  }, [toast, t]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { label: t.pending, class: "bg-yellow-100 text-yellow-800" },
-      processing: { label: t.processing, class: "bg-blue-100 text-blue-800" },
-      completed: { label: t.completed, class: "bg-green-100 text-green-800" },
+      pending: { label: t('pending'), class: "bg-yellow-100 text-yellow-800" },
+      processing: { label: t('processing'), class: "bg-blue-100 text-blue-800" },
+      completed: { label: t('completed'), class: "bg-green-100 text-green-800" },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
@@ -201,168 +138,266 @@ export default function AdminDashboard() {
     );
   };
 
+  // Simple Revenue Chart Component
+  const RevenueChart = ({ data }: { data: RevenueData[] }) => {
+    if (data.length === 0) {
+      return (
+        <div className="h-48 sm:h-64 flex items-center justify-center text-muted-foreground text-sm sm:text-base">
+          {t('noData')}
+        </div>
+      );
+    }
+
+    const maxRevenue = Math.max(...data.map(d => d.revenue));
+    const maxHeight = 120; // Reduced height for mobile
+
+    return (
+      <div className="h-48 sm:h-64 flex items-end justify-between space-x-1 p-2 sm:p-4">
+        {data.map((item, index) => {
+          const height = maxRevenue > 0 ? (item.revenue / maxRevenue) * maxHeight : 0;
+          return (
+            <div key={index} className="flex flex-col items-center flex-1 min-w-0">
+              <div className="text-xs text-muted-foreground mb-1 sm:mb-2 text-center">
+                {formatCurrencyForDisplay(item.revenue)}
+              </div>
+              <div 
+                className="w-full bg-primary rounded-t min-h-[4px]"
+                style={{ height: `${Math.max(height, 4)}px` }}
+              />
+              <div className="text-xs text-muted-foreground mt-1 sm:mt-2 text-center truncate w-full">
+                {item.month}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Simple Product Stats Chart Component
+  const ProductStatsChart = ({ data }: { data: ProductStats[] }) => {
+    if (data.length === 0) {
+      return (
+        <div className="h-48 sm:h-64 flex items-center justify-center text-muted-foreground text-sm sm:text-base">
+          {t('noData')}
+        </div>
+      );
+    }
+
+    const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
+
+    return (
+      <div className="h-48 sm:h-64 space-y-2 sm:space-y-3 p-2 sm:p-4 overflow-y-auto">
+        {data.map((item, index) => {
+          const percentage = totalRevenue > 0 ? (item.revenue / totalRevenue) * 100 : 0;
+          return (
+            <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <div 
+                  className="w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: `hsl(${index * 60}, 70%, 50%)` }}
+                />
+                <span className="text-xs sm:text-sm font-medium truncate">{item.category}</span>
+              </div>
+              <div className="text-right flex-shrink-0 ml-2">
+                <div className="text-xs sm:text-sm font-medium">
+                  {formatCurrencyForDisplay(item.revenue)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {item.count} {t('products')} ({percentage.toFixed(1)}%)
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-6 max-w-full">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">{t.title}</h1>
-          <p className="text-muted-foreground">{t.subtitle}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('dashboard')}</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">{t('dashboard')}</p>
         </div>
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t.totalOrders}</CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalOrders}</div>
-                <div className="flex items-center text-xs text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +{stats.ordersTrend}% {t.fromLastMonth}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t.products}</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalProducts}</div>
-                <div className="flex items-center text-xs text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +{stats.productsTrend}% {t.fromLastMonth}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t.users}</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalUsers}</div>
-                <div className="flex items-center text-xs text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +{stats.usersTrend}% {t.fromLastMonth}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t.revenue}</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyForDisplay(stats.totalRevenue)}</div>
-                <div className="flex items-center text-xs text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +{stats.revenueTrend}% {t.fromLastMonth}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BarChart3 className="h-5 w-5 mr-2" />
-                  {t.revenueChart}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  {t.chartPlaceholder}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <PieChart className="h-5 w-5 mr-2" />
-                  {t.productStats}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  {t.chartPlaceholder}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Orders */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.recentOrders}</CardTitle>
+        
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+              <CardTitle className="text-xs sm:text-sm font-medium">{t('orders')}</CardTitle>
+              <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <p className="font-medium">{order.id}</p>
-                        <p className="text-sm text-muted-foreground">{order.customer}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <span className="font-medium">{formatCurrencyForDisplay(order.total)}</span>
-                      {getStatusBadge(order.status)}
-                    </div>
-                  </div>
-                ))}
+            <CardContent className="p-0 pt-2">
+              <div className="text-lg sm:text-2xl font-bold">{stats.totalOrders}</div>
+              <div className="flex items-center text-xs text-green-600">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">+{stats.ordersTrend}% {t('fromLastMonth')}</span>
+                <span className="sm:hidden">+{stats.ordersTrend}%</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col"
-              onClick={() => navigate("/admin/products")}
-            >
-              <Package className="h-6 w-6 mb-2" />
-              {t.manageProducts}
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col"
-              onClick={() => navigate("/admin/categories")}
-            >
-              <Tag className="h-6 w-6 mb-2" />
-              {t.manageCategories}
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col"
-              onClick={() => navigate("/admin/orders")}
-            >
-              <ShoppingCart className="h-6 w-6 mb-2" />
-              {t.manageOrders}
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col"
-              onClick={() => navigate("/admin/users")}
-            >
-              <Users className="h-6 w-6 mb-2" />
-              {t.manageUsers}
-            </Button>
-          </div>
+          <Card className="p-3 sm:p-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+              <CardTitle className="text-xs sm:text-sm font-medium">{t('products')}</CardTitle>
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="p-0 pt-2">
+              <div className="text-lg sm:text-2xl font-bold">{stats.totalProducts}</div>
+              <div className="flex items-center text-xs text-green-600">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">+{stats.productsTrend}% {t('fromLastMonth')}</span>
+                <span className="sm:hidden">+{stats.productsTrend}%</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="p-3 sm:p-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+              <CardTitle className="text-xs sm:text-sm font-medium">{t('users')}</CardTitle>
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="p-0 pt-2">
+              <div className="text-lg sm:text-2xl font-bold">{stats.totalUsers}</div>
+              <div className="flex items-center text-xs text-green-600">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">+{stats.usersTrend}% {t('fromLastMonth')}</span>
+                <span className="sm:hidden">+{stats.usersTrend}%</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="p-3 sm:p-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+              <CardTitle className="text-xs sm:text-sm font-medium">{t('revenue')}</CardTitle>
+              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="p-0 pt-2">
+              <div className="text-lg sm:text-2xl font-bold">{formatCurrencyForDisplay(stats.totalRevenue)}</div>
+              <div className="flex items-center text-xs text-green-600">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">+{stats.revenueTrend}% {t('fromLastMonth')}</span>
+                <span className="sm:hidden">+{stats.revenueTrend}%</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </AdminLayout>
-    );
-  }
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-sm sm:text-base">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                {t('revenueChart')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-6">
+              <RevenueChart data={revenueData} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-sm sm:text-base">
+                <PieChart className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                {t('productStats')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-6">
+              <ProductStatsChart data={productStats} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Orders */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm sm:text-base">{t('recentOrders')}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-6">
+            <div className="space-y-3 sm:space-y-4">
+              {recentOrders.length === 0 ? (
+                <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm sm:text-base">
+                  {t('noOrders')}
+                </div>
+              ) : (
+                recentOrders.map((order) => (
+                  <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg space-y-3 sm:space-y-0">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                        <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-sm sm:text-base truncate">{order.id}</h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{order.customer}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 flex-shrink-0">
+                      <div className="text-right">
+                        <span className="font-medium text-sm sm:text-base">{formatCurrencyForDisplay(order.total)}</span>
+                        <div className="mt-1 sm:mt-0">
+                          {getStatusBadge(order.status)}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs sm:text-sm"
+                        onClick={() => navigate(`/admin/orders/${order.id}`)}
+                      >
+                        {t('viewDetails')}
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Button 
+            variant="outline" 
+            className="h-16 sm:h-20 flex flex-col p-2"
+            onClick={() => navigate("/admin/products")}
+          >
+            <Package className="h-5 w-5 sm:h-6 sm:w-6 mb-1 sm:mb-2" />
+            <span className="text-xs sm:text-sm">{t('manageProducts')}</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="h-16 sm:h-20 flex flex-col p-2"
+            onClick={() => navigate("/admin/categories")}
+          >
+            <Tag className="h-5 w-5 sm:h-6 sm:w-6 mb-1 sm:mb-2" />
+            <span className="text-xs sm:text-sm">{t('manageCategories')}</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="h-16 sm:h-20 flex flex-col p-2"
+            onClick={() => navigate("/admin/orders")}
+          >
+            <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 mb-1 sm:mb-2" />
+            <span className="text-xs sm:text-sm">{t('manageOrders')}</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="h-16 sm:h-20 flex flex-col p-2"
+            onClick={() => navigate("/admin/users")}
+          >
+            <Users className="h-5 w-5 sm:h-6 sm:w-6 mb-1 sm:mb-2" />
+            <span className="text-xs sm:text-sm">{t('manageUsers')}</span>
+          </Button>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}

@@ -15,7 +15,9 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  updateOrderStatus
+  updateOrderStatus,
+  getRevenueData,
+  getProductStats
 } from '../controllers/adminController';
 
 const router = express.Router();
@@ -26,6 +28,8 @@ router.use(requireAdmin);
 
 // Dashboard stats
 router.get('/stats', getAdminStats);
+router.get('/revenue-data', getRevenueData);
+router.get('/product-stats', getProductStats);
 
 // Orders management
 router.get('/orders', getAdminOrders);

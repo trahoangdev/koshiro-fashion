@@ -134,27 +134,27 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
         fixed top-0 left-0 h-full bg-background border-r z-50 transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-auto
-        w-64
+        w-64 lg:w-64
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">K</span>
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-foreground font-bold text-xs sm:text-sm">K</span>
               </div>
-              <div>
-                <h1 className="font-bold text-lg">KOSHIRO</h1>
-                <p className="text-xs text-muted-foreground">Admin Panel</p>
+              <div className="min-w-0">
+                <h1 className="font-bold text-base sm:text-lg truncate">KOSHIRO</h1>
+                <p className="text-xs text-muted-foreground truncate">Admin Panel</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={onToggle} className="lg:hidden">
+            <Button variant="ghost" size="sm" onClick={onToggle} className="lg:hidden flex-shrink-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
+          <nav className="flex-1 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -163,7 +163,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                 <Button
                   key={item.id}
                   variant={active ? "default" : "ghost"}
-                  className={`w-full justify-start gap-3 h-11 ${
+                  className={`w-full justify-start gap-2 sm:gap-3 h-10 sm:h-11 text-sm sm:text-base ${
                     active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                   }`}
                   onClick={() => {
@@ -173,22 +173,24 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                     }
                   }}
                 >
-                  <Icon className="h-4 w-4" />
-                  {getLabel(item)}
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{getLabel(item)}</span>
                 </Button>
               );
             })}
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t space-y-3">
+          <div className="p-3 sm:p-4 border-t space-y-2 sm:space-y-3 flex-shrink-0">
             {/* Language Switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full justify-start gap-3">
-                  <Globe className="h-4 w-4" />
-                  {language === "vi" ? "Tiếng Việt" : 
-                   language === "en" ? "English" : "日本語"}
+                <Button variant="outline" className="w-full justify-start gap-2 sm:gap-3 h-10 sm:h-11 text-sm sm:text-base">
+                  <Globe className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">
+                    {language === "vi" ? "Tiếng Việt" : 
+                     language === "en" ? "English" : "日本語"}
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
@@ -207,12 +209,14 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
             {/* Logout */}
             <Button 
               variant="outline" 
-              className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="w-full justify-start gap-2 sm:gap-3 h-10 sm:h-11 text-sm sm:text-base text-red-600 hover:text-red-700 hover:bg-red-50"
               onClick={handleLogout}
             >
-              <LogOut className="h-4 w-4" />
-              {language === "vi" ? "Đăng xuất" : 
-               language === "en" ? "Logout" : "ログアウト"}
+              <LogOut className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">
+                {language === "vi" ? "Đăng xuất" : 
+                 language === "en" ? "Logout" : "ログアウト"}
+              </span>
             </Button>
           </div>
         </div>
