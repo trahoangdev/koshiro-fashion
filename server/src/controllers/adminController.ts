@@ -325,14 +325,14 @@ export const getProductStats = async (req: Request, res: Response) => {
       // Get orders with products from this category
       const orders = await Order.find({ 
         status: 'completed',
-        'items.productId': { $in: products.map(p => (p._id as any).toString()) }
+        'items.productId': { $in: products.map(p => p._id.toString()) }
       });
       
       // Calculate revenue for this category
       let categoryRevenue = 0;
       for (const order of orders) {
         for (const item of order.items) {
-          const product = products.find(p => (p._id as any).toString() === item.productId.toString());
+          const product = products.find(p => p._id.toString() === item.productId.toString());
           if (product) {
             categoryRevenue += item.price * item.quantity;
           }

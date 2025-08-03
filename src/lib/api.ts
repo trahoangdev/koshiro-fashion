@@ -1,7 +1,7 @@
 const API_BASE_URL = 'http://localhost:3000/api';
 
 // Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   message?: string;
   error?: string;
@@ -31,14 +31,71 @@ export interface RegisterRequest {
   address?: string;
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  phone?: string;
+  address?: string;
+}
+
 export interface AuthResponse {
   token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-  };
+  user: AuthUser;
+}
+
+export interface ProductFormData {
+  name: string;
+  nameEn?: string;
+  nameJa?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionJa?: string;
+  price: number;
+  originalPrice?: number;
+  categoryId: string;
+  images: string[];
+  sizes: string[];
+  colors: string[];
+  stock: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  onSale: boolean;
+  tags: string[];
+}
+
+export interface CategoryFormData {
+  name: string;
+  nameEn?: string;
+  nameJa?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionJa?: string;
+  slug: string;
+  image?: string;
+  isActive: boolean;
+  parentId?: string;
+}
+
+export interface UserFormData {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  role: 'user' | 'admin';
+  isActive: boolean;
+}
+
+export interface CartItem {
+  productId: string;
+  name: string;
+  nameVi: string;
+  quantity: number;
+  price: number;
+  size?: string;
+  color?: string;
+  images: string[];
 }
 
 // Product types
@@ -222,7 +279,7 @@ class ApiClient {
   // Auth methods
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await this.request<{ message: string; token: string; user: any }>('/auth/login', {
+      const response = await this.request<{ message: string; token: string; user: AuthUser }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
@@ -244,7 +301,7 @@ class ApiClient {
 
   async adminLogin(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await this.request<{ message: string; token: string; user: any }>('/auth/admin/login', {
+      const response = await this.request<{ message: string; token: string; user: AuthUser }>('/auth/admin/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
@@ -266,7 +323,7 @@ class ApiClient {
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     try {
-      const response = await this.request<{ message: string; token: string; user: any }>('/auth/register', {
+      const response = await this.request<{ message: string; token: string; user: AuthUser }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(userData),
       });
@@ -286,9 +343,9 @@ class ApiClient {
     }
   }
 
-  async getProfile(): Promise<{ user: any }> {
+  async getProfile(): Promise<{ user: AuthUser }> {
     try {
-      return await this.request<{ user: any }>('/auth/profile');
+      return await this.request<{ user: AuthUser }>('/auth/profile');
     } catch (error) {
       console.error('Get profile API error:', error);
       throw error;
@@ -299,9 +356,9 @@ class ApiClient {
     name?: string;
     phone?: string;
     address?: string;
-  }): Promise<{ message: string; user: any }> {
+  }): Promise<{ message: string; user: AuthUser }> {
     try {
-      return await this.request<{ message: string; user: any }>('/auth/profile', {
+      return await this.request<{ message: string; user: AuthUser }>('/auth/profile', {
         method: 'PUT',
         body: JSON.stringify(userData),
       });
@@ -659,14 +716,14 @@ class ApiClient {
     return this.request<PaginationResponse<Product>>(endpoint);
   }
 
-  async createProduct(productData: any): Promise<{ message: string; product: Product }> {
+  async createProduct(productData: ProductFormData): Promise<{ message: string; product: Product }> {
     return this.request<{ message: string; product: Product }>('/admin/products', {
       method: 'POST',
       body: JSON.stringify(productData),
     });
   }
 
-  async updateProduct(id: string, productData: any): Promise<{ message: string; product: Product }> {
+  async updateProduct(id: string, productData: ProductFormData): Promise<{ message: string; product: Product }> {
     return this.request<{ message: string; product: Product }>(`/admin/products/${id}`, {
       method: 'PUT',
       body: JSON.stringify(productData),
@@ -698,14 +755,14 @@ class ApiClient {
     return this.request<{ categories: Category[] }>(endpoint);
   }
 
-  async createCategory(categoryData: any): Promise<{ message: string; category: Category }> {
+  async createCategory(categoryData: CategoryFormData): Promise<{ message: string; category: Category }> {
     return this.request<{ message: string; category: Category }>('/admin/categories', {
       method: 'POST',
       body: JSON.stringify(categoryData),
     });
   }
 
-  async updateCategory(id: string, categoryData: any): Promise<{ message: string; category: Category }> {
+  async updateCategory(id: string, categoryData: CategoryFormData): Promise<{ message: string; category: Category }> {
     return this.request<{ message: string; category: Category }>(`/admin/categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(categoryData),
@@ -740,14 +797,14 @@ class ApiClient {
     return this.request<PaginationResponse<User>>(endpoint);
   }
 
-  async createUser(userData: any): Promise<{ message: string; user: User }> {
+  async createUser(userData: UserFormData): Promise<{ message: string; user: User }> {
     return this.request<{ message: string; user: User }>('/admin/users', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
-  async updateUser(id: string, userData: any): Promise<{ message: string; user: User }> {
+  async updateUser(id: string, userData: UserFormData): Promise<{ message: string; user: User }> {
     return this.request<{ message: string; user: User }>(`/admin/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
@@ -785,8 +842,8 @@ class ApiClient {
   }
 
   // Cart methods
-  async getCart(): Promise<{ items: any[]; total: number }> {
-    return this.request<{ items: any[]; total: number }>('/cart');
+  async getCart(): Promise<{ items: CartItem[]; total: number }> {
+    return this.request<{ items: CartItem[]; total: number }>('/cart');
   }
 
   async addToCart(productId: string, quantity: number = 1): Promise<{ message: string }> {
