@@ -30,6 +30,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SizeGuidePage from "./pages/SizeGuidePage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminProducts from "./pages/AdminProducts";
 import AdminCategories from "./pages/AdminCategories";
 import AdminOrders from "./pages/AdminOrders";
@@ -74,6 +75,11 @@ const App = () => (
               <Route path="/admin" element={
                 <ProtectedAdminRoute>
                   <AdminDashboard />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <ProtectedAdminRoute>
+                  <AdminAnalytics />
                 </ProtectedAdminRoute>
               } />
               <Route path="/admin/products" element={
