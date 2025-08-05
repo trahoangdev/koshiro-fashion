@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { api, Product } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CartItem {
   id: string;
@@ -24,10 +25,17 @@ const WishlistPage = () => {
   const [refreshWishlistTrigger, setRefreshWishlistTrigger] = useState(0);
   const { language } = useLanguage();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
-  // Load wishlist items from API
+  // Load wishlist from API
   useEffect(() => {
     const loadWishlist = async () => {
+      // Only load wishlist if user is authenticated
+      if (!isAuthenticated) {
+        setWishlistItems([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
         // Load real wishlist data from API
@@ -49,8 +57,12 @@ const WishlistPage = () => {
       } catch (error) {
         console.error('Error loading wishlist:', error);
         toast({
-          title: "Lỗi tải dữ liệu",
-          description: "Không thể tải danh sách yêu thích",
+          title: language === 'vi' ? "Lỗi tải dữ liệu" : 
+                 language === 'ja' ? "データ読み込みエラー" : 
+                 "Data Loading Error",
+          description: language === 'vi' ? "Không thể tải danh sách yêu thích" :
+                       language === 'ja' ? "お気に入りリストを読み込めませんでした" :
+                       "Could not load wishlist",
           variant: "destructive",
         });
         setWishlistItems([]); // Set empty array on error
@@ -60,17 +72,29 @@ const WishlistPage = () => {
     };
 
     loadWishlist();
-  }, [toast]);
+  }, [toast, language, isAuthenticated]);
 
   // Load cart items from API
   useEffect(() => {
     const loadCart = async () => {
+      // Only load cart if user is authenticated
+      if (!isAuthenticated) {
+        setCartItems([]);
+        return;
+      }
+
       try {
         const response = await api.getCart();
         if (response && response.items) {
-          const cartItemsData = response.items.map((item: { productId: Product; quantity: number }) => ({
-            id: item.productId._id,
-            product: item.productId,
+          const cartItemsData = response.items.map((item: { 
+            productId: string; 
+            quantity: number; 
+            size?: string; 
+            color?: string; 
+            product: Product; 
+          }) => ({
+            id: item.productId,
+            product: item.product,
             quantity: item.quantity
           }));
           setCartItems(cartItemsData);
@@ -82,9 +106,30 @@ const WishlistPage = () => {
     };
 
     loadCart();
-  }, []);
+  }, [isAuthenticated]);
+
+  // Helper function to get product name in current language
+  const getProductName = (product: Product) => {
+    if (language === 'vi') return product.name;
+    if (language === 'ja') return product.nameJa || product.name;
+    return product.nameEn || product.name;
+  };
 
   const addToCart = async (product: Product) => {
+    // Only allow adding to cart if user is authenticated
+    if (!isAuthenticated) {
+      toast({
+        title: language === 'vi' ? "Cần đăng nhập" : 
+               language === 'ja' ? "ログインが必要です" : 
+               "Login Required",
+        description: language === 'vi' ? "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng" :
+                     language === 'ja' ? "商品をカートに追加するにはログインしてください" :
+                     "Please login to add products to cart",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Add to cart via API
       await api.addToCart(product._id, 1);
@@ -102,58 +147,105 @@ const WishlistPage = () => {
       });
 
       toast({
-        title: "Đã thêm vào giỏ hàng",
-        description: `${product.name} đã được thêm vào giỏ hàng`,
+        title: language === 'vi' ? "Đã thêm vào giỏ hàng" : 
+               language === 'ja' ? "カートに追加されました" : 
+               "Added to Cart",
+        description: language === 'vi' ? `${getProductName(product)} đã được thêm vào giỏ hàng` :
+                     language === 'ja' ? `${getProductName(product)}がカートに追加されました` :
+                     `${getProductName(product)} has been added to cart`,
       });
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast({
-        title: "Lỗi",
-        description: "Không thể thêm vào giỏ hàng",
+        title: language === 'vi' ? "Lỗi" : 
+               language === 'ja' ? "エラー" : 
+               "Error",
+        description: language === 'vi' ? "Không thể thêm vào giỏ hàng" :
+                     language === 'ja' ? "カートに追加できませんでした" :
+                     "Could not add to cart",
         variant: "destructive",
       });
     }
   };
 
   const removeFromWishlist = async (productId: string) => {
+    // Only allow removing from wishlist if user is authenticated
+    if (!isAuthenticated) {
+      toast({
+        title: language === 'vi' ? "Cần đăng nhập" : 
+               language === 'ja' ? "ログインが必要です" : 
+               "Login Required",
+        description: language === 'vi' ? "Vui lòng đăng nhập để quản lý danh sách yêu thích" :
+                     language === 'ja' ? "お気に入りリストを管理するにはログインしてください" :
+                     "Please login to manage wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // Remove from wishlist via API
       await api.removeFromWishlist(productId);
       
       setWishlistItems(prev => prev.filter(item => item._id !== productId));
-      // Refresh wishlist count in header
-      setRefreshWishlistTrigger(prev => prev + 1);
+      
       toast({
-        title: "Đã xóa khỏi danh sách yêu thích",
-        description: "Sản phẩm đã được xóa khỏi wishlist",
+        title: language === 'vi' ? "Đã xóa khỏi danh sách yêu thích" : 
+               language === 'ja' ? "お気に入りから削除されました" : 
+               "Removed from Wishlist",
+        description: language === 'vi' ? "Sản phẩm đã được xóa khỏi danh sách yêu thích" :
+                     language === 'ja' ? "商品がお気に入りから削除されました" :
+                     "Product has been removed from wishlist",
       });
     } catch (error) {
       console.error('Error removing from wishlist:', error);
       toast({
-        title: "Lỗi",
-        description: "Không thể xóa khỏi danh sách yêu thích",
+        title: language === 'vi' ? "Lỗi" : 
+               language === 'ja' ? "エラー" : 
+               "Error",
+        description: language === 'vi' ? "Không thể xóa khỏi danh sách yêu thích" :
+                     language === 'ja' ? "お気に入りから削除できませんでした" :
+                     "Could not remove from wishlist",
         variant: "destructive",
       });
     }
   };
 
   const clearWishlist = async () => {
-    try {
-      // Clear wishlist via API
-      await api.clearWishlist();
-      
-      setWishlistItems([]);
-      // Refresh wishlist count in header
-      setRefreshWishlistTrigger(prev => prev + 1);
+    // Only allow clearing wishlist if user is authenticated
+    if (!isAuthenticated) {
       toast({
-        title: "Đã xóa tất cả",
-        description: "Danh sách yêu thích đã được làm trống",
+        title: language === 'vi' ? "Cần đăng nhập" : 
+               language === 'ja' ? "ログインが必要です" : 
+               "Login Required",
+        description: language === 'vi' ? "Vui lòng đăng nhập để quản lý danh sách yêu thích" :
+                     language === 'ja' ? "お気に入りリストを管理するにはログインしてください" :
+                     "Please login to manage wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await api.clearWishlist();
+      setWishlistItems([]);
+      
+      toast({
+        title: language === 'vi' ? "Đã xóa tất cả" : 
+               language === 'ja' ? "すべて削除されました" : 
+               "All Cleared",
+        description: language === 'vi' ? "Tất cả sản phẩm đã được xóa khỏi danh sách yêu thích" :
+                     language === 'ja' ? "すべての商品がお気に入りから削除されました" :
+                     "All products have been removed from wishlist",
       });
     } catch (error) {
       console.error('Error clearing wishlist:', error);
       toast({
-        title: "Lỗi",
-        description: "Không thể xóa danh sách yêu thích",
+        title: language === 'vi' ? "Lỗi" : 
+               language === 'ja' ? "エラー" : 
+               "Error",
+        description: language === 'vi' ? "Không thể xóa danh sách yêu thích" :
+                     language === 'ja' ? "お気に入りリストを削除できませんでした" :
+                     "Could not clear wishlist",
         variant: "destructive",
       });
     }
@@ -233,7 +325,34 @@ const WishlistPage = () => {
 
           {/* Wishlist Content */}
           <section>
-            {isLoading ? (
+            {!isAuthenticated ? (
+              <div className="text-center py-12">
+                <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">
+                  {language === 'vi' ? 'Cần đăng nhập' :
+                   language === 'ja' ? 'ログインが必要です' : 'Login Required'}
+                </h2>
+                <p className="text-muted-foreground mb-8">
+                  {language === 'vi' ? 'Vui lòng đăng nhập để xem danh sách yêu thích của bạn' :
+                   language === 'ja' ? 'お気に入りリストを表示するにはログインしてください' :
+                   'Please login to view your wishlist'}
+                </p>
+                <div className="space-x-4">
+                  <Link to="/login">
+                    <Button size="lg">
+                      {language === 'vi' ? 'Đăng Nhập' :
+                       language === 'ja' ? 'ログイン' : 'Login'}
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button variant="outline" size="lg">
+                      {language === 'vi' ? 'Đăng Ký' :
+                       language === 'ja' ? '登録' : 'Register'}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ) : isLoading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-muted-foreground">
@@ -282,7 +401,7 @@ const WishlistPage = () => {
                         <div className="relative mb-4">
                           <img
                             src={product.images[0] || "/src/assets/placeholder.svg"}
-                            alt={product.name}
+                            alt={getProductName(product)}
                             className="w-full h-48 object-cover rounded-lg"
                           />
                           <Button
@@ -296,7 +415,7 @@ const WishlistPage = () => {
                         </div>
                         
                         <h3 className="font-semibold mb-2 line-clamp-2">
-                          {product.name}
+                          {getProductName(product)}
                         </h3>
                         
                         <div className="flex items-center justify-between mb-4">
@@ -335,7 +454,9 @@ const WishlistPage = () => {
               <Link to="/">
                 <Button variant="outline" size="lg">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Continue Shopping
+                  {language === 'vi' ? "Tiếp Tục Mua Sắm" : 
+                   language === 'ja' ? "ショッピングを続ける" : 
+                   "Continue Shopping"}
                 </Button>
               </Link>
             </section>

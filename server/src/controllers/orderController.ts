@@ -1,7 +1,15 @@
 import { Request, Response } from 'express';
-import { Order } from '../models/Order';
+import { Order, generateOrderNumber } from '../models/Order';
 import { Product } from '../models/Product';
 import { User } from '../models/User';
+
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+    role: string;
+  };
+}
 
 // Get all orders (admin)
 export const getOrders = async (req: Request, res: Response) => {
@@ -21,7 +29,7 @@ export const getOrders = async (req: Request, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Build filter object
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
     
     if (status) {
       filter.status = status;
@@ -36,7 +44,7 @@ export const getOrders = async (req: Request, res: Response) => {
     }
 
     // Build sort object
-    const sort: any = {};
+    const sort: Record<string, 1 | -1> = {};
     sort[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
 
     const orders = await Order.find(filter)
@@ -59,14 +67,17 @@ export const getOrders = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get orders error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Get user orders
-export const getUserOrders = async (req: Request, res: Response) => {
+export const getUserOrders = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.userId;
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    const userId = req.user.userId;
     const { page = 1, limit = 10 } = req.query;
 
     const pageNum = parseInt(page as string);
@@ -92,43 +103,64 @@ export const getUserOrders = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get user orders error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Get single order
-export const getOrder = async (req: Request, res: Response) => {
+export const getOrder = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.userId;
-    const userRole = (req as any).user.role;
-    
-    const filter: any = { _id: id };
-    
-    // If not admin, only allow access to own orders
-    if (userRole !== 'admin') {
-      filter.userId = userId;
-    }
-    
-    const order = await Order.findOne(filter)
+    const userId = req.user?.userId;
+
+    const order = await Order.findById(id)
       .populate('userId', 'name email phone')
-      .populate('items.productId', 'name nameEn nameJa images price');
-    
+      .populate('items.productId', 'name nameEn nameJa images');
+
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if user is authorized to view this order
+    const isAdmin = req.user?.role === 'admin';
+    if (!isAdmin && order.userId.toString() !== userId) {
+      return res.status(403).json({ message: 'Access denied' });
     }
 
     res.json({ order });
   } catch (error) {
     console.error('Get order error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Track order by order number (public route)
+export const trackOrder = async (req: Request, res: Response) => {
+  try {
+    const { orderNumber } = req.params;
+
+    const order = await Order.findOne({ orderNumber })
+      .populate('userId', 'name email phone')
+      .populate('items.productId', 'name nameEn nameJa images');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(order);
+  } catch (error) {
+    console.error('Track order error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Create new order
-export const createOrder = async (req: Request, res: Response) => {
+export const createOrder = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.userId;
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    const userId = req.user.userId;
     const {
       items,
       shippingAddress,
@@ -140,6 +172,16 @@ export const createOrder = async (req: Request, res: Response) => {
     // Validate items
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'Order must have at least one item' });
+    }
+
+    // Validate shipping address
+    if (!shippingAddress || !shippingAddress.name || !shippingAddress.phone || !shippingAddress.address || !shippingAddress.city || !shippingAddress.district) {
+      return res.status(400).json({ message: 'Complete shipping address is required' });
+    }
+
+    // Validate payment method
+    if (!paymentMethod) {
+      return res.status(400).json({ message: 'Payment method is required' });
     }
 
     // Calculate total and validate products
@@ -181,7 +223,11 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
 
+    // Generate unique order number
+    const orderNumber = await generateOrderNumber();
+    
     const order = new Order({
+      orderNumber,
       userId,
       items: orderItems,
       totalAmount,
@@ -194,12 +240,17 @@ export const createOrder = async (req: Request, res: Response) => {
     await order.save();
 
     // Update user statistics
-    await User.findByIdAndUpdate(userId, {
-      $inc: { 
-        totalOrders: 1,
-        totalSpent: totalAmount
-      }
-    });
+    try {
+      await User.findByIdAndUpdate(userId, {
+        $inc: { 
+          totalOrders: 1,
+          totalSpent: totalAmount
+        }
+      });
+    } catch (userUpdateError) {
+      console.error('Error updating user statistics:', userUpdateError);
+      // Don't fail the order creation if user update fails
+    }
 
     res.status(201).json({
       message: 'Order created successfully',
@@ -207,7 +258,12 @@ export const createOrder = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Create order error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -217,7 +273,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status, paymentStatus, notes } = req.body;
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (status) updateData.status = status;
     if (paymentStatus) updateData.paymentStatus = paymentStatus;
     if (notes !== undefined) updateData.notes = notes;
@@ -240,18 +296,21 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update order status error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Cancel order
-export const cancelOrder = async (req: Request, res: Response) => {
+export const cancelOrder = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
     const { id } = req.params;
-    const userId = (req as any).user.userId;
-    const userRole = (req as any).user.role;
+    const userId = req.user.userId;
+    const userRole = req.user.role;
 
-    const filter: any = { _id: id };
+    const filter: Record<string, unknown> = { _id: id };
     if (userRole !== 'admin') {
       filter.userId = userId;
     }
@@ -293,7 +352,7 @@ export const cancelOrder = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Cancel order error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -336,6 +395,6 @@ export const getOrderStats = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get order stats error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }; 

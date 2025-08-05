@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { api, Order, Product } from "@/lib/api";
 import { 
   User, 
-  ShoppingBag, 
+  Package, 
   Heart, 
+  MapPin, 
+  CreditCard, 
+  Bell, 
   Settings, 
   LogOut,
-  Package,
-  CreditCard,
-  MapPin,
-  Bell
+  Calendar
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -24,12 +25,21 @@ interface ProfileSidebarProps {
 
 const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: ProfileSidebarProps) => {
   const { language } = useLanguage();
+  const { user, isAuthenticated } = useAuth();
   const [ordersCount, setOrdersCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load real data for counts
   const loadCounts = async () => {
+    // Only load counts if user is authenticated
+    if (!isAuthenticated) {
+      setOrdersCount(0);
+      setWishlistCount(0);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       
@@ -81,7 +91,7 @@ const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: Prof
 
   useEffect(() => {
     loadCounts();
-  }, [refreshTrigger]); // Re-run when refreshTrigger changes
+  }, [refreshTrigger, isAuthenticated]); // Re-run when refreshTrigger or authentication changes
 
   const translations = {
     en: {
@@ -136,7 +146,7 @@ const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: Prof
     {
       id: "orders",
       label: t.orders,
-      icon: ShoppingBag,
+      icon: Package,
       badge: isLoading ? "..." : ordersCount.toString()
     },
     {

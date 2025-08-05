@@ -24,9 +24,10 @@ const seedData = async () => {
     console.log('✅ Cleared existing data');
 
     // Create admin user
+    const hashedPassword = await bcrypt.hash('admin123', 10);
     const adminUser = new User({
       email: 'admin@koshiro.com',
-      password: 'admin123',
+      password: hashedPassword,
       name: 'Admin User',
       role: 'admin',
       status: 'active'
@@ -38,7 +39,7 @@ const seedData = async () => {
     const sampleUsers = [
       {
         email: 'customer1@example.com',
-        password: 'password123',
+        password: await bcrypt.hash('password123', 10),
         name: 'Nguyễn Văn A',
         phone: '0123456789',
         role: 'customer',
@@ -46,7 +47,7 @@ const seedData = async () => {
       },
       {
         email: 'customer2@example.com',
-        password: 'password123',
+        password: await bcrypt.hash('password123', 10),
         name: 'Trần Thị B',
         phone: '0987654321',
         role: 'customer',

@@ -71,7 +71,7 @@ export const getProducts = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get products error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -90,7 +90,7 @@ export const getProduct = async (req: Request, res: Response) => {
     res.json({ product });
   } catch (error) {
     console.error('Get product error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -154,7 +154,7 @@ export const createProduct = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Create product error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -188,7 +188,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update product error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -211,7 +211,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Delete product error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -232,7 +232,7 @@ export const getFeaturedProducts = async (req: Request, res: Response) => {
     res.json({ products });
   } catch (error) {
     console.error('Get featured products error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -256,6 +256,6 @@ export const searchProducts = async (req: Request, res: Response) => {
     res.json({ products });
   } catch (error) {
     console.error('Search products error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }; 

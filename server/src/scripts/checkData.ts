@@ -44,8 +44,8 @@ async function checkData() {
 // Connect to MongoDB and run check
 async function main() {
   try {
-    // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/koshiro-fashion';
+    // Connect to MongoDB using the same connection string as seedData
+    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://trahoangdev:7RMlso6ZQp6OcTtQ@cluster0.zgzpftw.mongodb.net/koshiro-fashion';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB\n');
     

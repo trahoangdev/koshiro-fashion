@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, ShoppingBag, Menu, X, User, Globe, Heart, LogOut, Settings, Package, CreditCard, MapPin, Bell, LogIn, UserPlus } from "lucide-react";
+import { Search, ShoppingBag, Menu, X, User, Globe, Heart, LogOut, Settings, Package, CreditCard, MapPin, Bell, LogIn, UserPlus, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +65,9 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(searchQuery);
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
   };
 
   const handleLogout = () => {
@@ -240,6 +242,13 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
             </Button>
           </Link>
 
+          {/* Compare */}
+          <Link to="/compare">
+            <Button variant="ghost" size="icon" className="hidden md:flex">
+              <GitCompare className="h-4 w-4" />
+            </Button>
+          </Link>
+
           {/* Account */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -367,6 +376,18 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
               <Button variant="ghost" className="justify-start">{t.yukata}</Button>
               <Button variant="ghost" className="justify-start">{t.hakama}</Button>
               <Button variant="ghost" className="justify-start">{t.sale}</Button>
+              <Link to="/wishlist" className="w-full">
+                <Button variant="ghost" className="justify-start w-full">
+                  <Heart className="mr-2 h-4 w-4" />
+                  {t.wishlist}
+                </Button>
+              </Link>
+              <Link to="/compare" className="w-full">
+                <Button variant="ghost" className="justify-start w-full">
+                  <GitCompare className="mr-2 h-4 w-4" />
+                  {language === 'vi' ? 'So Sánh' : language === 'ja' ? '比較' : 'Compare'}
+                </Button>
+              </Link>
               <Link to="/profile" className="w-full">
                 <Button variant="ghost" className="justify-start w-full">{t.account}</Button>
               </Link>

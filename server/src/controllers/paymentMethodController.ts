@@ -10,7 +10,7 @@ export const getPaymentMethods = async (req: Request, res: Response) => {
     res.json(paymentMethods);
   } catch (error) {
     console.error('Get payment methods error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -71,7 +71,7 @@ export const addPaymentMethod = async (req: Request, res: Response) => {
     res.status(201).json(paymentMethod);
   } catch (error) {
     console.error('Add payment method error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -111,7 +111,7 @@ export const updatePaymentMethod = async (req: Request, res: Response) => {
     res.json(paymentMethod);
   } catch (error) {
     console.error('Update payment method error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -139,7 +139,7 @@ export const deletePaymentMethod = async (req: Request, res: Response) => {
     res.json({ message: 'Payment method deleted successfully' });
   } catch (error) {
     console.error('Delete payment method error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -166,6 +166,6 @@ export const setDefaultPaymentMethod = async (req: Request, res: Response) => {
     res.json({ message: 'Default payment method updated successfully' });
   } catch (error) {
     console.error('Set default payment method error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }; 

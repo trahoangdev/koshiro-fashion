@@ -95,8 +95,7 @@ const addressSchema = new Schema({
 const orderSchema = new Schema<IOrder>({
   orderNumber: {
     type: String,
-    required: true,
-    unique: true
+    required: false // Make it optional initially, will be set in pre-save
   },
   userId: {
     type: Schema.Types.ObjectId,
@@ -140,28 +139,46 @@ const orderSchema = new Schema<IOrder>({
 // Indexes for better performance
 orderSchema.index({ userId: 1 });
 orderSchema.index({ status: 1 });
-orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ orderNumber: 1 }, { unique: true });
 orderSchema.index({ createdAt: -1 });
 
-// Auto-generate order number
-orderSchema.pre('save', async function(next) {
-  if (this.isNew && !this.orderNumber) {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
-    // Get count of orders today
-    const todayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const todayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-    
+// Helper function to generate order number
+export const generateOrderNumber = async (): Promise<string> => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  // Get count of orders today
+  const todayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const todayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+  
+  // Use a more robust approach to avoid race conditions
+  let attempt = 0;
+  let orderNumber;
+  let isUnique = false;
+  
+  while (!isUnique && attempt < 10) {
     const count = await mongoose.model('Order').countDocuments({
       createdAt: { $gte: todayStart, $lt: todayEnd }
     });
     
-    this.orderNumber = `ORD${year}${month}${day}${String(count + 1).padStart(3, '0')}`;
+    orderNumber = `ORD${year}${month}${day}${String(count + 1 + attempt).padStart(3, '0')}`;
+    
+    // Check if this order number already exists
+    const existingOrder = await mongoose.model('Order').findOne({ orderNumber });
+    if (!existingOrder) {
+      isUnique = true;
+    } else {
+      attempt++;
+    }
   }
-  next();
-});
+  
+  if (!isUnique) {
+    throw new Error('Unable to generate unique order number after 10 attempts');
+  }
+  
+  return orderNumber!;
+};
 
 export const Order = mongoose.model<IOrder>('Order', orderSchema); 

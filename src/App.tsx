@@ -19,6 +19,10 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import InfoPage from "./pages/InfoPage";
+import SearchPage from "./pages/SearchPage";
+import OrderTrackingPage from "./pages/OrderTrackingPage";
+import ComparePage from "./pages/ComparePage";
+import ReviewsPage from "./pages/ReviewsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -57,6 +61,10 @@ const App = () => (
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/info/:pageType" element={<InfoPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
+              <Route path="/compare" element={<ComparePage />} />
+              <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />

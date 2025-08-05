@@ -31,71 +31,9 @@ export interface RegisterRequest {
   address?: string;
 }
 
-export interface AuthUser {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  phone?: string;
-  address?: string;
-}
-
 export interface AuthResponse {
   token: string;
-  user: AuthUser;
-}
-
-export interface ProductFormData {
-  name: string;
-  nameEn?: string;
-  nameJa?: string;
-  description?: string;
-  descriptionEn?: string;
-  descriptionJa?: string;
-  price: number;
-  originalPrice?: number;
-  categoryId: string;
-  images: string[];
-  sizes: string[];
-  colors: string[];
-  stock: number;
-  isActive: boolean;
-  isFeatured: boolean;
-  onSale: boolean;
-  tags: string[];
-}
-
-export interface CategoryFormData {
-  name: string;
-  nameEn?: string;
-  nameJa?: string;
-  description?: string;
-  descriptionEn?: string;
-  descriptionJa?: string;
-  slug: string;
-  image?: string;
-  isActive: boolean;
-  parentId?: string;
-}
-
-export interface UserFormData {
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  role: 'user' | 'admin';
-  isActive: boolean;
-}
-
-export interface CartItem {
-  productId: string;
-  name: string;
-  nameVi: string;
-  quantity: number;
-  price: number;
-  size?: string;
-  color?: string;
-  images: string[];
+  user: User;
 }
 
 // Product types
@@ -171,8 +109,12 @@ export interface User {
   email: string;
   phone?: string;
   address?: string;
-  role: 'user' | 'admin';
+  role: 'customer' | 'admin';
+  status: 'active' | 'inactive' | 'blocked';
   isActive: boolean;
+  totalOrders: number;
+  totalSpent: number;
+  lastActive?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -186,7 +128,7 @@ export interface Order {
     email: string;
     phone: string;
   };
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
+  status: 'pending' | 'processing' | 'completed' | 'cancelled';
   items: OrderItem[];
   totalAmount: number;
   shippingAddress: {
@@ -213,6 +155,49 @@ export interface PaymentMethod {
   isDefault: boolean;
   brand?: string;
   paypalEmail?: string;
+}
+
+// Review types
+export interface Review {
+  _id: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  productId?: {
+    _id: string;
+    name: string;
+  };
+  rating: number;
+  title: string;
+  comment: string;
+  verified: boolean;
+  helpful: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateReviewRequest {
+  productId?: string;
+  rating: number;
+  title: string;
+  comment: string;
+}
+
+// Settings types
+export interface Settings {
+  _id: string;
+  websiteName: string;
+  websiteDescription: string;
+  contactEmail: string;
+  contactPhone: string;
+  primaryColor: string;
+  enableDarkMode: boolean;
+  maintenanceMode: boolean;
+  debugMode: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // API Client
@@ -279,7 +264,7 @@ class ApiClient {
   // Auth methods
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await this.request<{ message: string; token: string; user: AuthUser }>('/auth/login', {
+      const response = await this.request<{ message: string; token: string; user: User }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
@@ -301,7 +286,7 @@ class ApiClient {
 
   async adminLogin(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await this.request<{ message: string; token: string; user: AuthUser }>('/auth/admin/login', {
+      const response = await this.request<{ message: string; token: string; user: User }>('/auth/admin/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
@@ -323,7 +308,7 @@ class ApiClient {
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     try {
-      const response = await this.request<{ message: string; token: string; user: AuthUser }>('/auth/register', {
+      const response = await this.request<{ message: string; token: string; user: User }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(userData),
       });
@@ -343,9 +328,9 @@ class ApiClient {
     }
   }
 
-  async getProfile(): Promise<{ user: AuthUser }> {
+  async getProfile(): Promise<{ user: User }> {
     try {
-      return await this.request<{ user: AuthUser }>('/auth/profile');
+      return await this.request<{ user: User }>('/auth/profile');
     } catch (error) {
       console.error('Get profile API error:', error);
       throw error;
@@ -356,9 +341,9 @@ class ApiClient {
     name?: string;
     phone?: string;
     address?: string;
-  }): Promise<{ message: string; user: AuthUser }> {
+  }): Promise<{ message: string; user: User }> {
     try {
-      return await this.request<{ message: string; user: AuthUser }>('/auth/profile', {
+      return await this.request<{ message: string; user: User }>('/auth/profile', {
         method: 'PUT',
         body: JSON.stringify(userData),
       });
@@ -395,12 +380,11 @@ class ApiClient {
 
 
   async getOrderById(orderId: string): Promise<Order> {
-    try {
-      return await this.request<Order>(`/orders/${orderId}`);
-    } catch (error) {
-      console.error('Get order by ID API error:', error);
-      throw error;
-    }
+    return this.request<Order>(`/orders/${orderId}`);
+  }
+
+  async trackOrder(orderNumber: string): Promise<Order> {
+    return this.request<Order>(`/orders/track/${orderNumber}`);
   }
 
   // Payment Methods
@@ -716,14 +700,50 @@ class ApiClient {
     return this.request<PaginationResponse<Product>>(endpoint);
   }
 
-  async createProduct(productData: ProductFormData): Promise<{ message: string; product: Product }> {
+  async createProduct(productData: {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    price: number;
+    originalPrice?: number;
+    categoryId: string;
+    images: string[];
+    sizes: string[];
+    colors: string[];
+    stock: number;
+    isActive?: boolean;
+    isFeatured?: boolean;
+    onSale?: boolean;
+    tags?: string[];
+  }): Promise<{ message: string; product: Product }> {
     return this.request<{ message: string; product: Product }>('/admin/products', {
       method: 'POST',
       body: JSON.stringify(productData),
     });
   }
 
-  async updateProduct(id: string, productData: ProductFormData): Promise<{ message: string; product: Product }> {
+  async updateProduct(id: string, productData: {
+    name?: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    price?: number;
+    originalPrice?: number;
+    categoryId?: string;
+    images?: string[];
+    sizes?: string[];
+    colors?: string[];
+    stock?: number;
+    isActive?: boolean;
+    isFeatured?: boolean;
+    onSale?: boolean;
+    tags?: string[];
+  }): Promise<{ message: string; product: Product }> {
     return this.request<{ message: string; product: Product }>(`/admin/products/${id}`, {
       method: 'PUT',
       body: JSON.stringify(productData),
@@ -755,14 +775,36 @@ class ApiClient {
     return this.request<{ categories: Category[] }>(endpoint);
   }
 
-  async createCategory(categoryData: CategoryFormData): Promise<{ message: string; category: Category }> {
+  async createCategory(categoryData: {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    slug: string;
+    image?: string;
+    isActive?: boolean;
+    parentId?: string;
+  }): Promise<{ message: string; category: Category }> {
     return this.request<{ message: string; category: Category }>('/admin/categories', {
       method: 'POST',
       body: JSON.stringify(categoryData),
     });
   }
 
-  async updateCategory(id: string, categoryData: CategoryFormData): Promise<{ message: string; category: Category }> {
+  async updateCategory(id: string, categoryData: {
+    name?: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    slug?: string;
+    image?: string;
+    isActive?: boolean;
+    parentId?: string;
+  }): Promise<{ message: string; category: Category }> {
     return this.request<{ message: string; category: Category }>(`/admin/categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(categoryData),
@@ -797,14 +839,29 @@ class ApiClient {
     return this.request<PaginationResponse<User>>(endpoint);
   }
 
-  async createUser(userData: UserFormData): Promise<{ message: string; user: User }> {
+  async createUser(userData: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+    address?: string;
+    role?: 'customer' | 'admin';
+    status?: 'active' | 'inactive' | 'blocked';
+  }): Promise<{ message: string; user: User }> {
     return this.request<{ message: string; user: User }>('/admin/users', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
-  async updateUser(id: string, userData: UserFormData): Promise<{ message: string; user: User }> {
+  async updateUser(id: string, userData: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    role?: 'customer' | 'admin';
+    status?: 'active' | 'inactive' | 'blocked';
+  }): Promise<{ message: string; user: User }> {
     return this.request<{ message: string; user: User }>(`/admin/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
@@ -842,8 +899,20 @@ class ApiClient {
   }
 
   // Cart methods
-  async getCart(): Promise<{ items: CartItem[]; total: number }> {
-    return this.request<{ items: CartItem[]; total: number }>('/cart');
+  async getCart(): Promise<{ items: Array<{
+    productId: string;
+    quantity: number;
+    size?: string;
+    color?: string;
+    product: Product;
+  }>; total: number }> {
+    return this.request<{ items: Array<{
+      productId: string;
+      quantity: number;
+      size?: string;
+      color?: string;
+      product: Product;
+    }>; total: number }>('/cart');
   }
 
   async addToCart(productId: string, quantity: number = 1): Promise<{ message: string }> {
@@ -884,7 +953,53 @@ class ApiClient {
     count: number;
     revenue: number;
   }>> {
-    return this.request('/admin/product-stats');
+    return this.request<Array<{
+      category: string;
+      count: number;
+      revenue: number;
+    }>>('/admin/product-stats');
+  }
+
+  // Review methods
+  async getReviews(params?: {
+    page?: number;
+    limit?: number;
+    productId?: string;
+  }): Promise<{ reviews: Review[]; total: number }> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.productId) searchParams.append('productId', params.productId);
+    
+    return this.request<{ reviews: Review[]; total: number }>(`/reviews?${searchParams.toString()}`);
+  }
+
+  async createReview(reviewData: CreateReviewRequest): Promise<{ message: string; review: Review }> {
+    return this.request<{ message: string; review: Review }>('/reviews', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(reviewData),
+    });
+  }
+
+  async markReviewHelpful(reviewId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/reviews/${reviewId}/helpful`, {
+      method: 'POST',
+    });
+  }
+
+  // Settings methods
+  async getSettings(): Promise<Settings> {
+    return this.request<Settings>('/settings');
+  }
+
+  async updateSettings(settings: Settings): Promise<Settings> {
+    return this.request<Settings>('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
   }
 }
 

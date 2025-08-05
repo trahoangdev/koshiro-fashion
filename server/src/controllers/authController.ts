@@ -67,7 +67,7 @@ export const register = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -115,7 +115,7 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -163,7 +163,7 @@ export const adminLogin = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Admin login error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -179,7 +179,7 @@ export const getProfile = async (req: Request, res: Response) => {
     res.json({ user });
   } catch (error) {
     console.error('Get profile error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -217,7 +217,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -269,7 +269,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -300,6 +300,6 @@ export const resetPassword = async (req: Request, res: Response) => {
     res.json({ message: 'Password has been reset successfully' });
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }; 

@@ -129,6 +129,12 @@ const Footer = () => {
           <div className="space-y-6">
             <h4 className="text-lg font-semibold">{t.support}</h4>
             <nav className="space-y-3">
+              <Link to="/order-tracking" className="block text-muted-foreground hover:text-primary transition-colors">
+                {language === 'vi' ? 'Theo Dõi Đơn Hàng' : language === 'ja' ? '注文追跡' : 'Order Tracking'}
+              </Link>
+              <Link to="/reviews" className="block text-muted-foreground hover:text-primary transition-colors">
+                {language === 'vi' ? 'Đánh Giá Khách Hàng' : language === 'ja' ? 'お客様のレビュー' : 'Customer Reviews'}
+              </Link>
               <Link to="/info/faq" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.faq}
               </Link>

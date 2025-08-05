@@ -10,6 +10,8 @@ import orderRoutes from './routes/orders';
 import paymentMethodRoutes from './routes/paymentMethods';
 import wishlistRoutes from './routes/wishlist';
 import cartRoutes from './routes/cart';
+import reviewRoutes from './routes/reviews';
+import settingsRoutes from './routes/settings';
 import adminRoutes from './routes/admin';
 
 // Load environment variables
@@ -40,6 +42,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check

@@ -23,7 +23,7 @@ export const getCategories = async (req: Request, res: Response) => {
     res.json({ categories });
   } catch (error) {
     console.error('Get categories error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -41,7 +41,7 @@ export const getCategory = async (req: Request, res: Response) => {
     res.json({ category });
   } catch (error) {
     console.error('Get category error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -59,7 +59,7 @@ export const getCategoryBySlug = async (req: Request, res: Response) => {
     res.json({ category });
   } catch (error) {
     console.error('Get category by slug error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -114,7 +114,7 @@ export const createCategory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Create category error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -163,7 +163,7 @@ export const updateCategory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update category error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -197,7 +197,7 @@ export const deleteCategory = async (req: Request, res: Response) => {
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Delete category error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -214,10 +214,10 @@ export const getCategoryTree = async (req: Request, res: Response) => {
     const categories = await Category.find(filter).sort({ name: 1 });
 
     // Build tree structure
-    const buildTree = (parentId: string | null = null) => {
+    const buildTree = (parentId: string | null = null): any[] => {
       return categories
         .filter(cat => cat.parentId?.toString() === parentId)
-        .map(cat => ({
+        .map((cat: any) => ({
           ...cat.toObject(),
           children: buildTree(cat._id.toString())
         }));
@@ -228,7 +228,7 @@ export const getCategoryTree = async (req: Request, res: Response) => {
     res.json({ categories: categoryTree });
   } catch (error) {
     console.error('Get category tree error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -273,6 +273,6 @@ export const getCategoryWithProducts = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Get category with products error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }; 

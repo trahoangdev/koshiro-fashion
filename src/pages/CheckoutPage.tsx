@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/lib/api";
-import { cartService, CartItem } from "@/lib/cartService";
+import { api, Product } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -31,6 +30,14 @@ import {
   Loader2
 } from "lucide-react";
 import { Link } from "react-router-dom";
+
+interface CartItem {
+  productId: string;
+  product: Product;
+  quantity: number;
+  selectedSize?: string;
+  selectedColor?: string;
+}
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -62,12 +69,44 @@ const CheckoutPage = () => {
   const { language } = useLanguage();
   const { toast } = useToast();
 
-  // Load cart items
+  // Load cart items from API if authenticated
   useEffect(() => {
-    const loadCart = () => {
+    const loadCart = async () => {
+      if (!isAuthenticated) {
+        setCartItems([]);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const cart = cartService.getCart();
-        setCartItems(cart);
+        setLoading(true);
+        const response = await api.getCart();
+        if (response && response.items && Array.isArray(response.items)) {
+          const cartItemsData = response.items
+            .filter((item: { 
+              productId: string; 
+              quantity: number; 
+              size?: string; 
+              color?: string; 
+              product: Product; 
+            }) => item && item.product && item.product._id && item.product.images && Array.isArray(item.product.images))
+            .map((item: { 
+              productId: string; 
+              quantity: number; 
+              size?: string; 
+              color?: string; 
+              product: Product; 
+            }) => ({
+              productId: item.productId,
+              product: item.product,
+              quantity: item.quantity,
+              selectedSize: item.size,
+              selectedColor: item.color
+            }));
+          setCartItems(cartItemsData);
+        } else {
+          setCartItems([]);
+        }
         
         // Pre-fill form with user data if authenticated
         if (isAuthenticated && user) {
@@ -83,8 +122,12 @@ const CheckoutPage = () => {
       } catch (error) {
         console.error('Error loading cart:', error);
         toast({
-          title: "Lỗi tải giỏ hàng",
-          description: "Không thể tải thông tin giỏ hàng",
+          title: language === 'vi' ? "Lỗi tải giỏ hàng" : 
+                 language === 'ja' ? "カート読み込みエラー" : 
+                 "Error Loading Cart",
+          description: language === 'vi' ? "Không thể tải thông tin giỏ hàng" :
+                       language === 'ja' ? "カート情報を読み込めませんでした" :
+                       "Unable to load cart information",
           variant: "destructive",
         });
       } finally {
@@ -93,14 +136,20 @@ const CheckoutPage = () => {
     };
 
     loadCart();
-  }, [isAuthenticated, user, toast]);
+  }, [isAuthenticated, user, toast, language]);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty or user not authenticated
   useEffect(() => {
-    if (!loading && cartItems.length === 0) {
-      navigate('/cart');
+    if (!loading) {
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+      if (cartItems.length === 0) {
+        navigate('/cart');
+      }
     }
-  }, [loading, cartItems.length, navigate]);
+  }, [loading, cartItems.length, navigate, isAuthenticated]);
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const shipping = subtotal > 2000000 ? 0 : 50000; // Free shipping over 2M VND
@@ -243,6 +292,16 @@ const CheckoutPage = () => {
     setIsProcessing(true);
 
     try {
+      // Validate cart items
+      if (!cartItems || cartItems.length === 0) {
+        throw new Error('Cart is empty');
+      }
+
+      // Validate form data
+      if (!formData.firstName || !formData.lastName || !formData.phone || !formData.address || !formData.city || !formData.state) {
+        throw new Error('Please fill in all required fields');
+      }
+
       // Prepare order data
       const orderData = {
         items: cartItems.map(item => ({
@@ -269,11 +328,14 @@ const CheckoutPage = () => {
         notes: formData.notes
       };
 
+      // Debug: Log order data
+      console.log('Creating order with data:', orderData);
+      
       // Create order via API
       const response = await api.createOrder(orderData);
       
       // Clear cart after successful order
-      cartService.clearCart();
+      await api.clearCart();
       
       setIsProcessing(false);
       setIsCompleted(true);

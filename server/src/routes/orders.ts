@@ -6,11 +6,15 @@ import {
   createOrder,
   updateOrderStatus,
   cancelOrder,
-  getOrderStats
+  getOrderStats,
+  trackOrder
 } from '../controllers/orderController';
 import { authenticateToken, requireAdmin, requireCustomer } from '../middleware/auth';
 
 const router = express.Router();
+
+// Public routes
+router.get('/track/:orderNumber', trackOrder);
 
 // Customer routes (protected)
 router.get('/my-orders', authenticateToken, requireCustomer, getUserOrders);

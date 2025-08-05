@@ -92,7 +92,7 @@ export default function AdminDashboard() {
         // Transform Order data to RecentOrder format
         const transformedOrders: RecentOrder[] = ordersResponse.data.map(order => ({
           id: order.orderNumber,
-          customer: order.userId.name,
+          customer: order.userId?.name || 'Unknown Customer',
           total: order.totalAmount,
           status: order.status
         }));

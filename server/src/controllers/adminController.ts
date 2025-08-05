@@ -96,7 +96,7 @@ export const getAdminStats = async (req: Request, res: Response) => {
     res.json(response);
   } catch (error) {
     console.error('Error getting admin stats:', error);
-    res.status(500).json({ message: 'Error getting admin stats' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -136,7 +136,7 @@ export const getAdminOrders = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting admin orders:', error);
-    res.status(500).json({ message: 'Error getting admin orders' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -175,7 +175,7 @@ export const getAdminProducts = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting admin products:', error);
-    res.status(500).json({ message: 'Error getting admin products' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -196,11 +196,11 @@ export const getAdminCategories = async (req: Request, res: Response) => {
       .sort({ createdAt: -1 });
     
     res.json({
-      categories
+      categories: categories
     });
   } catch (error) {
     console.error('Error getting admin categories:', error);
-    res.status(500).json({ message: 'Error getting admin categories' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -237,7 +237,11 @@ export const getAdminUsers = async (req: Request, res: Response) => {
       phone: user.phone,
       address: user.address,
       role: user.role,
+      status: user.status,
       isActive: user.status === 'active',
+      totalOrders: user.totalOrders,
+      totalSpent: user.totalSpent,
+      lastActive: user.lastActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     }));
@@ -256,7 +260,7 @@ export const getAdminUsers = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting admin users:', error);
-    res.status(500).json({ message: 'Error getting admin users' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -302,7 +306,7 @@ export const getRevenueData = async (req: Request, res: Response) => {
     res.json(revenueData);
   } catch (error) {
     console.error('Error getting revenue data:', error);
-    res.status(500).json({ message: 'Error getting revenue data' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -323,16 +327,18 @@ export const getProductStats = async (req: Request, res: Response) => {
       });
       
       // Get orders with products from this category
+      const productIds = products.map(p => p._id);
       const orders = await Order.find({ 
         status: 'completed',
-        'items.productId': { $in: products.map(p => p._id.toString()) }
+        'items.productId': { $in: productIds }
       });
       
       // Calculate revenue for this category
       let categoryRevenue = 0;
       for (const order of orders) {
         for (const item of order.items) {
-          const product = products.find(p => p._id.toString() === item.productId.toString());
+          // Use proper type assertion for mongoose ObjectId comparison
+          const product = products.find(p => String(p._id) === String(item.productId));
           if (product) {
             categoryRevenue += item.price * item.quantity;
           }
@@ -353,7 +359,7 @@ export const getProductStats = async (req: Request, res: Response) => {
     res.json(productStats);
   } catch (error) {
     console.error('Error getting product statistics:', error);
-    res.status(500).json({ message: 'Error getting product statistics' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -376,7 +382,7 @@ export const createProduct = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error creating product:', error);
-    res.status(500).json({ message: 'Error creating product' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -410,7 +416,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error updating product:', error);
-    res.status(500).json({ message: 'Error updating product' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -432,7 +438,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
-    res.status(500).json({ message: 'Error deleting product' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -452,7 +458,7 @@ export const createCategory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error creating category:', error);
-    res.status(500).json({ message: 'Error creating category' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -477,7 +483,7 @@ export const updateCategory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error updating category:', error);
-    res.status(500).json({ message: 'Error updating category' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -502,7 +508,7 @@ export const deleteCategory = async (req: Request, res: Response) => {
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Error deleting category:', error);
-    res.status(500).json({ message: 'Error deleting category' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -529,6 +535,10 @@ export const createUser = async (req: Request, res: Response) => {
       address: user.address,
       role: user.role,
       status: user.status,
+      isActive: user.status === 'active',
+      totalOrders: user.totalOrders,
+      totalSpent: user.totalSpent,
+      lastActive: user.lastActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -539,7 +549,7 @@ export const createUser = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error creating user:', error);
-    res.status(500).json({ message: 'Error creating user' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -561,13 +571,30 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Transform to match frontend interface
+    const userResponse = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      role: user.role,
+      status: user.status,
+      isActive: user.status === 'active',
+      totalOrders: user.totalOrders,
+      totalSpent: user.totalSpent,
+      lastActive: user.lastActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+    
     res.json({
       message: 'User updated successfully',
-      user
+      user: userResponse
     });
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).json({ message: 'Error updating user' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -592,7 +619,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
-    res.status(500).json({ message: 'Error deleting user' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -618,6 +645,6 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error updating order status:', error);
-    res.status(500).json({ message: 'Error updating order status' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }; 

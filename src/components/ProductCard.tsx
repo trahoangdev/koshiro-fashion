@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Product } from "@/lib/api";
-import { ShoppingBag, Heart, Star } from "lucide-react";
+import { ShoppingBag, Heart, Star, GitCompare } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
@@ -13,9 +13,10 @@ interface ProductCardProps {
   viewMode?: 'grid' | 'list';
   onAddToCart?: (product: Product) => void;
   onAddToWishlist?: (product: Product) => void;
+  onAddToCompare?: (product: Product) => void;
 }
 
-const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist }: ProductCardProps) => {
+const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist, onAddToCompare }: ProductCardProps) => {
   const { language, t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -54,6 +55,19 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
     toast({
       title: t('success'),
       description: t('addedToWishlist'),
+    });
+  };
+
+  const handleAddToCompare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAddToCompare?.(product);
+    
+    // Show toast notification
+    toast({
+      title: language === 'vi' ? "Thành công" : language === 'ja' ? "成功" : "Success",
+      description: language === 'vi' ? "Đã thêm vào danh sách so sánh" : 
+                   language === 'ja' ? "比較リストに追加されました" : 
+                   "Added to compare list",
     });
   };
 
@@ -146,6 +160,14 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
                   </Button>
                   
                   <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAddToCompare}
+                  >
+                    <GitCompare className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button
                     variant="default"
                     size="sm"
                     disabled={product.stock <= 0}
@@ -195,6 +217,17 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist 
             onClick={handleAddToWishlist}
           >
             <Heart className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-background/80 backdrop-blur-sm"
+            onClick={handleAddToCompare}
+          >
+            <GitCompare className="h-4 w-4" />
           </Button>
         </div>
       </div>

@@ -25,22 +25,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
+import { api, Settings as SettingsType } from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
-
-interface SettingsData {
-  websiteName: string;
-  websiteDescription: string;
-  contactEmail: string;
-  contactPhone: string;
-  primaryColor: string;
-  enableDarkMode: boolean;
-  maintenanceMode: boolean;
-  debugMode: boolean;
-}
 
 export default function AdminSettings() {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<SettingsData>({
+  const navigate = useNavigate();
+  const [settings, setSettings] = useState<SettingsType>({
+    _id: '',
     websiteName: "Koshiro Japan Style Fashion",
     websiteDescription: "Thời trang Nhật Bản truyền thống và hiện đại",
     contactEmail: "contact@koshiro-fashion.com",
@@ -48,12 +41,40 @@ export default function AdminSettings() {
     primaryColor: "#3b82f6",
     enableDarkMode: true,
     maintenanceMode: false,
-    debugMode: false
+    debugMode: false,
+    createdAt: '',
+    updatedAt: ''
   });
   
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { language } = useLanguage();
+
+  // Load settings on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setIsLoading(true);
+        const settingsData = await api.getSettings();
+        setSettings(settingsData);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        toast({
+          title: language === 'vi' ? "Lỗi tải cài đặt" : 
+                 language === 'ja' ? "設定読み込みエラー" : 
+                 "Error Loading Settings",
+          description: language === 'vi' ? "Không thể tải cài đặt hệ thống" :
+                       language === 'ja' ? "システム設定を読み込めませんでした" :
+                       "Unable to load system settings",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [toast, language]);
 
   const translations = {
     vi: {
@@ -122,20 +143,25 @@ export default function AdminSettings() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      console.log('Saving settings:', settings);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.updateSettings(settings);
       
       toast({
-        title: t.saved,
-        description: "Cài đặt đã được cập nhật",
+        title: language === 'vi' ? "Đã lưu cài đặt" : 
+               language === 'ja' ? "設定が保存されました" : 
+               "Settings Saved",
+        description: language === 'vi' ? "Cài đặt đã được lưu thành công" :
+                     language === 'ja' ? "設定が正常に保存されました" :
+                     "Settings have been saved successfully",
       });
-      
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
-        title: t.error,
-        description: "Không thể lưu cài đặt",
+        title: language === 'vi' ? "Lỗi lưu cài đặt" : 
+               language === 'ja' ? "設定保存エラー" : 
+               "Error Saving Settings",
+        description: language === 'vi' ? "Không thể lưu cài đặt" :
+                     language === 'ja' ? "設定を保存できませんでした" :
+                     "Unable to save settings",
         variant: "destructive",
       });
     } finally {
@@ -143,7 +169,7 @@ export default function AdminSettings() {
     }
   };
 
-  const handleInputChange = (key: keyof SettingsData, value: string | boolean) => {
+  const handleInputChange = (key: keyof SettingsType, value: string | boolean) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { api, Product } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
-import { cartService } from '@/lib/cartService';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { language } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -157,44 +158,128 @@ const ProductDetail: React.FC = () => {
     loadProduct();
   }, [id, toast, t.errorLoading, t.errorLoadingDesc]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
     
-    cartService.addToCart(product, quantity, selectedSize, selectedColor);
+    if (!isAuthenticated) {
+      toast({
+        title: language === 'vi' ? "Cần đăng nhập" : 
+               language === 'ja' ? "ログインが必要です" : 
+               "Login Required",
+        description: language === 'vi' ? "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng" :
+                     language === 'ja' ? "商品をカートに追加するにはログインしてください" :
+                     "Please login to add products to cart",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    toast({
-      title: t.addToCartSuccess,
-      description: t.addToCartSuccessDesc,
-    });
+    try {
+      await api.addToCart(product._id, quantity);
+      toast({
+        title: language === 'vi' ? "Đã thêm vào giỏ hàng" : 
+               language === 'ja' ? "カートに追加されました" : 
+               "Added to Cart",
+        description: language === 'vi' ? "Sản phẩm đã được thêm vào giỏ hàng" :
+                     language === 'ja' ? "商品がカートに追加されました" :
+                     "Product has been added to cart",
+      });
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      toast({
+        title: language === 'vi' ? "Lỗi" : 
+               language === 'ja' ? "エラー" : 
+               "Error",
+        description: language === 'vi' ? "Không thể thêm vào giỏ hàng" :
+                     language === 'ja' ? "カートに追加できませんでした" :
+                     "Failed to add to cart. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleAddToWishlist = async () => {
     if (!product) return;
     
+    if (!isAuthenticated) {
+      toast({
+        title: language === 'vi' ? "Cần đăng nhập" : 
+               language === 'ja' ? "ログインが必要です" : 
+               "Login Required",
+        description: language === 'vi' ? "Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích" :
+                     language === 'ja' ? "お気に入りリストに追加するにはログインしてください" :
+                     "Please login to add products to wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await api.addToWishlist(product._id);
       toast({
-        title: t.addToWishlistSuccess,
-        description: t.addToWishlistSuccessDesc,
+        title: language === 'vi' ? "Đã thêm vào yêu thích" : 
+               language === 'ja' ? "お気に入りに追加されました" : 
+               "Added to Wishlist",
+        description: language === 'vi' ? "Sản phẩm đã được thêm vào danh sách yêu thích" :
+                     language === 'ja' ? "商品がお気に入りリストに追加されました" :
+                     "Product has been added to wishlist",
       });
       // Refresh wishlist count in header
       setRefreshWishlistTrigger(prev => prev + 1);
     } catch (error) {
       console.error('Failed to add to wishlist:', error);
       toast({
-        title: "Error",
-        description: "Failed to add to wishlist. Please try again.",
+        title: language === 'vi' ? "Lỗi" : 
+               language === 'ja' ? "エラー" : 
+               "Error",
+        description: language === 'vi' ? "Không thể thêm vào danh sách yêu thích" :
+                     language === 'ja' ? "お気に入りリストに追加できませんでした" :
+                     "Failed to add to wishlist. Please try again.",
         variant: "destructive"
       });
     }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!product) return;
     
-    // Add to cart first, then navigate to checkout
-    cartService.addToCart(product, quantity, selectedSize, selectedColor);
-    navigate('/checkout');
+    if (!isAuthenticated) {
+      toast({
+        title: language === 'vi' ? "Cần đăng nhập" : 
+               language === 'ja' ? "ログインが必要です" : 
+               "Login Required",
+        description: language === 'vi' ? "Vui lòng đăng nhập để mua sản phẩm" :
+                     language === 'ja' ? "商品を購入するにはログインしてください" :
+                     "Please login to purchase products",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Add to cart first, then navigate to checkout
+      await api.addToCart(product._id, quantity);
+      toast({
+        title: language === 'vi' ? "Đã thêm vào giỏ hàng" : 
+               language === 'ja' ? "カートに追加されました" : 
+               "Added to Cart",
+        description: language === 'vi' ? "Sản phẩm đã được thêm vào giỏ hàng" :
+                     language === 'ja' ? "商品がカートに追加されました" :
+                     "Product has been added to cart",
+      });
+      navigate('/checkout');
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      toast({
+        title: language === 'vi' ? "Lỗi" : 
+               language === 'ja' ? "エラー" : 
+               "Error",
+        description: language === 'vi' ? "Không thể thêm vào giỏ hàng" :
+                     language === 'ja' ? "カートに追加できませんでした" :
+                     "Failed to add to cart. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {
