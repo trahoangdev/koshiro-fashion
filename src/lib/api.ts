@@ -1,0 +1,1007 @@
+const API_BASE_URL = 'http://localhost:3000/api';
+
+// Types
+export interface ApiResponse<T = unknown> {
+  data?: T;
+  message?: string;
+  error?: string;
+}
+
+export interface PaginationResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+// Auth types
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+  address?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+// Product types
+export interface Product {
+  _id: string;
+  name: string;
+  nameEn?: string;
+  nameJa?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionJa?: string;
+  price: number;
+  originalPrice?: number;
+  categoryId: {
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    slug: string;
+  };
+  images: string[];
+  sizes: string[];
+  colors: string[];
+  stock: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  onSale: boolean;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Category types
+export interface Category {
+  _id: string;
+  name: string;
+  nameEn?: string;
+  nameJa?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionJa?: string;
+  slug: string;
+  image?: string;
+  isActive: boolean;
+  parentId?: string;
+  productCount: number;
+  children?: Category[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Order types
+export interface OrderItem {
+  productId: {
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    images: string[];
+    price: number;
+  };
+  name: string;
+  nameVi: string;
+  quantity: number;
+  price: number;
+  size?: string;
+  color?: string;
+}
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  role: 'customer' | 'admin';
+  status: 'active' | 'inactive' | 'blocked';
+  isActive: boolean;
+  totalOrders: number;
+  totalSpent: number;
+  lastActive?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  items: OrderItem[];
+  totalAmount: number;
+  shippingAddress: {
+    name: string;
+    phone: string;
+    address: string;
+    city: string;
+    district: string;
+  };
+  paymentMethod: string;
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentMethod {
+  _id: string;
+  type: 'credit_card' | 'debit_card' | 'paypal';
+  name: string;
+  last4?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
+  isDefault: boolean;
+  brand?: string;
+  paypalEmail?: string;
+}
+
+// Review types
+export interface Review {
+  _id: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  productId?: {
+    _id: string;
+    name: string;
+  };
+  rating: number;
+  title: string;
+  comment: string;
+  verified: boolean;
+  helpful: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateReviewRequest {
+  productId?: string;
+  rating: number;
+  title: string;
+  comment: string;
+}
+
+// Settings types
+export interface Settings {
+  _id: string;
+  websiteName: string;
+  websiteDescription: string;
+  contactEmail: string;
+  contactPhone: string;
+  primaryColor: string;
+  enableDarkMode: boolean;
+  maintenanceMode: boolean;
+  debugMode: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// API Client
+class ApiClient {
+  private baseURL: string;
+  private token: string | null;
+
+  constructor(baseURL: string) {
+    this.baseURL = baseURL;
+    this.token = localStorage.getItem('token');
+  }
+
+  // Method to update token
+  updateToken(token: string | null) {
+    this.token = token;
+    if (token) {
+      localStorage.setItem('token', token);
+    } else {
+      localStorage.removeItem('token');
+    }
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (this.token) {
+      (headers as Record<string, string>).Authorization = `Bearer ${this.token}`;
+      console.log(`API Request to ${endpoint} with token: ${this.token.substring(0, 20)}...`);
+    } else {
+      console.log(`API Request to ${endpoint} without token`);
+    }
+
+    const config: RequestInit = {
+      ...options,
+      headers,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`API Error for ${endpoint}:`, errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`API Success for ${endpoint}:`, data);
+      return data;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // Auth methods
+  async login(credentials: LoginRequest): Promise<AuthResponse> {
+    try {
+      const response = await this.request<{ message: string; token: string; user: User }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+      
+      if (response.token) {
+        this.token = response.token;
+        localStorage.setItem('token', response.token);
+      }
+      
+      return {
+        token: response.token,
+        user: response.user
+      };
+    } catch (error) {
+      console.error('Login API error:', error);
+      throw error;
+    }
+  }
+
+  async adminLogin(credentials: LoginRequest): Promise<AuthResponse> {
+    try {
+      const response = await this.request<{ message: string; token: string; user: User }>('/auth/admin/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+      
+      if (response.token) {
+        this.token = response.token;
+        localStorage.setItem('token', response.token);
+      }
+      
+      return {
+        token: response.token,
+        user: response.user
+      };
+    } catch (error) {
+      console.error('Admin login API error:', error);
+      throw error;
+    }
+  }
+
+  async register(userData: RegisterRequest): Promise<AuthResponse> {
+    try {
+      const response = await this.request<{ message: string; token: string; user: User }>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+      
+      if (response.token) {
+        this.token = response.token;
+        localStorage.setItem('token', response.token);
+      }
+      
+      return {
+        token: response.token,
+        user: response.user
+      };
+    } catch (error) {
+      console.error('Register API error:', error);
+      throw error;
+    }
+  }
+
+  async getProfile(): Promise<{ user: User }> {
+    try {
+      return await this.request<{ user: User }>('/auth/profile');
+    } catch (error) {
+      console.error('Get profile API error:', error);
+      throw error;
+    }
+  }
+
+  async updateProfile(userData: {
+    name?: string;
+    phone?: string;
+    address?: string;
+  }): Promise<{ message: string; user: User }> {
+    try {
+      return await this.request<{ message: string; user: User }>('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      });
+    } catch (error) {
+      console.error('Update profile API error:', error);
+      throw error;
+    }
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    } catch (error) {
+      console.error('Forgot password API error:', error);
+      throw error;
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, newPassword }),
+      });
+    } catch (error) {
+      console.error('Reset password API error:', error);
+      throw error;
+    }
+  }
+
+
+
+  async getOrderById(orderId: string): Promise<Order> {
+    return this.request<Order>(`/orders/${orderId}`);
+  }
+
+  async trackOrder(orderNumber: string): Promise<Order> {
+    return this.request<Order>(`/orders/track/${orderNumber}`);
+  }
+
+  // Payment Methods
+  async getPaymentMethods(): Promise<PaymentMethod[]> {
+    try {
+      return await this.request<PaymentMethod[]>('/payment-methods');
+    } catch (error) {
+      console.error('Get payment methods API error:', error);
+      throw error;
+    }
+  }
+
+  async addPaymentMethod(paymentData: {
+    type: 'credit_card' | 'debit_card' | 'paypal';
+    name: string;
+    cardNumber?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+    cvv?: string;
+    paypalEmail?: string;
+  }): Promise<PaymentMethod> {
+    try {
+      return await this.request<PaymentMethod>('/payment-methods', {
+        method: 'POST',
+        body: JSON.stringify(paymentData),
+      });
+    } catch (error) {
+      console.error('Add payment method API error:', error);
+      throw error;
+    }
+  }
+
+  async updatePaymentMethod(id: string, paymentData: {
+    type: 'credit_card' | 'debit_card' | 'paypal';
+    name: string;
+    cardNumber?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+    cvv?: string;
+    paypalEmail?: string;
+  }): Promise<PaymentMethod> {
+    try {
+      return await this.request<PaymentMethod>(`/payment-methods/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(paymentData),
+      });
+    } catch (error) {
+      console.error('Update payment method API error:', error);
+      throw error;
+    }
+  }
+
+  async deletePaymentMethod(id: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>(`/payment-methods/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Delete payment method API error:', error);
+      throw error;
+    }
+  }
+
+  async setDefaultPaymentMethod(id: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>(`/payment-methods/${id}/default`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error('Set default payment method API error:', error);
+      throw error;
+    }
+  }
+
+  logout(): void {
+    this.token = null;
+    localStorage.removeItem('token');
+  }
+
+  // Product methods
+  async getProducts(params?: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    search?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    isActive?: boolean;
+    isFeatured?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{ products: Product[] }> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/products${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<{ products: Product[] }>(endpoint);
+  }
+
+  async getProduct(id: string): Promise<{ product: Product }> {
+    return this.request<{ product: Product }>(`/products/${id}`);
+  }
+
+  async getFeaturedProducts(limit: number = 6): Promise<{ products: Product[] }> {
+    return this.request<{ products: Product[] }>(`/products/featured?limit=${limit}`);
+  }
+
+  async searchProducts(query: string, limit: number = 10): Promise<{ products: Product[] }> {
+    return this.request<{ products: Product[] }>(`/products/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+  }
+
+  // Category methods
+  async getCategories(params?: {
+    isActive?: boolean;
+    parentId?: string;
+  }): Promise<{ categories: Category[] }> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/categories${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<{ categories: Category[] }>(endpoint);
+  }
+
+  async getCategoryTree(params?: {
+    isActive?: boolean;
+  }): Promise<{ categories: Category[] }> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/categories/tree${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<{ categories: Category[] }>(endpoint);
+  }
+
+  async getCategoryBySlug(slug: string): Promise<{ category: Category }> {
+    return this.request<{ category: Category }>(`/categories/slug/${slug}`);
+  }
+
+  async getCategoryWithProducts(
+    id: string,
+    params?: { page?: number; limit?: number }
+  ): Promise<{
+    category: Category;
+    products: Product[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  }> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/categories/${id}/products${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(endpoint);
+  }
+
+  // Order methods
+  async getUserOrders(params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<PaginationResponse<Order>> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/orders/my-orders${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<PaginationResponse<Order>>(endpoint);
+  }
+
+  async getUserOrder(id: string): Promise<{ order: Order }> {
+    return this.request<{ order: Order }>(`/orders/my-orders/${id}`);
+  }
+
+  async createOrder(orderData: {
+    items: Array<{
+      productId: string;
+      quantity: number;
+      size?: string;
+      color?: string;
+    }>;
+    shippingAddress: {
+      name: string;
+      phone: string;
+      address: string;
+      city: string;
+      district: string;
+    };
+    billingAddress?: {
+      name: string;
+      phone: string;
+      address: string;
+      city: string;
+      district: string;
+    };
+    paymentMethod: string;
+    notes?: string;
+  }): Promise<{ message: string; order: Order }> {
+    return this.request<{ message: string; order: Order }>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+  }
+
+  async cancelOrder(id: string): Promise<{ message: string; order: Order }> {
+    return this.request<{ message: string; order: Order }>(`/orders/${id}/cancel`, {
+      method: 'PUT',
+    });
+  }
+
+  // Health check
+  async healthCheck(): Promise<{ status: string; message: string; timestamp: string }> {
+    return this.request<{ status: string; message: string; timestamp: string }>('/health');
+  }
+
+  // Admin Dashboard methods
+  async getAdminStats(): Promise<{
+    totalOrders: number;
+    totalProducts: number;
+    totalUsers: number;
+    totalRevenue: number;
+    ordersTrend: number;
+    productsTrend: number;
+    usersTrend: number;
+    revenueTrend: number;
+  }> {
+    return this.request('/admin/stats');
+  }
+
+  async getAdminOrders(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<PaginationResponse<Order>> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/admin/orders${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<PaginationResponse<Order>>(endpoint);
+  }
+
+  async getAdminProducts(params?: {
+    page?: number;
+    limit?: number;
+    isActive?: boolean;
+  }): Promise<PaginationResponse<Product>> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/admin/products${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<PaginationResponse<Product>>(endpoint);
+  }
+
+  async createProduct(productData: {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    price: number;
+    originalPrice?: number;
+    categoryId: string;
+    images: string[];
+    sizes: string[];
+    colors: string[];
+    stock: number;
+    isActive?: boolean;
+    isFeatured?: boolean;
+    onSale?: boolean;
+    tags?: string[];
+  }): Promise<{ message: string; product: Product }> {
+    return this.request<{ message: string; product: Product }>('/admin/products', {
+      method: 'POST',
+      body: JSON.stringify(productData),
+    });
+  }
+
+  async updateProduct(id: string, productData: {
+    name?: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    price?: number;
+    originalPrice?: number;
+    categoryId?: string;
+    images?: string[];
+    sizes?: string[];
+    colors?: string[];
+    stock?: number;
+    isActive?: boolean;
+    isFeatured?: boolean;
+    onSale?: boolean;
+    tags?: string[];
+  }): Promise<{ message: string; product: Product }> {
+    return this.request<{ message: string; product: Product }>(`/admin/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(productData),
+    });
+  }
+
+  async deleteProduct(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/products/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAdminCategories(params?: {
+    isActive?: boolean;
+  }): Promise<{ categories: Category[] }> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/admin/categories${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<{ categories: Category[] }>(endpoint);
+  }
+
+  async createCategory(categoryData: {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    slug: string;
+    image?: string;
+    isActive?: boolean;
+    parentId?: string;
+  }): Promise<{ message: string; category: Category }> {
+    return this.request<{ message: string; category: Category }>('/admin/categories', {
+      method: 'POST',
+      body: JSON.stringify(categoryData),
+    });
+  }
+
+  async updateCategory(id: string, categoryData: {
+    name?: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    slug?: string;
+    image?: string;
+    isActive?: boolean;
+    parentId?: string;
+  }): Promise<{ message: string; category: Category }> {
+    return this.request<{ message: string; category: Category }>(`/admin/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(categoryData),
+    });
+  }
+
+  async deleteCategory(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/categories/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAdminUsers(params?: {
+    page?: number;
+    limit?: number;
+    role?: string;
+    isActive?: boolean;
+  }): Promise<PaginationResponse<User>> {
+    const searchParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/admin/users${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<PaginationResponse<User>>(endpoint);
+  }
+
+  async createUser(userData: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+    address?: string;
+    role?: 'customer' | 'admin';
+    status?: 'active' | 'inactive' | 'blocked';
+  }): Promise<{ message: string; user: User }> {
+    return this.request<{ message: string; user: User }>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async updateUser(id: string, userData: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    role?: 'customer' | 'admin';
+    status?: 'active' | 'inactive' | 'blocked';
+  }): Promise<{ message: string; user: User }> {
+    return this.request<{ message: string; user: User }>(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async deleteUser(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Wishlist methods
+  async getWishlist(): Promise<Product[]> {
+    return this.request<Product[]>('/wishlist');
+  }
+
+  async addToWishlist(productId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/wishlist', {
+      method: 'POST',
+      body: JSON.stringify({ productId }),
+    });
+  }
+
+  async removeFromWishlist(productId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/wishlist/${productId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearWishlist(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/wishlist', {
+      method: 'DELETE',
+    });
+  }
+
+  // Cart methods
+  async getCart(): Promise<{ items: Array<{
+    productId: string;
+    quantity: number;
+    size?: string;
+    color?: string;
+    product: Product;
+  }>; total: number }> {
+    return this.request<{ items: Array<{
+      productId: string;
+      quantity: number;
+      size?: string;
+      color?: string;
+      product: Product;
+    }>; total: number }>('/cart');
+  }
+
+  async addToCart(productId: string, quantity: number = 1): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/cart', {
+      method: 'POST',
+      body: JSON.stringify({ productId, quantity }),
+    });
+  }
+
+  async updateCartItem(productId: string, quantity: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/cart/${productId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ quantity }),
+    });
+  }
+
+  async removeFromCart(productId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/cart/${productId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearCart(): Promise<{ message: string }> {
+    return this.request('/cart/clear', { method: 'DELETE' });
+  }
+
+  // Dashboard Analytics
+  async getRevenueData(): Promise<Array<{
+    month: string;
+    revenue: number;
+    orders: number;
+  }>> {
+    return this.request('/admin/revenue-data');
+  }
+
+  async getProductStats(): Promise<Array<{
+    category: string;
+    count: number;
+    revenue: number;
+  }>> {
+    return this.request<Array<{
+      category: string;
+      count: number;
+      revenue: number;
+    }>>('/admin/product-stats');
+  }
+
+  // Review methods
+  async getReviews(params?: {
+    page?: number;
+    limit?: number;
+    productId?: string;
+  }): Promise<{ reviews: Review[]; total: number }> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.productId) searchParams.append('productId', params.productId);
+    
+    return this.request<{ reviews: Review[]; total: number }>(`/reviews?${searchParams.toString()}`);
+  }
+
+  async createReview(reviewData: CreateReviewRequest): Promise<{ message: string; review: Review }> {
+    return this.request<{ message: string; review: Review }>('/reviews', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(reviewData),
+    });
+  }
+
+  async markReviewHelpful(reviewId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/reviews/${reviewId}/helpful`, {
+      method: 'POST',
+    });
+  }
+
+  // Settings methods
+  async getSettings(): Promise<Settings> {
+    return this.request<Settings>('/settings');
+  }
+
+  async updateSettings(settings: Settings): Promise<Settings> {
+    return this.request<Settings>('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  }
+}
+
+// Create and export API client instance
+export const api = new ApiClient(API_BASE_URL); 

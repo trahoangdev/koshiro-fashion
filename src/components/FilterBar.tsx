@@ -8,28 +8,28 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface FilterBarProps {
   selectedCategory: string;
   selectedPriceRange: string;
   selectedColor: string;
-  currentLanguage: string;
   onCategoryChange: (category: string) => void;
   onPriceRangeChange: (range: string) => void;
   onColorChange: (color: string) => void;
   onClearFilters: () => void;
 }
 
-export const FilterBar = ({
+const FilterBar = ({
   selectedCategory,
   selectedPriceRange,
   selectedColor,
-  currentLanguage,
   onCategoryChange,
   onPriceRangeChange,
   onColorChange,
   onClearFilters
 }: FilterBarProps) => {
+  const { language } = useLanguage();
   const translations = {
     en: {
       allCategories: "All Categories",
@@ -84,7 +84,7 @@ export const FilterBar = ({
     }
   };
 
-  const t = translations[currentLanguage as keyof typeof translations] || translations.en;
+  const t = translations[language as keyof typeof translations] || translations.en;
 
   const hasActiveFilters = selectedCategory !== 'all' || selectedPriceRange !== 'all' || selectedColor !== 'all';
 
@@ -182,3 +182,5 @@ export const FilterBar = ({
     </div>
   );
 };
+
+export default FilterBar;

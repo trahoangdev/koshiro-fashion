@@ -1,10 +1,10 @@
 import { Separator } from "@/components/ui/separator";
+import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-interface FooterProps {
-  currentLanguage: string;
-}
-
-export const Footer = ({ currentLanguage }: FooterProps) => {
+const Footer = () => {
+  const { language } = useLanguage();
+  
   const translations = {
     en: {
       brand: "KOSHIRO",
@@ -19,6 +19,7 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
       faq: "FAQ",
       privacy: "Privacy Policy",
       terms: "Terms of Service",
+      sizeGuide: "Size Guide",
       rights: "All rights reserved.",
       newsletter: "Subscribe to our newsletter for latest updates",
       subscribe: "Subscribe"
@@ -36,6 +37,7 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
       faq: "Câu Hỏi Thường Gặp",
       privacy: "Chính Sách Bảo Mật",
       terms: "Điều Khoản Dịch Vụ",
+      sizeGuide: "Hướng Dẫn Kích Thước",
       rights: "Tất cả quyền được bảo lưu.",
       newsletter: "Đăng ký nhận bản tin để cập nhật tin tức mới nhất",
       subscribe: "Đăng Ký"
@@ -53,13 +55,14 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
       faq: "よくある質問",
       privacy: "プライバシーポリシー",
       terms: "利用規約",
+      sizeGuide: "サイズガイド",
       rights: "すべての権利が保護されています。",
       newsletter: "最新情報をお届けするニュースレターに登録",
       subscribe: "登録"
     }
   };
 
-  const t = translations[currentLanguage as keyof typeof translations] || translations.en;
+  const t = translations[language as keyof typeof translations] || translations.en;
 
   return (
     <footer className="bg-card border-t mt-20">
@@ -79,18 +82,21 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
           <div className="space-y-6">
             <h4 className="text-lg font-semibold">{t.quickLinks}</h4>
             <nav className="space-y-3">
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/about" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.about}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/contact" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.contact}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/size-guide" className="block text-muted-foreground hover:text-primary transition-colors">
+                {t.sizeGuide}
+              </Link>
+              <Link to="/info/shipping-info" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.shipping}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/info/returns" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.returns}
-              </a>
+              </Link>
             </nav>
           </div>
 
@@ -98,18 +104,24 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
           <div className="space-y-6">
             <h4 className="text-lg font-semibold">{t.categories}</h4>
             <nav className="space-y-3">
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/category/ao-kimono" className="block text-muted-foreground hover:text-primary transition-colors">
                 Kimono
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/category/ao-yukata" className="block text-muted-foreground hover:text-primary transition-colors">
                 Yukata
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/category/tops" className="block text-muted-foreground hover:text-primary transition-colors">
+                Tops
+              </Link>
+              <Link to="/category/bottoms" className="block text-muted-foreground hover:text-primary transition-colors">
+                Bottoms
+              </Link>
+              <Link to="/category/hakama" className="block text-muted-foreground hover:text-primary transition-colors">
                 Hakama
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/category/phu-kien" className="block text-muted-foreground hover:text-primary transition-colors">
                 Accessories
-              </a>
+              </Link>
             </nav>
           </div>
 
@@ -117,15 +129,21 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
           <div className="space-y-6">
             <h4 className="text-lg font-semibold">{t.support}</h4>
             <nav className="space-y-3">
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/order-tracking" className="block text-muted-foreground hover:text-primary transition-colors">
+                {language === 'vi' ? 'Theo Dõi Đơn Hàng' : language === 'ja' ? '注文追跡' : 'Order Tracking'}
+              </Link>
+              <Link to="/reviews" className="block text-muted-foreground hover:text-primary transition-colors">
+                {language === 'vi' ? 'Đánh Giá Khách Hàng' : language === 'ja' ? 'お客様のレビュー' : 'Customer Reviews'}
+              </Link>
+              <Link to="/info/faq" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.faq}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/info/privacy-policy" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.privacy}
-              </a>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/info/terms-of-service" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.terms}
-              </a>
+              </Link>
             </nav>
           </div>
         </div>
@@ -147,3 +165,5 @@ export const Footer = ({ currentLanguage }: FooterProps) => {
     </footer>
   );
 };
+
+export default Footer;

@@ -1,13 +1,25 @@
-import { useState } from "react";
-import { User, MapPin, Phone, Mail, Edit2, Save, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { User, MapPin, Phone, Mail, Edit2, Save, X, ShoppingBag, Heart, Settings, CreditCard, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import ProfileSidebar from "@/components/ProfileSidebar";
+import ProfileOrders from "@/components/ProfileOrders";
+import ProfileAddresses from "@/components/ProfileAddresses";
+import ProfilePayment from "@/components/ProfilePayment";
+import ProfileNotifications from "@/components/ProfileNotifications";
+import ProfileSettings from "@/components/ProfileSettings";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 interface ProfileData {
   name: string;
@@ -19,17 +31,74 @@ interface ProfileData {
 }
 
 export default function Profile() {
-  const [language, setLanguage] = useState("vi");
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { language } = useLanguage();
+  const { toast } = useToast();
+  const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
+  const [activeSection, setActiveSection] = useState("profile");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
   const [profileData, setProfileData] = useState<ProfileData>({
-    name: "Nguyễn Văn An",
-    email: "nguyen.van.an@email.com",
-    phone: "+84 123 456 789",
-    address: "123 Đường ABC",
-    city: "Hồ Chí Minh",
-    country: "Việt Nam"
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    country: "Vietnam"
   });
   const [editData, setEditData] = useState<ProfileData>(profileData);
+
+  // Handle URL parameters for active section
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (section && ['profile', 'orders', 'addresses', 'payment', 'notifications', 'settings'].includes(section)) {
+      setActiveSection(section);
+    }
+  }, [searchParams]);
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (user) {
+      const userData: ProfileData = {
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        city: "",
+        country: "Vietnam"
+      };
+      setProfileData(userData);
+      setEditData(userData);
+    }
+  }, [user, isAuthenticated, isLoading, navigate]);
+
+  // Redirect if not authenticated
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-zen">
+        <Header cartItemsCount={0} onSearch={() => {}} />
+        <main className="py-16">
+          <div className="container mx-auto text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4">Loading...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
 
   const translations = {
     en: {
@@ -91,11 +160,40 @@ export default function Profile() {
     }
   };
 
-  const t = translations[language as keyof typeof translations] || translations.vi;
+  const t = translations[language as keyof typeof translations] || translations.en;
 
-  const handleSave = () => {
-    setProfileData(editData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setSaving(true);
+    try {
+      // Update user profile via API
+      const updateData = {
+        name: editData.name,
+        phone: editData.phone,
+        address: editData.address
+      };
+      
+      await api.updateProfile(updateData);
+      
+      setProfileData(editData);
+      setIsEditing(false);
+      refreshUser(); // Refresh user data after successful update
+      
+      toast({
+        title: "Cập nhật thành công",
+        description: "Thông tin hồ sơ đã được cập nhật",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Lỗi cập nhật",
+        description: error instanceof Error ? error.message : "Có lỗi xảy ra khi cập nhật hồ sơ",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -103,26 +201,35 @@ export default function Profile() {
     setIsEditing(false);
   };
 
+  const refreshSidebarCounts = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-zen">
       <Header 
         cartItemsCount={0} 
         onSearch={() => {}} 
-        onLanguageChange={setLanguage}
-        currentLanguage={language}
-        onCartClick={() => {}}
-        showCartPanel={false}
       />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{t.title}</h1>
-          </div>
+      <main className="py-16">
+        <div className="container mx-auto">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar */}
+            <ProfileSidebar 
+              activeSection={activeSection}
+              onSectionChange={setActiveSection}
+              refreshTrigger={refreshTrigger}
+            />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Profile Info */}
-            <div className="lg:col-span-2 space-y-6">
+            {/* Main Content */}
+            <div className="flex-1 space-y-8">
+              <div className="text-center lg:text-left">
+                <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
+                <p className="text-muted-foreground">Manage your account and preferences</p>
+              </div>
+
+              {/* Profile Info */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
@@ -234,34 +341,33 @@ export default function Profile() {
                       <Button variant="outline" onClick={handleCancel}>
                         {t.cancel}
                       </Button>
-                      <Button onClick={handleSave}>
-                        <Save className="h-4 w-4 mr-2" />
+                      <Button onClick={handleSave} disabled={saving}>
+                        {saving ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-2"></div>
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
                         {t.save}
                       </Button>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Order History */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t.orderHistory}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center text-muted-foreground py-8">
-                    {t.noOrders}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Additional Sections based on activeSection */}
+              <div className="space-y-6">
+                {activeSection === "orders" && <ProfileOrders />}
+                {activeSection === "addresses" && <ProfileAddresses />}
+                {activeSection === "payment" && <ProfilePayment />}
+                {activeSection === "notifications" && <ProfileNotifications />}
+                {activeSection === "settings" && <ProfileSettings />}
+              </div>
             </div>
           </div>
         </div>
       </main>
 
-      <Footer currentLanguage={language} />
+      <Footer />
     </div>
   );
 }
