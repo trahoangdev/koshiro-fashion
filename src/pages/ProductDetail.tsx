@@ -357,7 +357,11 @@ const ProductDetail: React.FC = () => {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-              <p className="text-muted-foreground mb-4">{product.categoryId.name}</p>
+              <p className="text-muted-foreground mb-4">
+                {typeof product.categoryId === 'string' 
+                  ? 'Category' 
+                  : product.categoryId.name}
+              </p>
               
               <div className="flex items-center space-x-4 mb-4">
                 <div className="flex items-center space-x-1">
@@ -521,7 +525,11 @@ const ProductDetail: React.FC = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span className="font-medium">Category:</span>
-                      <span>{product.categoryId.name}</span>
+                      <span>
+                        {typeof product.categoryId === 'string' 
+                          ? 'Category' 
+                          : product.categoryId.name}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Stock:</span>

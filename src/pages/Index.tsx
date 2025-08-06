@@ -130,8 +130,13 @@ const Index = () => {
     
     return products.filter(product => {
       // Category filter
-      if (selectedCategory !== 'all' && product.categoryId?.slug !== selectedCategory) {
-        return false;
+      if (selectedCategory !== 'all') {
+        const categorySlug = typeof product.categoryId === 'string' 
+          ? null 
+          : product.categoryId?.slug;
+        if (categorySlug !== selectedCategory) {
+          return false;
+        }
       }
       
       // Price filter

@@ -17,8 +17,18 @@ import {
   deleteUser,
   updateOrderStatus,
   getRevenueData,
-  getProductStats
+  getProductStats,
+  getUserById,
+  bulkUpdateUserStatus,
+  getOrderDetails,
+  bulkUpdateOrderStatus,
+  printOrder,
+  sendOrderEmail,
+  getAnalyticsData,
+  generateReport
 } from '../controllers/adminController';
+import { cancelOrder } from '../controllers/orderController';
+import { exportData, importData } from '../controllers/exportImportController';
 
 const router = express.Router();
 
@@ -33,7 +43,12 @@ router.get('/product-stats', getProductStats);
 
 // Orders management
 router.get('/orders', getAdminOrders);
+router.get('/orders/:orderId', getOrderDetails);
 router.put('/orders/:id/status', updateOrderStatus);
+router.put('/orders/:id/cancel', cancelOrder);
+router.put('/orders/bulk-status', bulkUpdateOrderStatus);
+router.get('/orders/:orderId/print', printOrder);
+router.post('/orders/:orderId/email', sendOrderEmail);
 
 // Products management
 router.get('/products', getAdminProducts);
@@ -49,8 +64,18 @@ router.delete('/categories/:id', deleteCategory);
 
 // Users management
 router.get('/users', getAdminUsers);
+router.get('/users/:userId', getUserById);
 router.post('/users', createUser);
 router.put('/users/:id', updateUser);
+router.put('/users/bulk-status', bulkUpdateUserStatus);
 router.delete('/users/:id', deleteUser);
+
+// Analytics and Reports
+router.get('/analytics', getAnalyticsData);
+router.post('/reports', generateReport);
+
+// Export/Import
+router.post('/export', exportData);
+router.post('/import', importData);
 
 export default router; 

@@ -30,10 +30,13 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SizeGuidePage from "./pages/SizeGuidePage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminReports from "./pages/AdminReports";
 import AdminProducts from "./pages/AdminProducts";
 import AdminCategories from "./pages/AdminCategories";
 import AdminOrders from "./pages/AdminOrders";
 import AdminUsers from "./pages/AdminUsers";
+import AdminActivity from "./pages/AdminActivity";
 import AdminSettings from "./pages/AdminSettings";
 import NotFound from "./pages/NotFound";
 
@@ -76,6 +79,16 @@ const App = () => (
                   <AdminDashboard />
                 </ProtectedAdminRoute>
               } />
+              <Route path="/admin/analytics" element={
+                <ProtectedAdminRoute>
+                  <AdminAnalytics />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/admin/reports" element={
+                <ProtectedAdminRoute>
+                  <AdminReports />
+                </ProtectedAdminRoute>
+              } />
               <Route path="/admin/products" element={
                 <ProtectedAdminRoute>
                   <AdminProducts />
@@ -94,6 +107,11 @@ const App = () => (
               <Route path="/admin/users" element={
                 <ProtectedAdminRoute>
                   <AdminUsers />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/admin/activity" element={
+                <ProtectedAdminRoute>
+                  <AdminActivity />
                 </ProtectedAdminRoute>
               } />
               <Route path="/admin/settings" element={

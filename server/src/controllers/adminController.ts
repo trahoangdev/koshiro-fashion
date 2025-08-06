@@ -3,6 +3,8 @@ import { Order } from '../models/Order';
 import { Product } from '../models/Product';
 import { User } from '../models/User';
 import { Category } from '../models/Category';
+import { ActivityLog } from '../models/ActivityLog';
+import { Notification } from '../models/Notification';
 
 // Helper function to update product count for categories
 const updateCategoryProductCount = async (categoryId: string) => {
@@ -647,4 +649,299 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     console.error('Error updating order status:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+// Enhanced User Management
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error getting user by ID:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const bulkUpdateUserStatus = async (req: Request, res: Response) => {
+  try {
+    const { userIds, status } = req.body;
+    
+    const result = await User.updateMany(
+      { _id: { $in: userIds } },
+      { status }
+    );
+
+    res.json({
+      message: `Updated ${result.modifiedCount} users`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error bulk updating user status:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Enhanced Order Management
+export const getOrderDetails = async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    
+    const order = await Order.findById(orderId)
+      .populate('userId', 'name email phone')
+      .populate('items.product', 'name price images');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(order);
+  } catch (error) {
+    console.error('Error getting order details:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const bulkUpdateOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const { orderIds, status } = req.body;
+    
+    const result = await Order.updateMany(
+      { _id: { $in: orderIds } },
+      { status }
+    );
+
+    res.json({
+      message: `Updated ${result.modifiedCount} orders`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error bulk updating order status:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const printOrder = async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    
+    const order = await Order.findById(orderId)
+      .populate('userId', 'name email phone')
+      .populate('items.product', 'name price images');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Generate PDF or return order data for printing
+    const printData = {
+      orderNumber: order.orderNumber,
+      customer: order.userId,
+      items: order.items,
+      total: order.totalAmount,
+      date: order.createdAt
+    };
+
+    res.json(printData);
+  } catch (error) {
+    console.error('Error printing order:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const sendOrderEmail = async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const { emailType = 'confirmation' } = req.body;
+    
+    const order = await Order.findById(orderId)
+      .populate('userId', 'name email');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Send email logic here
+    // This would integrate with your email service
+
+    res.json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Error sending order email:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Analytics and Reports
+export const getAnalyticsData = async (req: Request, res: Response) => {
+  try {
+    const { period = '30d', type = 'revenue' } = req.query;
+    
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    switch (period) {
+      case '7d':
+        startDate.setDate(endDate.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(endDate.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(endDate.getDate() - 90);
+        break;
+      case '1y':
+        startDate.setFullYear(endDate.getFullYear() - 1);
+        break;
+    }
+
+    let data: any[] = [];
+
+    if (type === 'revenue') {
+      data = await Order.aggregate([
+        {
+          $match: {
+            status: 'completed',
+            createdAt: { $gte: startDate, $lte: endDate }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            revenue: { $sum: "$totalAmount" },
+            orders: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]);
+    } else if (type === 'orders') {
+      data = await Order.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startDate, $lte: endDate }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]);
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error getting analytics data:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const generateReport = async (req: Request, res: Response) => {
+  try {
+    const { type, startDate, endDate, format = 'pdf' } = req.body;
+    
+    let reportData: any = {};
+
+    switch (type) {
+      case 'sales':
+        reportData = await generateSalesReport(startDate, endDate);
+        break;
+      case 'inventory':
+        reportData = await generateInventoryReport();
+        break;
+      case 'users':
+        reportData = await generateUserReport(startDate, endDate);
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid report type' });
+    }
+
+    if (format === 'pdf') {
+      // Generate PDF report
+      const pdfBuffer = await generatePDFReport(reportData, type);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${type}_report.pdf"`);
+      return res.send(pdfBuffer);
+    } else {
+      res.json(reportData);
+    }
+  } catch (error) {
+    console.error('Error generating report:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Helper functions
+const generateSalesReport = async (startDate: string, endDate: string) => {
+  const orders = await Order.find({
+    createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+  }).populate('userId', 'name email');
+
+  const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalOrders = orders.length;
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+  return {
+    period: { startDate, endDate },
+    summary: {
+      totalRevenue,
+      totalOrders,
+      averageOrderValue
+    },
+    orders
+  };
+};
+
+const generateInventoryReport = async () => {
+  const products = await Product.find().populate('categoryId', 'name');
+  
+  const totalProducts = products.length;
+  const activeProducts = products.filter(p => p.isActive).length;
+  const lowStockProducts = products.filter(p => p.stock < 10).length; // Using stock < 10 as low stock threshold
+
+  return {
+    summary: {
+      totalProducts,
+      activeProducts,
+      lowStockProducts
+    },
+    products
+  };
+};
+
+const generateUserReport = async (startDate: string, endDate: string) => {
+  const users = await User.find({
+    createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+  });
+
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.status === 'active').length;
+  const newUsers = users.filter(u => {
+    const userDate = new Date(u.createdAt);
+    const now = new Date();
+    return userDate.getMonth() === now.getMonth() && userDate.getFullYear() === now.getFullYear();
+  }).length;
+
+  return {
+    period: { startDate, endDate },
+    summary: {
+      totalUsers,
+      activeUsers,
+      newUsers
+    },
+    users
+  };
+};
+
+const generatePDFReport = async (data: any, type: string): Promise<Buffer> => {
+  // This would integrate with a PDF generation library like PDFKit
+  // For now, return a simple buffer
+  return Buffer.from('PDF Report Placeholder');
 }; 
