@@ -47,7 +47,7 @@ export interface Product {
   descriptionJa?: string;
   price: number;
   originalPrice?: number;
-  categoryId: {
+  categoryId: string | {
     _id: string;
     name: string;
     nameEn?: string;
@@ -113,6 +113,7 @@ export interface User {
   status: 'active' | 'inactive' | 'blocked';
   isActive: boolean;
   totalOrders: number;
+  orderCount: number;
   totalSpent: number;
   lastActive?: string;
   createdAt: string;
@@ -198,6 +199,35 @@ export interface Settings {
   debugMode: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  action: string;
+  resource: string;
+  resourceId: string;
+  details: string;
+  ipAddress: string;
+  userAgent: string;
+  timestamp: string;
+  severity: 'info' | 'warning' | 'error' | 'success';
+  category: 'user' | 'product' | 'order' | 'system' | 'security' | 'data';
+}
+
+export interface Notification {
+  id: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  action?: {
+    label: string;
+    url: string;
+  };
 }
 
 // API Client
@@ -639,6 +669,22 @@ class ApiClient {
     });
   }
 
+  async cancelOrderAdmin(id: string): Promise<{ message: string; order: Order }> {
+    return this.request<{ message: string; order: Order }>(`/admin/orders/${id}/cancel`, {
+      method: 'PUT',
+    });
+  }
+
+  async updateOrder(id: string, orderData: {
+    status?: 'pending' | 'processing' | 'completed' | 'cancelled';
+    paymentStatus?: 'pending' | 'paid' | 'failed';
+  }): Promise<{ message: string; order: Order }> {
+    return this.request<{ message: string; order: Order }>(`/admin/orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(orderData),
+    });
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string; message: string; timestamp: string }> {
     return this.request<{ status: string; message: string; timestamp: string }>('/health');
@@ -874,6 +920,8 @@ class ApiClient {
     });
   }
 
+
+
   // Wishlist methods
   async getWishlist(): Promise<Product[]> {
     return this.request<Product[]>('/wishlist');
@@ -999,6 +1047,186 @@ class ApiClient {
     return this.request<Settings>('/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
+    });
+  }
+
+  // Activity Log APIs
+  async getActivityLogs(params?: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    severity?: string;
+    userId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<PaginationResponse<ActivityLog>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.severity) searchParams.append('severity', params.severity);
+    if (params?.userId) searchParams.append('userId', params.userId);
+    if (params?.dateFrom) searchParams.append('dateFrom', params.dateFrom);
+    if (params?.dateTo) searchParams.append('dateTo', params.dateTo);
+
+    return this.request<PaginationResponse<ActivityLog>>(`/admin/activity-logs?${searchParams}`);
+  }
+
+  async clearActivityLogs(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/admin/activity-logs', {
+      method: 'DELETE',
+    });
+  }
+
+  // Export/Import APIs
+  async exportData(type: string, format: string): Promise<{ downloadUrl: string }> {
+    return this.request<{ downloadUrl: string }>(`/admin/export/${type}`, {
+      method: 'POST',
+      body: JSON.stringify({ format }),
+    });
+  }
+
+  async importData(type: string, file: File): Promise<{ message: string; importedCount: number }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+
+    return this.request<{ message: string; importedCount: number }>(`/admin/import/${type}`, {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  // Enhanced User Management APIs
+  async getUserById(id: string): Promise<{ user: User }> {
+    return this.request<{ user: User }>(`/admin/users/${id}`);
+  }
+
+  async updateUserStatus(id: string, status: 'active' | 'inactive' | 'blocked'): Promise<{ message: string; user: User }> {
+    return this.request<{ message: string; user: User }>(`/admin/users/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async bulkUpdateUserStatus(userIds: string[], status: 'active' | 'inactive' | 'blocked'): Promise<{ message: string; updatedCount: number }> {
+    return this.request<{ message: string; updatedCount: number }>('/admin/users/bulk-status', {
+      method: 'PATCH',
+      body: JSON.stringify({ userIds, status }),
+    });
+  }
+
+  // Enhanced Order Management APIs
+  async updateOrderStatus(id: string, status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled'): Promise<{ message: string; order: Order }> {
+    return this.request<{ message: string; order: Order }>(`/admin/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async bulkUpdateOrderStatus(orderIds: string[], status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled'): Promise<{ message: string; updatedCount: number }> {
+    return this.request<{ message: string; updatedCount: number }>('/admin/orders/bulk-status', {
+      method: 'PATCH',
+      body: JSON.stringify({ orderIds, status }),
+    });
+  }
+
+  async getOrderDetails(id: string): Promise<{ order: Order }> {
+    return this.request<{ order: Order }>(`/admin/orders/${id}`);
+  }
+
+  async printOrder(id: string): Promise<{ printUrl: string }> {
+    return this.request<{ printUrl: string }>(`/admin/orders/${id}/print`, {
+      method: 'POST',
+    });
+  }
+
+  async sendOrderEmail(id: string, emailType: 'confirmation' | 'shipping' | 'delivery'): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/orders/${id}/email`, {
+      method: 'POST',
+      body: JSON.stringify({ emailType }),
+    });
+  }
+
+  // Analytics APIs
+  async getAnalyticsData(params?: {
+    period?: 'today' | 'week' | 'month' | 'year';
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<{
+    revenue: {
+      total: number;
+      trend: number;
+      byPeriod: Array<{ period: string; amount: number }>;
+    };
+    orders: {
+      total: number;
+      trend: number;
+      byStatus: Record<string, number>;
+      byPeriod: Array<{ period: string; count: number }>;
+    };
+    customers: {
+      total: number;
+      new: number;
+      active: number;
+      byPeriod: Array<{ period: string; count: number }>;
+    };
+    products: {
+      total: number;
+      active: number;
+      lowStock: number;
+      topSelling: Array<{ product: Product; sales: number }>;
+    };
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params?.period) searchParams.append('period', params.period);
+    if (params?.dateFrom) searchParams.append('dateFrom', params.dateFrom);
+    if (params?.dateTo) searchParams.append('dateTo', params.dateTo);
+
+    return this.request(`/admin/analytics?${searchParams}`);
+  }
+
+  // Reports APIs
+  async generateReport(type: 'sales' | 'customers' | 'inventory' | 'performance', params?: {
+    dateFrom?: string;
+    dateTo?: string;
+    format?: 'pdf' | 'excel' | 'csv';
+  }): Promise<{ downloadUrl: string }> {
+    return this.request<{ downloadUrl: string }>('/admin/reports/generate', {
+      method: 'POST',
+      body: JSON.stringify({ type, ...params }),
+    });
+  }
+
+  // Notification APIs
+  async getNotifications(params?: {
+    page?: number;
+    limit?: number;
+    read?: boolean;
+  }): Promise<PaginationResponse<Notification>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.read !== undefined) searchParams.append('read', params.read.toString());
+
+    return this.request<PaginationResponse<Notification>>(`/admin/notifications?${searchParams}`);
+  }
+
+  async markNotificationAsRead(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/notifications/${id}/read`, {
+      method: 'PATCH',
+    });
+  }
+
+  async markAllNotificationsAsRead(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/admin/notifications/read-all', {
+      method: 'PATCH',
+    });
+  }
+
+  async deleteNotification(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/notifications/${id}`, {
+      method: 'DELETE',
     });
   }
 }

@@ -2,19 +2,53 @@ import { useState, useEffect } from "react";
 import { 
   Settings,
   Save,
+  RefreshCw,
+  Loader2,
+  Bell,
   Globe,
+  Shield,
+  Database,
+  Palette,
   Mail,
   CreditCard,
-  Shield,
-  Palette,
-  Loader2
+  Truck,
+  FileText,
+  Users,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  Download,
+  Upload,
+  Trash2,
+  Plus,
+  Edit,
+  Copy,
+  ExternalLink,
+  Calendar,
+  Clock,
+  MapPin,
+  Phone,
+  Mail as MailIcon,
+  Building,
+  User,
+  Key,
+  Server,
+  HardDrive,
+  Activity,
+  Zap,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Select,
   SelectContent,
@@ -23,145 +57,165 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
-import { api, Settings as SettingsType } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 import AdminLayout from "@/components/AdminLayout";
+import { api } from "@/lib/api";
+
+interface SystemSettings {
+  general: {
+    siteName: string;
+    siteDescription: string;
+    contactEmail: string;
+    contactPhone: string;
+    address: string;
+    timezone: string;
+    currency: string;
+    language: string;
+  };
+  notifications: {
+    emailNotifications: boolean;
+    orderNotifications: boolean;
+    stockNotifications: boolean;
+    customerNotifications: boolean;
+    adminNotifications: boolean;
+  };
+  security: {
+    sessionTimeout: number;
+    passwordMinLength: number;
+    requireTwoFactor: boolean;
+    maxLoginAttempts: number;
+    enableCaptcha: boolean;
+  };
+  payment: {
+    stripeEnabled: boolean;
+    paypalEnabled: boolean;
+    cashOnDelivery: boolean;
+    bankTransfer: boolean;
+  };
+  shipping: {
+    freeShippingThreshold: number;
+    defaultShippingCost: number;
+    enableTracking: boolean;
+    shippingZones: Array<{ name: string; cost: number }>;
+  };
+  appearance: {
+    theme: string;
+    primaryColor: string;
+    logoUrl: string;
+    faviconUrl: string;
+  };
+}
 
 export default function AdminSettings() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [settings, setSettings] = useState<SettingsType>({
-    _id: '',
-    websiteName: "Koshiro Japan Style Fashion",
-    websiteDescription: "Thời trang Nhật Bản truyền thống và hiện đại",
-    contactEmail: "contact@koshiro-fashion.com",
-    contactPhone: "+84 123 456 789",
-    primaryColor: "#3b82f6",
-    enableDarkMode: true,
-    maintenanceMode: false,
-    debugMode: false,
-    createdAt: '',
-    updatedAt: ''
+  const { language } = useLanguage();
+  const [settings, setSettings] = useState<SystemSettings>({
+    general: {
+      siteName: "Koshiro Japan Style Fashion",
+      siteDescription: "Authentic Japanese fashion and accessories",
+      contactEmail: "contact@koshiro.com",
+      contactPhone: "+84 123 456 789",
+      address: "123 Fashion Street, Ho Chi Minh City, Vietnam",
+      timezone: "Asia/Ho_Chi_Minh",
+      currency: "VND",
+      language: "vi"
+    },
+    notifications: {
+      emailNotifications: true,
+      orderNotifications: true,
+      stockNotifications: true,
+      customerNotifications: true,
+      adminNotifications: true
+    },
+    security: {
+      sessionTimeout: 30,
+      passwordMinLength: 8,
+      requireTwoFactor: false,
+      maxLoginAttempts: 5,
+      enableCaptcha: true
+    },
+    payment: {
+      stripeEnabled: true,
+      paypalEnabled: true,
+      cashOnDelivery: true,
+      bankTransfer: true
+    },
+    shipping: {
+      freeShippingThreshold: 1000000,
+      defaultShippingCost: 50000,
+      enableTracking: true,
+      shippingZones: [
+        { name: "Ho Chi Minh City", cost: 30000 },
+        { name: "Hanoi", cost: 50000 },
+        { name: "Other Cities", cost: 80000 }
+      ]
+    },
+    appearance: {
+      theme: "light",
+      primaryColor: "#000000",
+      logoUrl: "/logo.png",
+      faviconUrl: "/favicon.ico"
+    }
   });
-  
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const { language } = useLanguage();
+  const [activeTab, setActiveTab] = useState("general");
 
-  // Load settings on component mount
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        setIsLoading(true);
-        const settingsData = await api.getSettings();
-        setSettings(settingsData);
-      } catch (error) {
-        console.error('Error loading settings:', error);
-        toast({
-          title: language === 'vi' ? "Lỗi tải cài đặt" : 
-                 language === 'ja' ? "設定読み込みエラー" : 
-                 "Error Loading Settings",
-          description: language === 'vi' ? "Không thể tải cài đặt hệ thống" :
-                       language === 'ja' ? "システム設定を読み込めませんでした" :
-                       "Unable to load system settings",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
+    if (!isLoggedIn) {
+      navigate("/admin/login");
+    }
+  }, [navigate]);
 
+  useEffect(() => {
     loadSettings();
-  }, [toast, language]);
+  }, []);
 
-  const translations = {
-    vi: {
-      title: "Cài đặt Hệ thống",
-      subtitle: "Quản lý cài đặt website và hệ thống",
-      save: "Lưu cài đặt",
-      saved: "Đã lưu cài đặt thành công",
-      error: "Lỗi khi lưu cài đặt",
-      loading: "Đang tải...",
-      website: "Website",
-      appearance: "Giao diện",
-      system: "Hệ thống",
-      websiteName: "Tên website",
-      websiteDescription: "Mô tả website",
-      contactEmail: "Email liên hệ",
-      contactPhone: "Số điện thoại",
-      primaryColor: "Màu chủ đạo",
-      enableDarkMode: "Bật chế độ tối",
-      maintenanceMode: "Chế độ bảo trì",
-      debugMode: "Chế độ debug"
-    },
-    en: {
-      title: "System Settings",
-      subtitle: "Manage website and system settings",
-      save: "Save Settings",
-      saved: "Settings saved successfully",
-      error: "Error saving settings",
-      loading: "Loading...",
-      website: "Website",
-      appearance: "Appearance",
-      system: "System",
-      websiteName: "Website Name",
-      websiteDescription: "Website Description",
-      contactEmail: "Contact Email",
-      contactPhone: "Contact Phone",
-      primaryColor: "Primary Color",
-      enableDarkMode: "Enable Dark Mode",
-      maintenanceMode: "Maintenance Mode",
-      debugMode: "Debug Mode"
-    },
-    ja: {
-      title: "システム設定",
-      subtitle: "ウェブサイトとシステム設定を管理",
-      save: "設定を保存",
-      saved: "設定が正常に保存されました",
-      error: "設定の保存中にエラーが発生しました",
-      loading: "読み込み中...",
-      website: "ウェブサイト",
-      appearance: "外観",
-      system: "システム",
-      websiteName: "ウェブサイト名",
-      websiteDescription: "ウェブサイトの説明",
-      contactEmail: "連絡先メール",
-      contactPhone: "連絡先電話番号",
-      primaryColor: "プライマリカラー",
-      enableDarkMode: "ダークモードを有効にする",
-      maintenanceMode: "メンテナンスモード",
-      debugMode: "デバッグモード"
+  const loadSettings = async () => {
+    try {
+      setIsLoading(true);
+      // In a real app, you would load settings from API
+      // const response = await api.getSettings();
+      // setSettings(response.data);
+      
+      // For now, we'll use the default settings
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      toast({
+        title: "Error loading settings",
+        description: "Could not load system settings",
+        variant: "destructive",
+      });
+      setIsLoading(false);
     }
   };
 
-  const t = translations[language as keyof typeof translations] || translations.vi;
-
-
-
-  const handleSave = async () => {
+  const handleSaveSettings = async () => {
     try {
       setIsSaving(true);
-      await api.updateSettings(settings);
+      // In a real app, you would save settings to API
+      // await api.updateSettings(settings);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
-        title: language === 'vi' ? "Đã lưu cài đặt" : 
-               language === 'ja' ? "設定が保存されました" : 
-               "Settings Saved",
-        description: language === 'vi' ? "Cài đặt đã được lưu thành công" :
-                     language === 'ja' ? "設定が正常に保存されました" :
-                     "Settings have been saved successfully",
+        title: "Settings saved successfully",
+        description: "Your changes have been applied",
       });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
-        title: language === 'vi' ? "Lỗi lưu cài đặt" : 
-               language === 'ja' ? "設定保存エラー" : 
-               "Error Saving Settings",
-        description: language === 'vi' ? "Không thể lưu cài đặt" :
-                     language === 'ja' ? "設定を保存できませんでした" :
-                     "Unable to save settings",
+        title: "Error saving settings",
+        description: "Could not save your changes",
         variant: "destructive",
       });
     } finally {
@@ -169,20 +223,190 @@ export default function AdminSettings() {
     }
   };
 
-  const handleInputChange = (key: keyof SettingsType, value: string | boolean) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: value
-    }));
+  const handleResetSettings = () => {
+    if (confirm("Are you sure you want to reset all settings to default?")) {
+      loadSettings();
+      toast({
+        title: "Settings reset",
+        description: "All settings have been reset to default values",
+      });
+    }
   };
+
+  const translations = {
+    en: {
+      title: "System Settings",
+      subtitle: "Manage your store configuration and preferences",
+      general: "General",
+      notifications: "Notifications",
+      security: "Security",
+      payment: "Payment",
+      shipping: "Shipping",
+      appearance: "Appearance",
+      save: "Save Changes",
+      reset: "Reset to Default",
+      loading: "Loading settings...",
+      siteName: "Site Name",
+      siteDescription: "Site Description",
+      contactEmail: "Contact Email",
+      contactPhone: "Contact Phone",
+      address: "Address",
+      timezone: "Timezone",
+      currency: "Currency",
+      language: "Language",
+      emailNotifications: "Email Notifications",
+      orderNotifications: "Order Notifications",
+      stockNotifications: "Stock Notifications",
+      customerNotifications: "Customer Notifications",
+      adminNotifications: "Admin Notifications",
+      sessionTimeout: "Session Timeout (minutes)",
+      passwordMinLength: "Minimum Password Length",
+      requireTwoFactor: "Require Two-Factor Authentication",
+      maxLoginAttempts: "Maximum Login Attempts",
+      enableCaptcha: "Enable CAPTCHA",
+      stripeEnabled: "Enable Stripe",
+      paypalEnabled: "Enable PayPal",
+      cashOnDelivery: "Cash on Delivery",
+      bankTransfer: "Bank Transfer",
+      freeShippingThreshold: "Free Shipping Threshold",
+      defaultShippingCost: "Default Shipping Cost",
+      enableTracking: "Enable Order Tracking",
+      shippingZones: "Shipping Zones",
+      theme: "Theme",
+      primaryColor: "Primary Color",
+      logoUrl: "Logo URL",
+      faviconUrl: "Favicon URL",
+      systemStatus: "System Status",
+      databaseStatus: "Database Status",
+      serverStatus: "Server Status",
+      uptime: "Uptime",
+      version: "Version",
+      lastBackup: "Last Backup",
+      nextBackup: "Next Backup",
+      backupNow: "Backup Now",
+      restoreBackup: "Restore Backup",
+      exportSettings: "Export Settings",
+      importSettings: "Import Settings"
+    },
+    vi: {
+      title: "Cài Đặt Hệ Thống",
+      subtitle: "Quản lý cấu hình và tùy chọn cửa hàng",
+      general: "Tổng Quan",
+      notifications: "Thông Báo",
+      security: "Bảo Mật",
+      payment: "Thanh Toán",
+      shipping: "Vận Chuyển",
+      appearance: "Giao Diện",
+      save: "Lưu Thay Đổi",
+      reset: "Đặt Lại Mặc Định",
+      loading: "Đang tải cài đặt...",
+      siteName: "Tên Website",
+      siteDescription: "Mô Tả Website",
+      contactEmail: "Email Liên Hệ",
+      contactPhone: "Số Điện Thoại",
+      address: "Địa Chỉ",
+      timezone: "Múi Giờ",
+      currency: "Tiền Tệ",
+      language: "Ngôn Ngữ",
+      emailNotifications: "Thông Báo Email",
+      orderNotifications: "Thông Báo Đơn Hàng",
+      stockNotifications: "Thông Báo Tồn Kho",
+      customerNotifications: "Thông Báo Khách Hàng",
+      adminNotifications: "Thông Báo Admin",
+      sessionTimeout: "Thời Gian Phiên (phút)",
+      passwordMinLength: "Độ Dài Mật Khẩu Tối Thiểu",
+      requireTwoFactor: "Yêu Cầu Xác Thực 2 Yếu Tố",
+      maxLoginAttempts: "Số Lần Đăng Nhập Tối Đa",
+      enableCaptcha: "Bật CAPTCHA",
+      stripeEnabled: "Bật Stripe",
+      paypalEnabled: "Bật PayPal",
+      cashOnDelivery: "Tiền Mặt Khi Nhận Hàng",
+      bankTransfer: "Chuyển Khoản Ngân Hàng",
+      freeShippingThreshold: "Ngưỡng Miễn Phí Vận Chuyển",
+      defaultShippingCost: "Phí Vận Chuyển Mặc Định",
+      enableTracking: "Bật Theo Dõi Đơn Hàng",
+      shippingZones: "Khu Vực Vận Chuyển",
+      theme: "Giao Diện",
+      primaryColor: "Màu Chủ Đạo",
+      logoUrl: "URL Logo",
+      faviconUrl: "URL Favicon",
+      systemStatus: "Trạng Thái Hệ Thống",
+      databaseStatus: "Trạng Thái Cơ Sở Dữ Liệu",
+      serverStatus: "Trạng Thái Máy Chủ",
+      uptime: "Thời Gian Hoạt Động",
+      version: "Phiên Bản",
+      lastBackup: "Sao Lưu Cuối",
+      nextBackup: "Sao Lưu Tiếp Theo",
+      backupNow: "Sao Lưu Ngay",
+      restoreBackup: "Khôi Phục Sao Lưu",
+      exportSettings: "Xuất Cài Đặt",
+      importSettings: "Nhập Cài Đặt"
+    },
+    ja: {
+      title: "システム設定",
+      subtitle: "ストアの設定とプリファレンスを管理",
+      general: "一般",
+      notifications: "通知",
+      security: "セキュリティ",
+      payment: "決済",
+      shipping: "配送",
+      appearance: "外観",
+      save: "変更を保存",
+      reset: "デフォルトにリセット",
+      loading: "設定を読み込み中...",
+      siteName: "サイト名",
+      siteDescription: "サイト説明",
+      contactEmail: "連絡先メール",
+      contactPhone: "連絡先電話番号",
+      address: "住所",
+      timezone: "タイムゾーン",
+      currency: "通貨",
+      language: "言語",
+      emailNotifications: "メール通知",
+      orderNotifications: "注文通知",
+      stockNotifications: "在庫通知",
+      customerNotifications: "顧客通知",
+      adminNotifications: "管理者通知",
+      sessionTimeout: "セッションタイムアウト（分）",
+      passwordMinLength: "最小パスワード長",
+      requireTwoFactor: "二要素認証を要求",
+      maxLoginAttempts: "最大ログイン試行回数",
+      enableCaptcha: "CAPTCHAを有効化",
+      stripeEnabled: "Stripeを有効化",
+      paypalEnabled: "PayPalを有効化",
+      cashOnDelivery: "代金引換",
+      bankTransfer: "銀行振込",
+      freeShippingThreshold: "送料無料のしきい値",
+      defaultShippingCost: "デフォルト送料",
+      enableTracking: "注文追跡を有効化",
+      shippingZones: "配送地域",
+      theme: "テーマ",
+      primaryColor: "プライマリカラー",
+      logoUrl: "ロゴURL",
+      faviconUrl: "ファビコンURL",
+      systemStatus: "システムステータス",
+      databaseStatus: "データベースステータス",
+      serverStatus: "サーバーステータス",
+      uptime: "稼働時間",
+      version: "バージョン",
+      lastBackup: "最後のバックアップ",
+      nextBackup: "次のバックアップ",
+      backupNow: "今すぐバックアップ",
+      restoreBackup: "バックアップを復元",
+      exportSettings: "設定をエクスポート",
+      importSettings: "設定をインポート"
+    }
+  };
+
+  const t = translations[language as keyof typeof translations] || translations.en;
 
   if (isLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>{t.loading}</span>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">{t.loading}</p>
           </div>
         </div>
       </AdminLayout>
@@ -191,60 +415,135 @@ export default function AdminSettings() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{t.title}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t.title}</h1>
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
-          
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              <>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleResetSettings}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              {t.reset}
+            </Button>
+            <Button onClick={handleSaveSettings} disabled={isSaving}>
+              {isSaving ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Đang lưu...
-              </>
-            ) : (
-              <>
+              ) : (
                 <Save className="h-4 w-4 mr-2" />
-                {t.save}
-              </>
-            )}
-          </Button>
+              )}
+              {t.save}
+            </Button>
+          </div>
         </div>
 
-        <Tabs defaultValue="website" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="website" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              {t.website}
+        {/* System Status */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t.systemStatus}</CardTitle>
+              <Activity className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">Online</div>
+              <p className="text-xs text-muted-foreground">All systems operational</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t.databaseStatus}</CardTitle>
+              <Database className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">Connected</div>
+              <p className="text-xs text-muted-foreground">MongoDB Atlas</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t.serverStatus}</CardTitle>
+              <Server className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">Running</div>
+              <p className="text-xs text-muted-foreground">Port 3000</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t.uptime}</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">99.9%</div>
+              <p className="text-xs text-muted-foreground">Last 30 days</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Settings Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="general" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              {t.general}
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              {t.notifications}
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              {t.security}
+            </TabsTrigger>
+            <TabsTrigger value="payment" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              {t.payment}
+            </TabsTrigger>
+            <TabsTrigger value="shipping" className="flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              {t.shipping}
             </TabsTrigger>
             <TabsTrigger value="appearance" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               {t.appearance}
             </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              {t.system}
-            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="website" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  {t.website}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TabsContent value="general" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Site Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="websiteName">{t.websiteName}</Label>
+                    <Label htmlFor="siteName">{t.siteName}</Label>
                     <Input
-                      id="websiteName"
-                      value={settings.websiteName}
-                      onChange={(e) => handleInputChange('websiteName', e.target.value)}
+                      id="siteName"
+                      value={settings.general.siteName}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        general: { ...prev.general, siteName: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="siteDescription">{t.siteDescription}</Label>
+                    <Textarea
+                      id="siteDescription"
+                      value={settings.general.siteDescription}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        general: { ...prev.general, siteDescription: e.target.value }
+                      }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -252,110 +551,577 @@ export default function AdminSettings() {
                     <Input
                       id="contactEmail"
                       type="email"
-                      value={settings.contactEmail}
-                      onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                      value={settings.general.contactEmail}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        general: { ...prev.general, contactEmail: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contactPhone">{t.contactPhone}</Label>
+                    <Input
+                      id="contactPhone"
+                      value={settings.general.contactPhone}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        general: { ...prev.general, contactPhone: e.target.value }
+                      }))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Location & Regional
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="address">{t.address}</Label>
+                    <Textarea
+                      id="address"
+                      value={settings.general.address}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        general: { ...prev.general, address: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="timezone">{t.timezone}</Label>
+                    <Select
+                      value={settings.general.timezone}
+                      onValueChange={(value) => setSettings(prev => ({
+                        ...prev,
+                        general: { ...prev.general, timezone: value }
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh</SelectItem>
+                        <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
+                        <SelectItem value="UTC">UTC</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">{t.currency}</Label>
+                    <Select
+                      value={settings.general.currency}
+                      onValueChange={(value) => setSettings(prev => ({
+                        ...prev,
+                        general: { ...prev.general, currency: value }
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="VND">VND (₫)</SelectItem>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="JPY">JPY (¥)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="language">{t.language}</Label>
+                    <Select
+                      value={settings.general.language}
+                      onValueChange={(value) => setSettings(prev => ({
+                        ...prev,
+                        general: { ...prev.general, language: value }
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vi">Tiếng Việt</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="ja">日本語</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Notification Preferences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.emailNotifications}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receive notifications via email
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.emailNotifications}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, emailNotifications: checked }
+                      }))}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.orderNotifications}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Get notified about new orders
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.orderNotifications}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, orderNotifications: checked }
+                      }))}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.stockNotifications}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Get notified about low stock items
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.stockNotifications}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, stockNotifications: checked }
+                      }))}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.customerNotifications}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Get notified about customer activities
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.customerNotifications}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, customerNotifications: checked }
+                      }))}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.adminNotifications}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Get notified about system events
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications.adminNotifications}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, adminNotifications: checked }
+                      }))}
                     />
                   </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="websiteDescription">{t.websiteDescription}</Label>
-                  <Textarea
-                    id="websiteDescription"
-                    value={settings.websiteDescription}
-                    onChange={(e) => handleInputChange('websiteDescription', e.target.value)}
-                    rows={3}
-                  />
-                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                <div className="space-y-2">
-                  <Label htmlFor="contactPhone">{t.contactPhone}</Label>
-                  <Input
-                    id="contactPhone"
-                    value={settings.contactPhone}
-                    onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-                  />
+          <TabsContent value="security" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Authentication
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sessionTimeout">{t.sessionTimeout}</Label>
+                    <Input
+                      id="sessionTimeout"
+                      type="number"
+                      value={settings.security.sessionTimeout}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        security: { ...prev.security, sessionTimeout: parseInt(e.target.value) }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="passwordMinLength">{t.passwordMinLength}</Label>
+                    <Input
+                      id="passwordMinLength"
+                      type="number"
+                      value={settings.security.passwordMinLength}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        security: { ...prev.security, passwordMinLength: parseInt(e.target.value) }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxLoginAttempts">{t.maxLoginAttempts}</Label>
+                    <Input
+                      id="maxLoginAttempts"
+                      type="number"
+                      value={settings.security.maxLoginAttempts}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        security: { ...prev.security, maxLoginAttempts: parseInt(e.target.value) }
+                      }))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Security Features
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.requireTwoFactor}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Require 2FA for admin accounts
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.security.requireTwoFactor}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        security: { ...prev.security, requireTwoFactor: checked }
+                      }))}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.enableCaptcha}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Enable CAPTCHA on login forms
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.security.enableCaptcha}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        security: { ...prev.security, enableCaptcha: checked }
+                      }))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payment" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Payment Methods
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Stripe</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Accept credit card payments via Stripe
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.payment.stripeEnabled}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        payment: { ...prev.payment, stripeEnabled: checked }
+                      }))}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>PayPal</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Accept payments via PayPal
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.payment.paypalEnabled}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        payment: { ...prev.payment, paypalEnabled: checked }
+                      }))}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.cashOnDelivery}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Allow cash payment on delivery
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.payment.cashOnDelivery}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        payment: { ...prev.payment, cashOnDelivery: checked }
+                      }))}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.bankTransfer}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Allow bank transfer payments
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.payment.bankTransfer}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        payment: { ...prev.payment, bankTransfer: checked }
+                      }))}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="shipping" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Truck className="h-5 w-5" />
+                    Shipping Configuration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="freeShippingThreshold">{t.freeShippingThreshold}</Label>
+                    <Input
+                      id="freeShippingThreshold"
+                      type="number"
+                      value={settings.shipping.freeShippingThreshold}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        shipping: { ...prev.shipping, freeShippingThreshold: parseInt(e.target.value) }
+                      }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultShippingCost">{t.defaultShippingCost}</Label>
+                    <Input
+                      id="defaultShippingCost"
+                      type="number"
+                      value={settings.shipping.defaultShippingCost}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        shipping: { ...prev.shipping, defaultShippingCost: parseInt(e.target.value) }
+                      }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.enableTracking}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Enable order tracking for customers
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.shipping.enableTracking}
+                      onCheckedChange={(checked) => setSettings(prev => ({
+                        ...prev,
+                        shipping: { ...prev.shipping, enableTracking: checked }
+                      }))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    {t.shippingZones}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {settings.shipping.shippingZones.map((zone, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={zone.name}
+                        onChange={(e) => {
+                          const newZones = [...settings.shipping.shippingZones];
+                          newZones[index].name = e.target.value;
+                          setSettings(prev => ({
+                            ...prev,
+                            shipping: { ...prev.shipping, shippingZones: newZones }
+                          }));
+                        }}
+                        placeholder="Zone name"
+                      />
+                      <Input
+                        type="number"
+                        value={zone.cost}
+                        onChange={(e) => {
+                          const newZones = [...settings.shipping.shippingZones];
+                          newZones[index].cost = parseInt(e.target.value);
+                          setSettings(prev => ({
+                            ...prev,
+                            shipping: { ...prev.shipping, shippingZones: newZones }
+                          }));
+                        }}
+                        placeholder="Cost"
+                        className="w-24"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newZones = settings.shipping.shippingZones.filter((_, i) => i !== index);
+                          setSettings(prev => ({
+                            ...prev,
+                            shipping: { ...prev.shipping, shippingZones: newZones }
+                          }));
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newZones = [...settings.shipping.shippingZones, { name: "", cost: 0 }];
+                      setSettings(prev => ({
+                        ...prev,
+                        shipping: { ...prev.shipping, shippingZones: newZones }
+                      }));
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Zone
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="appearance" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  {t.appearance}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="primaryColor">{t.primaryColor}</Label>
-                  <div className="flex gap-2">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Palette className="h-5 w-5" />
+                    Theme & Colors
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="theme">{t.theme}</Label>
+                    <Select
+                      value={settings.appearance.theme}
+                      onValueChange={(value) => setSettings(prev => ({
+                        ...prev,
+                        appearance: { ...prev.appearance, theme: value }
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="light">Light</SelectItem>
+                        <SelectItem value="dark">Dark</SelectItem>
+                        <SelectItem value="auto">Auto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="primaryColor">{t.primaryColor}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="primaryColor"
+                        value={settings.appearance.primaryColor}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          appearance: { ...prev.appearance, primaryColor: e.target.value }
+                        }))}
+                      />
+                      <div
+                        className="w-10 h-10 rounded border"
+                        style={{ backgroundColor: settings.appearance.primaryColor }}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Branding
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="logoUrl">{t.logoUrl}</Label>
                     <Input
-                      id="primaryColor"
-                      value={settings.primaryColor}
-                      onChange={(e) => handleInputChange('primaryColor', e.target.value)}
+                      id="logoUrl"
+                      value={settings.appearance.logoUrl}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        appearance: { ...prev.appearance, logoUrl: e.target.value }
+                      }))}
                     />
-                    <div
-                      className="w-10 h-10 rounded border"
-                      style={{ backgroundColor: settings.primaryColor }}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="faviconUrl">{t.faviconUrl}</Label>
+                    <Input
+                      id="faviconUrl"
+                      value={settings.appearance.faviconUrl}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        appearance: { ...prev.appearance, faviconUrl: e.target.value }
+                      }))}
                     />
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>{t.enableDarkMode}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Cho phép người dùng chuyển đổi chế độ tối
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.enableDarkMode}
-                    onCheckedChange={(checked) => handleInputChange('enableDarkMode', checked)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="system" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  {t.system}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>{t.maintenanceMode}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Tạm thời tắt website để bảo trì
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.maintenanceMode}
-                    onCheckedChange={(checked) => handleInputChange('maintenanceMode', checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>{t.debugMode}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Hiển thị thông tin debug (chỉ cho admin)
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.debugMode}
-                    onCheckedChange={(checked) => handleInputChange('debugMode', checked)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

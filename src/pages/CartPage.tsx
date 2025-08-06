@@ -294,7 +294,11 @@ const CartPage: React.FC = () => {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h3 className="font-semibold text-lg">{item.product?.name || 'Product'}</h3>
-                        <p className="text-muted-foreground text-sm">{item.product?.categoryId?.name || 'Category'}</p>
+                        <p className="text-muted-foreground text-sm">
+                          {typeof item.product?.categoryId === 'string' 
+                            ? 'Category' 
+                            : item.product?.categoryId?.name || 'Category'}
+                        </p>
                       </div>
                       
                       <Button

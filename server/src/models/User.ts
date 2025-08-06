@@ -14,6 +14,24 @@ export interface IUser extends Document {
   lastActive?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  addresses?: Array<{
+    type: 'shipping' | 'billing';
+    fullName: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    isDefault: boolean;
+  }>;
+  preferences?: {
+    emailNotifications: boolean;
+    smsNotifications: boolean;
+    marketingEmails: boolean;
+    language: string;
+    currency: string;
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -72,6 +90,67 @@ const userSchema = new Schema<IUser>({
   },
   resetPasswordExpires: {
     type: Date
+  },
+  addresses: [{
+    type: {
+      type: String,
+      enum: ['shipping', 'billing'],
+      default: 'shipping'
+    },
+    fullName: {
+      type: String,
+      required: true
+    },
+    phone: {
+      type: String,
+      required: true
+    },
+    address: {
+      type: String,
+      required: true
+    },
+    city: {
+      type: String,
+      required: true
+    },
+    state: {
+      type: String,
+      required: true
+    },
+    zipCode: {
+      type: String,
+      required: true
+    },
+    country: {
+      type: String,
+      required: true
+    },
+    isDefault: {
+      type: Boolean,
+      default: false
+    }
+  }],
+  preferences: {
+    emailNotifications: {
+      type: Boolean,
+      default: true
+    },
+    smsNotifications: {
+      type: Boolean,
+      default: false
+    },
+    marketingEmails: {
+      type: Boolean,
+      default: false
+    },
+    language: {
+      type: String,
+      default: 'en'
+    },
+    currency: {
+      type: String,
+      default: 'USD'
+    }
   }
 }, {
   timestamps: true

@@ -273,7 +273,7 @@ export default function AdminProducts() {
         api.getCategories()
       ]);
       setProducts(productsResponse.data);
-      setCategories(categoriesResponse);
+      setCategories(categoriesResponse.categories);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -330,10 +330,39 @@ export default function AdminProducts() {
     setFilteredProducts(filtered);
   };
 
-  const handleCreateProduct = async (formData: ProductFormData) => {
+  const handleCreateProduct = async (formData: {
+    name: string;
+    nameEn: string;
+    nameJa: string;
+    description: string;
+    descriptionEn: string;
+    descriptionJa: string;
+    price: number;
+    originalPrice: number;
+    categoryId: string;
+    images: string[];
+    sizes: string[];
+    colors: Array<string | { name: string; value: string }>;
+    stock: number;
+    tags: string[];
+    isActive: boolean;
+    isFeatured: boolean;
+    onSale: boolean;
+    metaTitle: string;
+    metaDescription: string;
+    weight: number;
+    dimensions: { length: number; width: number; height: number };
+    sku: string;
+    barcode: string;
+  }) => {
     try {
       setIsSubmitting(true);
-      await api.createProduct(formData);
+      // Convert form data to API format
+      const apiData = {
+        ...formData,
+        colors: formData.colors.map((color) => typeof color === 'string' ? color : color.name)
+      };
+      await api.createProduct(apiData);
       toast({
         title: t.createSuccess,
       });
@@ -351,12 +380,41 @@ export default function AdminProducts() {
     }
   };
 
-  const handleUpdateProduct = async (formData: ProductFormData) => {
+  const handleUpdateProduct = async (formData: {
+    name: string;
+    nameEn: string;
+    nameJa: string;
+    description: string;
+    descriptionEn: string;
+    descriptionJa: string;
+    price: number;
+    originalPrice: number;
+    categoryId: string;
+    images: string[];
+    sizes: string[];
+    colors: Array<string | { name: string; value: string }>;
+    stock: number;
+    tags: string[];
+    isActive: boolean;
+    isFeatured: boolean;
+    onSale: boolean;
+    metaTitle: string;
+    metaDescription: string;
+    weight: number;
+    dimensions: { length: number; width: number; height: number };
+    sku: string;
+    barcode: string;
+  }) => {
     if (!editingProduct) return;
     
     try {
       setIsSubmitting(true);
-      await api.updateProduct(editingProduct._id, formData);
+      // Convert form data to API format
+      const apiData = {
+        ...formData,
+        colors: formData.colors.map((color) => typeof color === 'string' ? color : color.name)
+      };
+      await api.updateProduct(editingProduct._id, apiData);
       toast({
         title: t.updateSuccess,
       });
@@ -490,6 +548,7 @@ export default function AdminProducts() {
                   categories={categories}
                   onSubmit={handleCreateProduct}
                   isSubmitting={isSubmitting}
+                  mode="create"
                   onCancel={() => setIsCreateDialogOpen(false)}
                 />
               </DialogContent>
@@ -840,9 +899,15 @@ export default function AdminProducts() {
             {editingProduct && (
               <ProductForm
                 categories={categories}
-                product={editingProduct}
+                initialData={editingProduct ? {
+                  ...editingProduct,
+                  categoryId: typeof editingProduct.categoryId === 'string' 
+                    ? editingProduct.categoryId 
+                    : editingProduct.categoryId._id
+                } : undefined}
                 onSubmit={handleUpdateProduct}
                 isSubmitting={isSubmitting}
+                mode="edit"
                 onCancel={() => {
                   setIsEditDialogOpen(false);
                   setEditingProduct(null);

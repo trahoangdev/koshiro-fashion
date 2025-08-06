@@ -9,7 +9,7 @@ import {
   getOrderStats,
   trackOrder
 } from '../controllers/orderController';
-import { authenticateToken, requireAdmin, requireCustomer } from '../middleware/auth';
+import { authenticateToken, requireAdmin, requireCustomer, requireCustomerOrAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get('/track/:orderNumber', trackOrder);
 router.get('/my-orders', authenticateToken, requireCustomer, getUserOrders);
 router.get('/my-orders/:id', authenticateToken, requireCustomer, getOrder);
 router.post('/', authenticateToken, requireCustomer, createOrder);
-router.put('/:id/cancel', authenticateToken, requireCustomer, cancelOrder);
+router.put('/:id/cancel', authenticateToken, requireCustomerOrAdmin, cancelOrder);
 
 // Admin routes (protected)
 router.get('/', authenticateToken, requireAdmin, getOrders);

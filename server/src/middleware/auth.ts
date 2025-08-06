@@ -62,4 +62,16 @@ export const requireCustomer = (req: AuthRequest, res: Response, next: NextFunct
   }
 
   next();
+};
+
+export const requireCustomerOrAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  if (req.user.role !== 'customer' && req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Customer or admin access required' });
+  }
+
+  next();
 }; 

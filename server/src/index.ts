@@ -13,6 +13,8 @@ import cartRoutes from './routes/cart';
 import reviewRoutes from './routes/reviews';
 import settingsRoutes from './routes/settings';
 import adminRoutes from './routes/admin';
+import activityRoutes from './routes/activity';
+import notificationRoutes from './routes/notifications';
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +47,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
