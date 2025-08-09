@@ -278,24 +278,29 @@ const CategoryPage: React.FC<CategoryPageProps> = () => {
       
       try {
         setLoading(true);
+        console.log('Loading category data for slug:', slug);
         
         // Load category info
         const categoryResponse = await api.getCategoryBySlug(slug);
+        console.log('Category loaded:', categoryResponse.category);
         setCategory(categoryResponse.category);
         
         // Load products in category
+        console.log('Loading products for category ID:', categoryResponse.category._id);
         const productsResponse = await api.getCategoryWithProducts(categoryResponse.category._id, {
           page: currentPage,
           limit: 12
         });
         
+        console.log('Products loaded:', productsResponse.products.length, 'products');
         setProducts(productsResponse.products);
         setTotalPages(productsResponse.pagination.pages);
 
         // Extract available sizes and colors
         const allSizes = new Set<string>();
         const allColors = new Set<string>();
-        const maxPrice = Math.max(...productsResponse.products.map(p => p.salePrice || p.price));
+        const prices = productsResponse.products.map(p => p.salePrice || p.price);
+        const maxPrice = prices.length > 0 ? Math.max(...prices) : 2000000; // Default max price if no products
         
         productsResponse.products.forEach(product => {
           product.sizes?.forEach(size => allSizes.add(size));
