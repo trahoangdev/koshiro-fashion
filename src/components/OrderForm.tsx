@@ -74,21 +74,26 @@ export default function OrderForm({
   const { toast } = useToast();
   const { language } = useLanguage();
   const [formData, setFormData] = useState<OrderFormData>({
-    userId: '',
-    status: 'pending',
-    paymentStatus: 'pending',
-    items: [],
+    userId: initialData?.userId || '',
+    status: initialData?.status || 'pending',
+    paymentStatus: initialData?.paymentStatus || 'pending',
+    items: initialData?.items?.map(item => ({
+      productId: typeof item.product === 'object' ? item.product._id : item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.size,
+      color: item.color
+    })) || [],
     shippingAddress: {
-      name: '',
-      phone: '',
-      address: '',
-      city: '',
-      district: ''
+      name: initialData?.shippingAddress?.name || '',
+      phone: initialData?.shippingAddress?.phone || '',
+      address: initialData?.shippingAddress?.address || '',
+      city: initialData?.shippingAddress?.city || '',
+      district: initialData?.shippingAddress?.district || ''
     },
-    paymentMethod: '',
-    notes: '',
-    trackingNumber: '',
-    ...initialData
+    paymentMethod: initialData?.paymentMethod || '',
+    notes: initialData?.notes || '',
+    trackingNumber: initialData?.trackingNumber || ''
   });
 
   const [selectedProduct, setSelectedProduct] = useState<string>('');
@@ -196,6 +201,46 @@ export default function OrderForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.userId) {
+      toast({
+        title: t.error,
+        description: 'Please select a customer',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (formData.items.length === 0) {
+      toast({
+        title: t.error,
+        description: 'Please add at least one item to the order',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.shippingAddress.name || !formData.shippingAddress.phone || 
+        !formData.shippingAddress.address || !formData.shippingAddress.city || 
+        !formData.shippingAddress.district) {
+      toast({
+        title: t.error,
+        description: 'Please fill in all shipping address fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.paymentMethod) {
+      toast({
+        title: t.error,
+        description: 'Please specify a payment method',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await onSubmit(formData);
       toast({

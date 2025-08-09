@@ -184,11 +184,15 @@ export const clearCart = async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { userId: string } }).user.userId;
 
-    const cart = await Cart.findOne({ userId });
+    let cart = await Cart.findOne({ userId });
     if (!cart) {
-      return res.status(404).json({ message: 'Cart not found' });
+      // If cart doesn't exist, create empty one and return success
+      cart = new Cart({ userId, items: [] });
+      await cart.save();
+      return res.json({ message: 'Cart cleared successfully' });
     }
 
+    // Clear all items from cart
     cart.items = [];
     await cart.save();
 

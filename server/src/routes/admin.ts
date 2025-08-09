@@ -15,7 +15,6 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  updateOrderStatus,
   getRevenueData,
   getProductStats,
   getUserById,
@@ -27,7 +26,7 @@ import {
   getAnalyticsData,
   generateReport
 } from '../controllers/adminController';
-import { cancelOrder } from '../controllers/orderController';
+import { cancelOrder, deleteOrder, updateOrderStatus } from '../controllers/orderController';
 import { exportData, importData } from '../controllers/exportImportController';
 
 const router = express.Router();
@@ -46,6 +45,7 @@ router.get('/orders', getAdminOrders);
 router.get('/orders/:orderId', getOrderDetails);
 router.put('/orders/:id/status', updateOrderStatus);
 router.put('/orders/:id/cancel', cancelOrder);
+router.delete('/orders/:id', deleteOrder);
 router.put('/orders/bulk-status', bulkUpdateOrderStatus);
 router.get('/orders/:orderId/print', printOrder);
 router.post('/orders/:orderId/email', sendOrderEmail);

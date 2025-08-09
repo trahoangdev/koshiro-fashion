@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, ShoppingBag, Menu, X, User, Globe, Heart, LogOut, Settings, Package, CreditCard, MapPin, Bell, LogIn, UserPlus, GitCompare } from "lucide-react";
+import EnhancedMobileMenu from "./EnhancedMobileMenu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -352,49 +353,14 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden border-t bg-background">
-          <div className="container py-4 space-y-4">
-            <form onSubmit={handleSearch} className="w-full">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  type="search"
-                  placeholder={t.search}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </form>
-            <nav className="flex flex-col space-y-2">
-              <Button variant="ghost" className="justify-start">{t.tops}</Button>
-              <Button variant="ghost" className="justify-start">{t.bottoms}</Button>
-              <Button variant="ghost" className="justify-start">{t.accessories}</Button>
-              <Button variant="ghost" className="justify-start">{t.kimono}</Button>
-              <Button variant="ghost" className="justify-start">{t.yukata}</Button>
-              <Button variant="ghost" className="justify-start">{t.hakama}</Button>
-              <Button variant="ghost" className="justify-start">{t.sale}</Button>
-              <Link to="/wishlist" className="w-full">
-                <Button variant="ghost" className="justify-start w-full">
-                  <Heart className="mr-2 h-4 w-4" />
-                  {t.wishlist}
-                </Button>
-              </Link>
-              <Link to="/compare" className="w-full">
-                <Button variant="ghost" className="justify-start w-full">
-                  <GitCompare className="mr-2 h-4 w-4" />
-                  {language === 'vi' ? 'So Sánh' : language === 'ja' ? '比較' : 'Compare'}
-                </Button>
-              </Link>
-              <Link to="/profile" className="w-full">
-                <Button variant="ghost" className="justify-start w-full">{t.account}</Button>
-              </Link>
-            </nav>
-          </div>
-        </div>
-      )}
+      {/* Enhanced Mobile Menu */}
+      <EnhancedMobileMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        cartItemsCount={cartItemsCount}
+        wishlistCount={wishlistCount}
+        onSearch={onSearch}
+      />
     </header>
   );
 };
