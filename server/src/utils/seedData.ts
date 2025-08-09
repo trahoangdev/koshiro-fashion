@@ -3,6 +3,47 @@ import { User } from '../models/User';
 import { Category } from '../models/Category';
 import { Product } from '../models/Product';
 
+// Helper function to generate Vietnamese, English, and Japanese product names
+const generateProductData = (baseName: { vi: string; en: string; ja: string }, baseDescription: { vi: string; en: string; ja: string }) => ({
+  name: baseName.vi,
+  nameEn: baseName.en,
+  nameJa: baseName.ja,
+  description: baseDescription.vi,
+  descriptionEn: baseDescription.en,
+  descriptionJa: baseDescription.ja
+});
+
+// Enhanced color translations
+const colorTranslations = {
+  'Đen': { en: 'Black', ja: '黒' },
+  'Trắng': { en: 'White', ja: '白' },
+  'Đỏ': { en: 'Red', ja: '赤' },
+  'Xanh dương': { en: 'Blue', ja: '青' },
+  'Xanh lá': { en: 'Green', ja: '緑' },
+  'Hồng': { en: 'Pink', ja: 'ピンク' },
+  'Tím': { en: 'Purple', ja: '紫' },
+  'Vàng': { en: 'Yellow', ja: '黄色' },
+  'Nâu': { en: 'Brown', ja: '茶色' },
+  'Xám': { en: 'Gray', ja: 'グレー' },
+  'Xanh đen': { en: 'Navy', ja: 'ネイビー' },
+  'Tím đen': { en: 'Dark Purple', ja: 'ダークパープル' },
+  'Cam': { en: 'Orange', ja: 'オレンジ' },
+  'Kem': { en: 'Cream', ja: 'クリーム' },
+  'Bạc': { en: 'Silver', ja: 'シルバー' },
+  'Vàng kim': { en: 'Gold', ja: 'ゴールド' }
+};
+
+// Enhanced size translations
+const sizeTranslations = {
+  'XS': { en: 'XS', ja: 'XS' },
+  'S': { en: 'S', ja: 'S' },
+  'M': { en: 'M', ja: 'M' },
+  'L': { en: 'L', ja: 'L' },
+  'XL': { en: 'XL', ja: 'XL' },
+  'XXL': { en: 'XXL', ja: 'XXL' },
+  'One Size': { en: 'One Size', ja: 'フリーサイズ' }
+};
+
 const seedData = async () => {
   try {
     await connectDB();
@@ -20,104 +61,263 @@ const seedData = async () => {
       password: 'admin123',
       name: 'Admin Koshiro',
       role: 'admin',
-      status: 'active'
+      status: 'active',
+      addresses: [
+        {
+          street: '123 Shibuya Street',
+          city: 'Tokyo',
+          state: 'Tokyo',
+          zipCode: '150-0002',
+          country: 'Japan',
+          isDefault: true
+        }
+      ],
+      preferences: {
+        language: 'ja',
+        currency: 'JPY',
+        notifications: {
+          email: true,
+          sms: false,
+          push: true
+        }
+      }
     });
     await adminUser.save();
     console.log('👤 Created admin user');
 
-    // Create categories
+    // Create test customer users
+    const customers = [
+      {
+        email: 'customer1@example.com',
+        password: 'customer123',
+        name: 'Nguyen Van A',
+        role: 'customer',
+        status: 'active',
+        addresses: [
+          {
+            street: '456 Le Loi Street',
+            city: 'Ho Chi Minh City',
+            state: 'Ho Chi Minh',
+            zipCode: '700000',
+            country: 'Vietnam',
+            isDefault: true
+          }
+        ],
+        preferences: {
+          language: 'vi',
+          currency: 'VND',
+          notifications: {
+            email: true,
+            sms: true,
+            push: true
+          }
+        }
+      },
+      {
+        email: 'customer2@example.com',
+        password: 'customer123',
+        name: 'John Smith',
+        role: 'customer',
+        status: 'active',
+        addresses: [
+          {
+            street: '789 Broadway',
+            city: 'New York',
+            state: 'NY',
+            zipCode: '10001',
+            country: 'USA',
+            isDefault: true
+          }
+        ],
+        preferences: {
+          language: 'en',
+          currency: 'USD',
+          notifications: {
+            email: true,
+            sms: false,
+            push: true
+          }
+        }
+      },
+      {
+        email: 'customer3@example.com',
+        password: 'customer123',
+        name: 'Tanaka Hiroshi',
+        role: 'customer',
+        status: 'active',
+        addresses: [
+          {
+            street: '321 Sakura Street',
+            city: 'Osaka',
+            state: 'Osaka',
+            zipCode: '540-0001',
+            country: 'Japan',
+            isDefault: true
+          }
+        ],
+        preferences: {
+          language: 'ja',
+          currency: 'JPY',
+          notifications: {
+            email: true,
+            sms: true,
+            push: false
+          }
+        }
+      }
+    ];
+
+    await User.insertMany(customers);
+    console.log('👥 Created customer users');
+
+    // Create enhanced categories
     const categories = [
       {
         name: 'Áo',
         nameEn: 'Tops',
         nameJa: 'トップス',
-        description: 'Các loại áo thời trang Nhật Bản',
-        descriptionEn: 'Japanese fashion tops',
-        descriptionJa: '日本のファッショントップス',
+        description: 'Bộ sưu tập các loại áo thời trang Nhật Bản cao cấp với chất liệu tự nhiên và thiết kế tinh tế',
+        descriptionEn: 'Premium Japanese fashion tops collection with natural materials and refined designs',
+        descriptionJa: '自然素材と洗練されたデザインによる日本のプレミアムファッショントップスコレクション',
         slug: 'tops',
-        image: '/placeholder.svg',
-        isActive: true
+        image: '/images/categories/tops.jpg',
+        isActive: true,
+        sortOrder: 1,
+        metaTitle: 'Áo Thời Trang Nhật Bản | Koshiro Fashion',
+        metaDescription: 'Khám phá bộ sưu tập áo thời trang Nhật Bản cao cấp với thiết kế độc đáo và chất liệu tự nhiên'
       },
       {
         name: 'Quần',
         nameEn: 'Bottoms',
         nameJa: 'ボトムス',
-        description: 'Các loại quần thời trang Nhật Bản',
-        descriptionEn: 'Japanese fashion bottoms',
-        descriptionJa: '日本のファッションボトムス',
+        description: 'Bộ sưu tập quần và váy thời trang Nhật Bản với phom dáng hoàn hảo và comfort tối ưu',
+        descriptionEn: 'Japanese fashion bottoms collection with perfect fit and optimal comfort',
+        descriptionJa: '完璧なフィットと最適な快適さを備えた日本のファッションボトムスコレクション',
         slug: 'bottoms',
-        image: '/placeholder.svg',
-        isActive: true
+        image: '/images/categories/bottoms.jpg',
+        isActive: true,
+        sortOrder: 2,
+        metaTitle: 'Quần Thời Trang Nhật Bản | Koshiro Fashion',
+        metaDescription: 'Tuyển chọn quần thời trang Nhật Bản với phom dáng hoàn hảo và chất liệu cao cấp'
       },
       {
         name: 'Phụ kiện',
         nameEn: 'Accessories',
         nameJa: 'アクセサリー',
-        description: 'Phụ kiện thời trang Nhật Bản',
-        descriptionEn: 'Japanese fashion accessories',
-        descriptionJa: '日本のファッションアクセサリー',
+        description: 'Phụ kiện thời trang Nhật Bản tinh tế - từ túi xách, giày dép đến trang sức truyền thống',
+        descriptionEn: 'Exquisite Japanese fashion accessories - from bags, footwear to traditional jewelry',
+        descriptionJa: 'バッグ、履物から伝統的なジュエリーまで、精巧な日本のファッションアクセサリー',
         slug: 'accessories',
-        image: '/placeholder.svg',
-        isActive: true
+        image: '/images/categories/accessories.jpg',
+        isActive: true,
+        sortOrder: 3,
+        metaTitle: 'Phụ Kiện Thời Trang Nhật Bản | Koshiro Fashion',
+        metaDescription: 'Bộ sưu tập phụ kiện thời trang Nhật Bản cao cấp với thiết kế độc đáo và chất lượng vượt trội'
       },
       {
         name: 'Kimono',
         nameEn: 'Kimono',
         nameJa: '着物',
-        description: 'Kimono truyền thống Nhật Bản',
-        descriptionEn: 'Traditional Japanese kimono',
-        descriptionJa: '伝統的な日本の着物',
+        description: 'Kimono truyền thống Nhật Bản authentic với nghệ thuật thêu tay và họa tiết độc quyền',
+        descriptionEn: 'Authentic traditional Japanese kimono with hand-embroidered artistry and exclusive patterns',
+        descriptionJa: '手刺繍の芸術性と独占的なパターンを持つ本格的な伝統的日本の着物',
         slug: 'kimono',
-        image: '/placeholder.svg',
-        isActive: true
+        image: '/images/categories/kimono.jpg',
+        isActive: true,
+        sortOrder: 4,
+        metaTitle: 'Kimono Truyền Thống Nhật Bản | Koshiro Fashion',
+        metaDescription: 'Kimono authentic với nghệ thuật thêu tay tinh xảo và họa tiết độc quyền từ Nhật Bản'
       },
       {
         name: 'Yukata',
         nameEn: 'Yukata',
         nameJa: '浴衣',
-        description: 'Yukata mùa hè Nhật Bản',
-        descriptionEn: 'Japanese summer yukata',
-        descriptionJa: '日本の夏の浴衣',
+        description: 'Yukata mùa hè nhẹ nhàng với họa tiết hoa anh đào và thiết kế thoải mái cho mọi dịp',
+        descriptionEn: 'Light summer yukata with cherry blossom patterns and comfortable designs for all occasions',
+        descriptionJa: 'あらゆる機会に適した桜の模様と快適なデザインの軽い夏の浴衣',
         slug: 'yukata',
-        image: '/placeholder.svg',
-        isActive: true
+        image: '/images/categories/yukata.jpg',
+        isActive: true,
+        sortOrder: 5,
+        metaTitle: 'Yukata Mùa Hè Nhật Bản | Koshiro Fashion',
+        metaDescription: 'Yukata mùa hè với họa tiết hoa anh đào đẹp mắt và chất liệu cotton thoáng mát'
       },
       {
         name: 'Hakama',
         nameEn: 'Hakama',
         nameJa: '袴',
-        description: 'Hakama truyền thống Nhật Bản',
-        descriptionEn: 'Traditional Japanese hakama',
-        descriptionJa: '伝統的な日本の袴',
+        description: 'Hakama truyền thống cho các dịp trang trọng với chất liệu silk cao cấp và may thủ công',
+        descriptionEn: 'Traditional hakama for formal occasions with premium silk materials and handcrafted construction',
+        descriptionJa: 'プレミアムシルク素材と手作りの構造による正式な機会のための伝統的な袴',
         slug: 'hakama',
-        image: '/placeholder.svg',
-        isActive: true
+        image: '/images/categories/hakama.jpg',
+        isActive: true,
+        sortOrder: 6,
+        metaTitle: 'Hakama Truyền Thống Nhật Bản | Koshiro Fashion',
+        metaDescription: 'Hakama cao cấp với chất liệu silk và may thủ công cho các dịp trang trọng'
+      },
+      {
+        name: 'Haori',
+        nameEn: 'Haori',
+        nameJa: '羽織',
+        description: 'Áo khoác Haori elegant với lớp lót silk và chi tiết thêu tinh xảo',
+        descriptionEn: 'Elegant haori jackets with silk lining and exquisite embroidered details',
+        descriptionJa: 'シルクの裏地と精巧な刺繍の詳細を備えたエレガントな羽織ジャケット',
+        slug: 'haori',
+        image: '/images/categories/haori.jpg',
+        isActive: true,
+        sortOrder: 7,
+        metaTitle: 'Áo Khoác Haori Nhật Bản | Koshiro Fashion',
+        metaDescription: 'Áo khoác Haori elegant với lót silk và chi tiết thêu thủ công tinh xảo'
+      },
+      {
+        name: 'Obi & Đai',
+        nameEn: 'Obi & Belts',
+        nameJa: '帯・ベルト',
+        description: 'Bộ sưu tập obi và đai thắt lưng truyền thống với nghệ thuật dệt thổ cẩm',
+        descriptionEn: 'Traditional obi and belt collection with brocade weaving artistry',
+        descriptionJa: '錦織りの芸術性を備えた伝統的な帯とベルトのコレクション',
+        slug: 'obi-belts',
+        image: '/images/categories/obi.jpg',
+        isActive: true,
+        sortOrder: 8,
+        metaTitle: 'Obi và Đai Thắt Lưng Nhật Bản | Koshiro Fashion',
+        metaDescription: 'Obi và đai thắt lưng truyền thống với nghệ thuật dệt thổ cẩm tinh xảo'
       }
     ];
 
     const savedCategories = await Category.insertMany(categories);
     console.log('📂 Created categories');
 
-    // Create products for each category
+    // Create enhanced products for each category
     const products = [
-      // ===== TOPS (Áo) =====
+      // ===== TOPS (Áo) - 10 sản phẩm =====
       {
-        name: 'Áo Yukata Nam',
-        nameEn: 'Men Yukata Top',
-        nameJa: '男性用浴衣トップ',
-        description: 'Áo Yukata dành cho nam giới với họa tiết truyền thống',
-        descriptionEn: 'Yukata top for men with traditional patterns',
-        descriptionJa: '伝統的な模様の男性用浴衣トップ',
-        price: 350000,
+        ...generateProductData(
+          { vi: 'Áo Yukata Nam Premium', en: 'Premium Men Yukata Top', ja: 'プレミアム男性用浴衣トップ' },
+          { vi: 'Áo Yukata cao cấp dành cho nam giới với họa tiết rồng truyền thống và chất liệu cotton organic', en: 'Premium yukata top for men with traditional dragon patterns and organic cotton material', ja: '伝統的な龍の模様とオーガニックコットン素材のプレミアム男性用浴衣トップ' }
+        ),
+        price: 450000,
+        salePrice: 350000,
         originalPrice: 450000,
         categoryId: savedCategories[0]._id, // Tops
-        images: ['/placeholder.svg'],
-        sizes: ['M', 'L', 'XL'],
+        images: ['/images/products/yukata-men-dragon.jpg', '/images/products/yukata-men-dragon-2.jpg', '/images/products/yukata-men-dragon-3.jpg'],
+        sizes: ['M', 'L', 'XL', 'XXL'],
         colors: ['Xanh dương', 'Đen', 'Xám'],
-        stock: 12,
+        colorsEn: ['Blue', 'Black', 'Gray'],
+        colorsJa: ['青', '黒', 'グレー'],
+        stock: 25,
         isActive: true,
-        isFeatured: false,
-        tags: ['yukata', 'nam', 'áo', 'truyền thống']
+        isFeatured: true,
+        tags: ['yukata', 'nam', 'áo', 'truyền thống', 'cotton organic', 'rồng'],
+        sku: 'YKT-M-DRG-001',
+        weight: 0.3,
+        material: 'Cotton Organic',
+        careInstructions: 'Giặt tay với nước lạnh, phơi khô tự nhiên',
+        origin: 'Japan',
+        warranty: '6 tháng',
+        rating: 4.8,
+        reviewCount: 45
       },
       {
         name: 'Áo Kimono Nữ',

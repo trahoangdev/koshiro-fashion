@@ -82,9 +82,9 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
 
   if (viewMode === 'list') {
     return (
-      <Card className="group overflow-hidden border-border/50 hover:shadow-medium transition-all duration-300 cursor-pointer" onClick={handleCardClick}>
+      <Card className="group overflow-hidden border-border/40 hover:shadow-lg hover:border-border/60 transition-all duration-300 cursor-pointer rounded-md" onClick={handleCardClick}>
         <div className="flex">
-          <div className="relative w-48 h-48 flex-shrink-0">
+          <div className="relative w-48 h-48 flex-shrink-0 rounded-l-md overflow-hidden">
             <img
               src={product.images[0] || '/placeholder.svg'}
               alt={getName()}
@@ -186,8 +186,8 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
   }
 
   return (
-    <Card className="group overflow-hidden border-border/50 hover:shadow-medium transition-all duration-300 cursor-pointer" onClick={handleCardClick}>
-      <div className="relative overflow-hidden">
+    <Card className="group overflow-hidden border-border/40 hover:shadow-lg hover:border-border/60 transition-all duration-300 cursor-pointer rounded-md" onClick={handleCardClick}>
+      <div className="relative overflow-hidden rounded-t-md">
         <img
           src={product.images[0] || '/placeholder.svg'}
           alt={getName()}

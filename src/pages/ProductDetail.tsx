@@ -1033,8 +1033,8 @@ const ProductDetail: React.FC = () => {
           <h2 className="text-2xl font-bold mb-8">You might also like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {relatedProducts.slice(0, 4).map((relatedProduct) => (
-              <Card key={relatedProduct._id} className="group cursor-pointer hover:shadow-lg transition-shadow">
-                <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
+              <Card key={relatedProduct._id} className="group cursor-pointer hover:shadow-lg transition-shadow rounded-md">
+                <div className="aspect-square bg-muted rounded-t-md overflow-hidden">
                   <img
                     src={relatedProduct.images[0] || '/placeholder.svg'}
                     alt={relatedProduct.name}
