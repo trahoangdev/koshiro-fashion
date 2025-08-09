@@ -4,6 +4,7 @@ import {
   getUserOrders,
   getOrder,
   createOrder,
+  updateOrder,
   updateOrderStatus,
   cancelOrder,
   getOrderStats,
@@ -26,6 +27,7 @@ router.put('/:id/cancel', authenticateToken, requireCustomerOrAdmin, cancelOrder
 router.get('/', authenticateToken, requireAdmin, getOrders);
 router.get('/stats', authenticateToken, requireAdmin, getOrderStats);
 router.get('/:id', authenticateToken, requireAdmin, getOrder);
+router.put('/:id', authenticateToken, requireAdmin, updateOrder);
 router.put('/:id/status', authenticateToken, requireAdmin, updateOrderStatus);
 
 export default router; 

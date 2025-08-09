@@ -47,6 +47,7 @@ export interface Product {
   descriptionJa?: string;
   price: number;
   originalPrice?: number;
+  salePrice?: number;
   categoryId: string | {
     _id: string;
     name: string;
@@ -676,8 +677,18 @@ class ApiClient {
   }
 
   async updateOrder(id: string, orderData: {
-    status?: 'pending' | 'processing' | 'completed' | 'cancelled';
+    status?: 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
     paymentStatus?: 'pending' | 'paid' | 'failed';
+    paymentMethod?: string;
+    notes?: string;
+    trackingNumber?: string;
+    shippingAddress?: {
+      name: string;
+      phone: string;
+      address: string;
+      city: string;
+      district: string;
+    };
   }): Promise<{ message: string; order: Order }> {
     return this.request<{ message: string; order: Order }>(`/admin/orders/${id}`, {
       method: 'PUT',
@@ -984,7 +995,7 @@ class ApiClient {
   }
 
   async clearCart(): Promise<{ message: string }> {
-    return this.request('/cart/clear', { method: 'DELETE' });
+    return this.request('/cart', { method: 'DELETE' });
   }
 
   // Dashboard Analytics
@@ -1119,14 +1130,14 @@ class ApiClient {
   // Enhanced Order Management APIs
   async updateOrderStatus(id: string, status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled'): Promise<{ message: string; order: Order }> {
     return this.request<{ message: string; order: Order }>(`/admin/orders/${id}/status`, {
-      method: 'PATCH',
+      method: 'PUT',
       body: JSON.stringify({ status }),
     });
   }
 
   async bulkUpdateOrderStatus(orderIds: string[], status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled'): Promise<{ message: string; updatedCount: number }> {
     return this.request<{ message: string; updatedCount: number }>('/admin/orders/bulk-status', {
-      method: 'PATCH',
+      method: 'PUT',
       body: JSON.stringify({ orderIds, status }),
     });
   }
@@ -1145,6 +1156,12 @@ class ApiClient {
     return this.request<{ message: string }>(`/admin/orders/${id}/email`, {
       method: 'POST',
       body: JSON.stringify({ emailType }),
+    });
+  }
+
+  async deleteOrder(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/orders/${id}`, {
+      method: 'DELETE',
     });
   }
 

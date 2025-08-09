@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import ProductGrid from "@/components/ProductGrid";
+import EnhancedProductGrid from "@/components/EnhancedProductGrid";
 import FilterBar from "@/components/FilterBar";
 import Cart from "@/components/Cart";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -456,11 +456,12 @@ const Index = () => {
                 </p>
               </div>
             ) : (
-              <ProductGrid
+              <EnhancedProductGrid
                 products={filteredProducts}
                 onAddToCart={addToCart}
                 onAddToWishlist={addToWishlist}
                 onAddToCompare={addToCompare}
+                loading={isLoading}
               />
             )}
           </section>

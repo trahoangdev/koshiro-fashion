@@ -1,0 +1,349 @@
+/* Responsive Typography */
+.text-responsive-xs {
+  @apply text-xs sm:text-sm md:text-base;
+}
+
+.text-responsive-sm {
+  @apply text-sm sm:text-base md:text-lg;
+}
+
+.text-responsive-base {
+  @apply text-base sm:text-lg md:text-xl;
+}
+
+.text-responsive-lg {
+  @apply text-lg sm:text-xl md:text-2xl;
+}
+
+.text-responsive-xl {
+  @apply text-xl sm:text-2xl md:text-3xl;
+}
+
+.text-responsive-2xl {
+  @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl;
+}
+
+.text-responsive-3xl {
+  @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl;
+}
+
+/* Responsive Headings */
+.heading-1 {
+  @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight;
+}
+
+.heading-2 {
+  @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight;
+}
+
+.heading-3 {
+  @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold leading-tight;
+}
+
+.heading-4 {
+  @apply text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-semibold leading-tight;
+}
+
+.heading-5 {
+  @apply text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-medium leading-tight;
+}
+
+.heading-6 {
+  @apply text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-medium leading-tight;
+}
+
+/* Responsive Spacing */
+.spacing-xs {
+  @apply space-y-2 sm:space-y-3 md:space-y-4;
+}
+
+.spacing-sm {
+  @apply space-y-3 sm:space-y-4 md:space-y-6;
+}
+
+.spacing-md {
+  @apply space-y-4 sm:space-y-6 md:space-y-8;
+}
+
+.spacing-lg {
+  @apply space-y-6 sm:space-y-8 md:space-y-12;
+}
+
+.spacing-xl {
+  @apply space-y-8 sm:space-y-12 md:space-y-16;
+}
+
+/* Responsive Padding */
+.padding-responsive-sm {
+  @apply p-3 sm:p-4 md:p-6;
+}
+
+.padding-responsive-md {
+  @apply p-4 sm:p-6 md:p-8;
+}
+
+.padding-responsive-lg {
+  @apply p-6 sm:p-8 md:p-12;
+}
+
+.padding-responsive-xl {
+  @apply p-8 sm:p-12 md:p-16;
+}
+
+/* Responsive Margins */
+.margin-responsive-sm {
+  @apply m-3 sm:m-4 md:m-6;
+}
+
+.margin-responsive-md {
+  @apply m-4 sm:m-6 md:m-8;
+}
+
+.margin-responsive-lg {
+  @apply m-6 sm:m-8 md:m-12;
+}
+
+.margin-responsive-xl {
+  @apply m-8 sm:m-12 md:m-16;
+}
+
+/* Responsive Grid Layouts */
+.grid-responsive-1-2 {
+  @apply grid grid-cols-1 md:grid-cols-2;
+}
+
+.grid-responsive-1-2-3 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.grid-responsive-1-2-4 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+}
+
+.grid-responsive-2-4-6 {
+  @apply grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6;
+}
+
+.grid-responsive-products {
+  @apply grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6;
+}
+
+.grid-responsive-cards {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+}
+
+/* Responsive Flex */
+.flex-responsive-col {
+  @apply flex flex-col md:flex-row;
+}
+
+.flex-responsive-col-reverse {
+  @apply flex flex-col-reverse md:flex-row;
+}
+
+.flex-responsive-wrap {
+  @apply flex flex-wrap;
+}
+
+/* Responsive Gaps */
+.gap-responsive-sm {
+  @apply gap-2 sm:gap-3 md:gap-4;
+}
+
+.gap-responsive-md {
+  @apply gap-3 sm:gap-4 md:gap-6;
+}
+
+.gap-responsive-lg {
+  @apply gap-4 sm:gap-6 md:gap-8;
+}
+
+.gap-responsive-xl {
+  @apply gap-6 sm:gap-8 md:gap-12;
+}
+
+/* Responsive Widths */
+.w-responsive-sm {
+  @apply w-full sm:w-auto;
+}
+
+.w-responsive-md {
+  @apply w-full md:w-auto;
+}
+
+.w-responsive-lg {
+  @apply w-full lg:w-auto;
+}
+
+/* Responsive Heights */
+.h-responsive-sm {
+  @apply h-32 sm:h-40 md:h-48;
+}
+
+.h-responsive-md {
+  @apply h-40 sm:h-48 md:h-64;
+}
+
+.h-responsive-lg {
+  @apply h-48 sm:h-64 md:h-80;
+}
+
+.h-responsive-xl {
+  @apply h-64 sm:h-80 md:h-96;
+}
+
+/* Mobile-first Show/Hide */
+.show-mobile {
+  @apply block sm:hidden;
+}
+
+.show-tablet {
+  @apply hidden sm:block lg:hidden;
+}
+
+.show-desktop {
+  @apply hidden lg:block;
+}
+
+.hide-mobile {
+  @apply hidden sm:block;
+}
+
+.hide-tablet {
+  @apply block sm:hidden lg:block;
+}
+
+.hide-desktop {
+  @apply block lg:hidden;
+}
+
+/* Responsive Container Queries */
+.container-responsive {
+  @apply max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-4xl;
+}
+
+.container-content {
+  @apply max-w-none sm:max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-full;
+}
+
+/* Responsive Aspect Ratios */
+.aspect-responsive-square {
+  @apply aspect-square;
+}
+
+.aspect-responsive-video {
+  @apply aspect-video;
+}
+
+.aspect-responsive-photo {
+  @apply aspect-[4/3] md:aspect-[3/2] lg:aspect-[16/10];
+}
+
+/* Responsive Button Sizes */
+.btn-responsive-sm {
+  @apply px-3 py-2 text-sm sm:px-4 sm:py-2 sm:text-base;
+}
+
+.btn-responsive-md {
+  @apply px-4 py-2 text-base sm:px-6 sm:py-3 sm:text-lg;
+}
+
+.btn-responsive-lg {
+  @apply px-6 py-3 text-lg sm:px-8 sm:py-4 sm:text-xl;
+}
+
+/* Responsive Form Elements */
+.input-responsive {
+  @apply px-3 py-2 text-sm sm:px-4 sm:py-3 sm:text-base;
+}
+
+.select-responsive {
+  @apply px-3 py-2 text-sm sm:px-4 sm:py-3 sm:text-base;
+}
+
+/* Responsive Card Layouts */
+.card-responsive {
+  @apply p-4 sm:p-6 md:p-8;
+}
+
+.card-compact {
+  @apply p-3 sm:p-4 md:p-6;
+}
+
+.card-spacious {
+  @apply p-6 sm:p-8 md:p-12;
+}
+
+/* Responsive Navigation */
+.nav-responsive {
+  @apply flex flex-col sm:flex-row;
+}
+
+.nav-mobile {
+  @apply flex flex-col space-y-2 sm:hidden;
+}
+
+.nav-desktop {
+  @apply hidden sm:flex sm:space-x-4 md:space-x-6 lg:space-x-8;
+}
+
+/* Responsive Tables */
+.table-responsive {
+  @apply block overflow-x-auto whitespace-nowrap sm:table sm:overflow-visible sm:whitespace-normal;
+}
+
+/* Responsive Images */
+.img-responsive {
+  @apply w-full h-auto object-cover;
+}
+
+.img-responsive-contain {
+  @apply w-full h-auto object-contain;
+}
+
+/* Responsive Borders */
+.border-responsive {
+  @apply border-0 sm:border;
+}
+
+.border-responsive-x {
+  @apply border-x-0 sm:border-x;
+}
+
+.border-responsive-y {
+  @apply border-y-0 sm:border-y;
+}
+
+/* Responsive Shadows */
+.shadow-responsive-sm {
+  @apply shadow-none sm:shadow-sm md:shadow;
+}
+
+.shadow-responsive-md {
+  @apply shadow-sm sm:shadow md:shadow-lg;
+}
+
+.shadow-responsive-lg {
+  @apply shadow sm:shadow-lg md:shadow-xl;
+}
+
+/* Responsive Animations */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-responsive {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .hover-responsive {
+    @apply hover:scale-105 hover:shadow-lg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-responsive {
+    @apply transition-none;
+  }
+  
+  .hover-responsive {
+    @apply hover:scale-100 hover:shadow-none;
+  }
+}

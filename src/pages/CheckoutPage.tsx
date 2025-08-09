@@ -89,7 +89,18 @@ const CheckoutPage = () => {
               size?: string; 
               color?: string; 
               product: Product; 
-            }) => item && item.product && item.product._id && item.product.images && Array.isArray(item.product.images))
+            }) => {
+              // More lenient filtering - just check essential fields
+              if (!item || !item.product) {
+                console.warn('Cart item missing product:', item);
+                return false;
+              }
+              if (!item.product._id) {
+                console.warn('Cart item product missing ID:', item.product);
+                return false;
+              }
+              return true;
+            })
             .map((item: { 
               productId: string; 
               quantity: number; 
@@ -98,13 +109,18 @@ const CheckoutPage = () => {
               product: Product; 
             }) => ({
               productId: item.productId,
-              product: item.product,
+              product: {
+                ...item.product,
+                images: item.product.images || [] // Ensure images is always an array
+              },
               quantity: item.quantity,
               selectedSize: item.size,
               selectedColor: item.color
             }));
+          console.log('Loaded cart items:', cartItemsData);
           setCartItems(cartItemsData);
         } else {
+          console.warn('Invalid cart response:', response);
           setCartItems([]);
         }
         
@@ -294,7 +310,17 @@ const CheckoutPage = () => {
     try {
       // Validate cart items
       if (!cartItems || cartItems.length === 0) {
-        throw new Error('Cart is empty');
+        throw new Error('Your cart is empty. Please add items before checkout.');
+      }
+
+      // Validate each cart item
+      for (const item of cartItems) {
+        if (!item.product || !item.product._id) {
+          throw new Error('Some products in your cart are no longer available. Please refresh and try again.');
+        }
+        if (item.quantity <= 0) {
+          throw new Error('Invalid quantity detected. Please check your cart.');
+        }
       }
 
       // Validate form data
@@ -305,8 +331,9 @@ const CheckoutPage = () => {
       // Prepare order data
       const orderData = {
         items: cartItems.map(item => ({
-          productId: item.productId,
+          productId: item.productId || item.product._id, // Fallback to product._id
           quantity: item.quantity,
+          price: item.product.price, // Include price for validation
           size: item.selectedSize,
           color: item.selectedColor
         })),
@@ -330,15 +357,24 @@ const CheckoutPage = () => {
 
       // Debug: Log order data
       console.log('Creating order with data:', orderData);
+      console.log('Cart items before order:', cartItems);
       
       // Create order via API
       const response = await api.createOrder(orderData);
-      
-      // Clear cart after successful order
-      await api.clearCart();
+      console.log('Order created successfully:', response);
       
       setIsProcessing(false);
       setIsCompleted(true);
+      
+      // Clear cart after successful order (with error handling)
+      try {
+        await api.clearCart();
+        console.log('Cart cleared successfully');
+      } catch (clearError) {
+        console.warn('Failed to clear cart automatically:', clearError);
+        // Don't fail the checkout if cart clearing fails
+        // User can manually clear cart later
+      }
       
       toast({
         title: "Đặt hàng thành công!",
@@ -346,10 +382,31 @@ const CheckoutPage = () => {
       });
     } catch (error) {
       console.error('Error creating order:', error);
+      console.error('Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
+      
       setIsProcessing(false);
+      
+      // Better error message handling
+      let errorMessage = "Có lỗi xảy ra khi đặt hàng";
+      if (error instanceof Error) {
+        if (error.message.includes('Product not found in cart')) {
+          errorMessage = "Giỏ hàng đã thay đổi. Vui lòng kiểm tra lại giỏ hàng và thử lại.";
+        } else if (error.message.includes('Insufficient stock')) {
+          errorMessage = "Sản phẩm không đủ số lượng trong kho. Vui lòng giảm số lượng.";
+        } else if (error.message.includes('Product') && error.message.includes('not found')) {
+          errorMessage = "Một số sản phẩm không còn tồn tại. Vui lòng kiểm tra lại giỏ hàng.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Lỗi đặt hàng",
-        description: error instanceof Error ? error.message : "Có lỗi xảy ra khi đặt hàng",
+        description: errorMessage,
         variant: "destructive",
       });
     }

@@ -356,6 +356,108 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Delete order (Admin only)
+export const deleteOrder = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const { id } = req.params;
+    const userRole = req.user.role;
+    
+    // Only admin can delete orders
+    if (userRole !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Only allow deletion of cancelled orders or very old completed orders
+    if (order.status !== 'cancelled' && order.status !== 'completed') {
+      return res.status(400).json({ 
+        message: 'Only cancelled or completed orders can be deleted' 
+      });
+    }
+
+    // If deleting a cancelled order, restore product stock
+    if (order.status === 'cancelled') {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: item.quantity }
+        });
+      }
+    }
+
+    // Delete the order
+    await Order.findByIdAndDelete(id);
+
+    // Update user statistics if needed
+    if (order.status === 'completed') {
+      await User.findByIdAndUpdate(order.userId, {
+        $inc: { 
+          totalOrders: -1,
+          totalSpent: -order.totalAmount
+        }
+      });
+    }
+
+    res.json({
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete order error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Update order (Admin only)
+export const updateOrder = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const { id } = req.params;
+    const userRole = req.user.role;
+    
+    // Only admin can update orders
+    if (userRole !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const updateData = req.body;
+    
+    // Remove fields that shouldn't be updated directly
+    delete updateData._id;
+    delete updateData.userId;
+    delete updateData.orderNumber;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+
+    const order = await Order.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('userId', 'name email phone');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json({
+      message: 'Order updated successfully',
+      order
+    });
+  } catch (error) {
+    console.error('Update order error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Get order statistics (admin)
 export const getOrderStats = async (req: Request, res: Response) => {
   try {

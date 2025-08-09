@@ -109,6 +109,11 @@ export default function AdminProducts() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
 
   const translations = {
     vi: {
@@ -154,7 +159,16 @@ export default function AdminProducts() {
       listView: "Xem dạng danh sách",
       lowStock: "Sắp hết hàng",
       outOfStock: "Hết hàng",
-      inStock: "Còn hàng"
+      inStock: "Còn hàng",
+      // Pagination translations
+      itemsPerPage: "Sản phẩm mỗi trang",
+      showing: "Hiển thị",
+      of: "trên tổng số",
+      products: "sản phẩm",
+      previous: "Trang trước",
+      next: "Trang sau",
+      goToPage: "Đi đến trang",
+      page: "Trang"
     },
     en: {
       title: "Product Management",
@@ -199,7 +213,16 @@ export default function AdminProducts() {
       listView: "List View",
       lowStock: "Low Stock",
       outOfStock: "Out of Stock",
-      inStock: "In Stock"
+      inStock: "In Stock",
+      // Pagination translations
+      itemsPerPage: "Items per page",
+      showing: "Showing",
+      of: "of",
+      products: "products",
+      previous: "Previous",
+      next: "Next",
+      goToPage: "Go to page",
+      page: "Page"
     },
     ja: {
       title: "商品管理",
@@ -244,7 +267,16 @@ export default function AdminProducts() {
       listView: "リスト表示",
       lowStock: "在庫不足",
       outOfStock: "在庫切れ",
-      inStock: "在庫あり"
+      inStock: "在庫あり",
+      // Pagination translations
+      itemsPerPage: "ページあたりのアイテム",
+      showing: "表示中",
+      of: "の",
+      products: "商品",
+      previous: "前へ",
+      next: "次へ",
+      goToPage: "ページへ移動",
+      page: "ページ"
     }
   };
 
@@ -263,13 +295,21 @@ export default function AdminProducts() {
 
   useEffect(() => {
     filterProducts();
+    resetPagination(); // Reset to first page when filters change
   }, [products, searchTerm, selectedCategory, statusFilter]);
+
+  // Pagination effect
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setPaginatedProducts(filteredProducts.slice(startIndex, endIndex));
+  }, [filteredProducts, currentPage, itemsPerPage]);
 
   const loadData = async () => {
     try {
       setIsLoading(true);
       const [productsResponse, categoriesResponse] = await Promise.all([
-        api.getAdminProducts(),
+        api.getAdminProducts({ page: 1, limit: 1000 }), // Get all products
         api.getCategories()
       ]);
       setProducts(productsResponse.data);
@@ -367,7 +407,7 @@ export default function AdminProducts() {
         title: t.createSuccess,
       });
       setIsCreateDialogOpen(false);
-      loadData();
+      await loadData(); // Ensure data is refreshed
     } catch (error) {
       console.error('Error creating product:', error);
       toast({
@@ -420,7 +460,7 @@ export default function AdminProducts() {
       });
       setIsEditDialogOpen(false);
       setEditingProduct(null);
-      loadData();
+      await loadData(); // Ensure data is refreshed
     } catch (error) {
       console.error('Error updating product:', error);
       toast({
@@ -439,7 +479,7 @@ export default function AdminProducts() {
       toast({
         title: t.deleteSuccess,
       });
-      loadData();
+      await loadData(); // Ensure data is refreshed
     } catch (error) {
       console.error('Error deleting product:', error);
       toast({
@@ -457,7 +497,7 @@ export default function AdminProducts() {
         title: `${selectedProducts.length} products deleted successfully`,
       });
       setSelectedProducts([]);
-      loadData();
+      await loadData(); // Ensure data is refreshed
     } catch (error) {
       console.error('Error bulk deleting products:', error);
       toast({
@@ -484,10 +524,10 @@ export default function AdminProducts() {
   };
 
   const handleSelectAll = () => {
-    if (selectedProducts.length === filteredProducts.length) {
+    if (selectedProducts.length === paginatedProducts.length) {
       setSelectedProducts([]);
     } else {
-      setSelectedProducts(filteredProducts.map(p => p._id));
+      setSelectedProducts(paginatedProducts.map(p => p._id));
     }
   };
 
@@ -497,6 +537,62 @@ export default function AdminProducts() {
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
     );
+  };
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    const newItemsPerPage = parseInt(value);
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  // Reset pagination when filters change
+  const resetPagination = () => {
+    setCurrentPage(1);
+  };
+
+  const getTotalPages = () => {
+    return Math.ceil(filteredProducts.length / itemsPerPage);
+  };
+
+  const getPageNumbers = () => {
+    const totalPages = getTotalPages();
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
   };
 
   if (isLoading) {
@@ -522,7 +618,7 @@ export default function AdminProducts() {
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={loadData}>
+            <Button variant="outline" size="sm" onClick={() => loadData()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm">
@@ -554,6 +650,67 @@ export default function AdminProducts() {
               </DialogContent>
             </Dialog>
           </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{products.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {filteredProducts.length} showing
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Products</CardTitle>
+              <CheckSquare className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {products.filter(p => p.isActive).length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {((products.filter(p => p.isActive).length / products.length) * 100).toFixed(1)}% of total
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Featured Products</CardTitle>
+              <Star className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {products.filter(p => p.isFeatured).length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Featured items
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {products.filter(p => p.stock <= 10 && p.stock > 0).length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Need restocking
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters and Search */}
@@ -630,7 +787,7 @@ export default function AdminProducts() {
                     {selectedProducts.length} products selected
                   </span>
                   <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                    {selectedProducts.length === filteredProducts.length ? t.deselectAll : t.selectAll}
+                    {selectedProducts.length === paginatedProducts.length ? t.deselectAll : t.selectAll}
                   </Button>
                 </div>
                 <AlertDialog>
@@ -661,7 +818,7 @@ export default function AdminProducts() {
         {/* Products Grid/List */}
         {viewMode === "grid" ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map((product) => (
+            {paginatedProducts.map((product) => (
               <Card key={product._id} className="group hover:shadow-lg transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
@@ -769,7 +926,7 @@ export default function AdminProducts() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredProducts.map((product) => (
+                    {paginatedProducts.map((product) => (
                       <tr key={product._id} className="border-b hover:bg-muted/50">
                         <td className="p-4">
                           <Checkbox
@@ -866,6 +1023,73 @@ export default function AdminProducts() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pagination Controls */}
+        {filteredProducts.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                {/* Items per page selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">{t.itemsPerPage}:</span>
+                  <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Pagination info */}
+                <div className="text-sm text-muted-foreground">
+                  {t.showing} {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)} {t.of} {filteredProducts.length} {t.products}
+                </div>
+
+                {/* Pagination buttons */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    {t.previous}
+                  </Button>
+                  
+                  {getPageNumbers().map((page, index) => (
+                    <div key={index}>
+                      {page === '...' ? (
+                        <span className="px-2 py-1 text-sm text-muted-foreground">...</span>
+                      ) : (
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(page as number)}
+                        >
+                          {page}
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === getTotalPages()}
+                  >
+                    {t.next}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

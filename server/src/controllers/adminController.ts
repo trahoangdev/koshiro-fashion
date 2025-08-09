@@ -625,31 +625,6 @@ export const deleteUser = async (req: Request, res: Response) => {
   }
 };
 
-// Order status update
-export const updateOrderStatus = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    const order = await Order.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true, runValidators: true }
-    ).populate('userId', 'name email phone');
-    
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-    
-    res.json({
-      message: 'Order status updated successfully',
-      order
-    });
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
 
 // Enhanced User Management
 export const getUserById = async (req: Request, res: Response) => {

@@ -105,6 +105,8 @@ export default function AdminOrders() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [users, setUsers] = useState<UserType[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [stats, setStats] = useState<OrderStats>({
@@ -279,15 +281,15 @@ export default function AdminOrders() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     filterAndSortOrders();
-  }, [orders, searchTerm, selectedStatus, selectedPaymentStatus, dateRange, sortBy, sortOrder]);
+  }, [orders, searchTerm, selectedStatus, selectedPaymentStatus, dateRange, sortBy, sortOrder]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
       const [ordersResponse, usersResponse, productsResponse] = await Promise.all([
         api.getAdminOrders({ page: 1, limit: 100 }),
         api.getAdminUsers({ page: 1, limit: 1000 }),
@@ -311,21 +313,21 @@ export default function AdminOrders() {
           : 0
       };
       setStats(orderStats);
-    } catch (error) {
+      } catch (error) {
       console.error('Error loading orders:', error);
-      toast({
-        title: t.errorLoading,
-        description: t.errorLoadingDesc,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        toast({
+          title: t.errorLoading,
+          description: t.errorLoadingDesc,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   const filterAndSortOrders = () => {
     let filtered = orders;
-
+    
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(order =>
@@ -334,7 +336,7 @@ export default function AdminOrders() {
         order.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
+    
     // Filter by status
     if (selectedStatus !== "all") {
       filtered = filtered.filter(order => order.status === selectedStatus);
@@ -419,23 +421,45 @@ export default function AdminOrders() {
         return aValue < bValue ? 1 : -1;
       }
     });
-
+    
     setFilteredOrders(filtered);
   };
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       setIsUpdatingStatus(true);
-      await api.updateOrder(orderId, { status: newStatus as 'pending' | 'processing' | 'completed' | 'cancelled' });
+      const order = orders.find(o => o._id === orderId);
+      const orderNumber = order?.orderNumber || 'Order';
+      
+      console.log('Updating order status:', { orderId, newStatus, orderNumber });
+      
+      const response = await api.updateOrderStatus(orderId, newStatus as 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled');
+      
+      console.log('Update order status response:', response);
+      
+      // Get status display name
+      const statusDisplayNames = {
+        pending: 'Pending',
+        processing: 'Processing',
+        shipped: 'Shipped',
+        delivered: 'Delivered',
+        completed: 'Completed',
+        cancelled: 'Cancelled'
+      };
+      
+      const statusDisplay = statusDisplayNames[newStatus as keyof typeof statusDisplayNames] || newStatus;
+      
       toast({
-        title: "Status updated successfully",
+        title: "🔄 Status Updated",
+        description: `${orderNumber} status changed to ${statusDisplay}`,
       });
-      loadData();
+      
+      await loadData(); // Reload data
     } catch (error) {
       console.error('Error updating order status:', error);
       toast({
-        title: "Error updating status",
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: "❌ Status Update Failed",
+        description: error instanceof Error ? error.message : "Unable to update order status",
         variant: "destructive",
       });
     } finally {
@@ -446,17 +470,32 @@ export default function AdminOrders() {
   const handleBulkStatusUpdate = async (newStatus: string) => {
     try {
       setIsUpdatingStatus(true);
-      await Promise.all(selectedOrders.map(id => api.updateOrder(id, { status: newStatus as 'pending' | 'processing' | 'completed' | 'cancelled' })));
+      
+      const statusDisplayNames = {
+        pending: 'Pending',
+        processing: 'Processing',
+        shipped: 'Shipped',
+        delivered: 'Delivered',
+        completed: 'Completed',
+        cancelled: 'Cancelled'
+      };
+      
+      const statusDisplay = statusDisplayNames[newStatus as keyof typeof statusDisplayNames] || newStatus;
+      
+      await api.bulkUpdateOrderStatus(selectedOrders, newStatus as 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled');
+      
       toast({
-        title: `${selectedOrders.length} orders updated successfully`,
+        title: "📦 Bulk Update Completed",
+        description: `${selectedOrders.length} orders successfully updated to ${statusDisplay}`,
       });
+      
       setSelectedOrders([]);
-      loadData();
+      await loadData();
     } catch (error) {
       console.error('Error bulk updating orders:', error);
       toast({
-        title: "Error updating orders",
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: "❌ Bulk Update Failed",
+        description: error instanceof Error ? error.message : "Unable to update selected orders",
         variant: "destructive",
       });
     } finally {
@@ -532,22 +571,7 @@ export default function AdminOrders() {
     setSelectedOrderForDetail(null);
   };
 
-  const handleOrderStatusUpdate = async (orderId: string, newStatus: string) => {
-    try {
-      await api.updateOrderStatus(orderId, newStatus as 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled');
-      toast({
-        title: t.updateStatus,
-        description: "Order status updated successfully",
-      });
-      loadData(); // Reload data
-    } catch (error) {
-      toast({
-        title: t.updateStatus,
-        description: "Failed to update order status",
-        variant: "destructive",
-      });
-    }
-  };
+
 
   const handleCreateOrder = async (formData: {
     userId: string;
@@ -573,17 +597,24 @@ export default function AdminOrders() {
   }) => {
     try {
       setIsSubmitting(true);
-      await api.createOrder(formData);
+      const response = await api.createOrder(formData);
+      
+      // Get customer name for better toast message
+      const customer = users.find(u => u._id === formData.userId);
+      const customerName = customer?.name || 'Customer';
+      
       toast({
-        title: "Create Order",
-        description: "Order created successfully",
+        title: "✅ Order Created Successfully",
+        description: `New order created for ${customerName} with ${formData.items.length} items`,
       });
+      
       setIsCreateDialogOpen(false);
-      loadData();
+      await loadData();
     } catch (error) {
+      console.error('Error creating order:', error);
       toast({
-        title: "Create Order",
-        description: "Failed to create order",
+        title: "❌ Failed to Create Order",
+        description: error instanceof Error ? error.message : "Unable to create order. Please check the form and try again.",
         variant: "destructive",
       });
     } finally {
@@ -617,21 +648,42 @@ export default function AdminOrders() {
     
     try {
       setIsSubmitting(true);
-      await api.updateOrder(editingOrder._id, {
-        status: formData.status as 'pending' | 'processing' | 'completed' | 'cancelled',
-        paymentStatus: formData.paymentStatus
-      });
+      
+      // Prepare update data - include more fields for comprehensive update
+      const updateData = {
+        status: formData.status,
+        paymentStatus: formData.paymentStatus,
+        paymentMethod: formData.paymentMethod,
+        notes: formData.notes,
+        trackingNumber: formData.trackingNumber,
+        shippingAddress: formData.shippingAddress
+      };
+      
+      await api.updateOrder(editingOrder._id, updateData);
+      
+      const statusChange = editingOrder.status !== formData.status ? 
+        ` (${editingOrder.status} → ${formData.status})` : '';
+      
       toast({
-        title: "Edit Order",
-        description: "Order updated successfully",
+        title: "✅ Order Updated Successfully",
+        description: `Order ${editingOrder.orderNumber} has been updated${statusChange}`,
       });
+      
       setIsEditDialogOpen(false);
       setEditingOrder(null);
-      loadData();
+      
+      // Update the selectedOrderForDetail if it's the same order
+      if (selectedOrderForDetail?._id === editingOrder._id) {
+        setSelectedOrderForDetail(null);
+        setIsDetailDialogOpen(false);
+      }
+      
+      await loadData();
     } catch (error) {
+      console.error('Error updating order:', error);
       toast({
-        title: "Edit Order",
-        description: "Failed to update order",
+        title: "❌ Failed to Update Order",
+        description: error instanceof Error ? error.message : "Unable to update order. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -639,21 +691,54 @@ export default function AdminOrders() {
     }
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
-    try {
-      // Note: deleteOrder API method doesn't exist yet, using cancelOrder instead
-      await api.cancelOrderAdmin(orderId);
+  const handleDeleteOrderClick = (order: Order) => {
+    // Check if order can be deleted
+    if (order.status !== 'cancelled' && order.status !== 'completed') {
       toast({
-        title: "Delete Order",
-        description: "Order deleted successfully",
-      });
-      loadData();
-    } catch (error) {
-      toast({
-        title: "Delete Order",
-        description: "Failed to delete order",
+        title: "Cannot Delete Order",
+        description: "Only cancelled or completed orders can be deleted",
         variant: "destructive",
       });
+      return;
+    }
+    
+    setOrderToDelete(order);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteOrderConfirm = async () => {
+    if (!orderToDelete) return;
+    
+    try {
+      await api.deleteOrder(orderToDelete._id);
+      toast({
+        title: "🗑️ Order Deleted",
+        description: `Order ${orderToDelete.orderNumber} has been permanently deleted`,
+      });
+      
+      // Close detail dialog if it's open for this order
+      if (selectedOrderForDetail?._id === orderToDelete._id) {
+        setIsDetailDialogOpen(false);
+        setSelectedOrderForDetail(null);
+      }
+      
+      setIsDeleteDialogOpen(false);
+      setOrderToDelete(null);
+      await loadData(); // Reload data
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast({
+        title: "❌ Delete Failed",
+        description: error instanceof Error ? error.message : "Failed to delete order",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    const order = orders.find(o => o._id === orderId);
+    if (order) {
+      handleDeleteOrderClick(order);
     }
   };
 
@@ -673,6 +758,196 @@ export default function AdminOrders() {
   const closeEditDialog = () => {
     setIsEditDialogOpen(false);
     setEditingOrder(null);
+  };
+
+  const handlePrintOrder = async (order: Order) => {
+    try {
+      const printData = await api.printOrder(order._id);
+      // Create a new window with print content
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Order ${order.orderNumber}</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .order-info { margin-bottom: 20px; }
+                .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                .items-table th { background-color: #f2f2f2; }
+                .total { font-weight: bold; font-size: 1.2em; }
+                @media print {
+                  .no-print { display: none; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>Koshiro Fashion Store</h1>
+                <h2>Order Invoice</h2>
+              </div>
+              
+              <div class="order-info">
+                <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+                <p><strong>Date:</strong> ${formatDate(order.createdAt)}</p>
+                <p><strong>Customer:</strong> ${order.userId?.name || 'Unknown'}</p>
+                <p><strong>Email:</strong> ${order.userId?.email || 'N/A'}</p>
+                <p><strong>Status:</strong> ${order.status}</p>
+                <p><strong>Payment Status:</strong> ${order.paymentStatus}</p>
+              </div>
+
+              <div class="shipping-address">
+                <h3>Shipping Address:</h3>
+                <p>${order.shippingAddress?.name || 'N/A'}</p>
+                <p>${order.shippingAddress?.phone || 'N/A'}</p>
+                <p>${order.shippingAddress?.address || 'N/A'}</p>
+                <p>${order.shippingAddress?.city || 'N/A'}, ${order.shippingAddress?.district || 'N/A'}</p>
+              </div>
+
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${order.items.map(item => `
+                    <tr>
+                      <td>${item.productId || 'Product'}</td>
+                      <td>${item.quantity}</td>
+                      <td>${formatCurrencyForDisplay(item.price)}</td>
+                      <td>${formatCurrencyForDisplay(item.price * item.quantity)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+
+              <div class="total">
+                <p>Total Amount: ${formatCurrencyForDisplay(order.totalAmount)}</p>
+              </div>
+
+              <div class="no-print" style="margin-top: 30px; text-align: center;">
+                <button onclick="window.print()">Print</button>
+                <button onclick="window.close()">Close</button>
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+      }
+      
+      toast({
+        title: "🖨️ Print Window Opened",
+        description: `Invoice for order ${order.orderNumber} is ready to print`,
+      });
+    } catch (error) {
+      console.error('Error printing order:', error);
+      toast({
+        title: "❌ Print Failed",
+        description: "Unable to open print window. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendOrderEmail = async (order: Order) => {
+    try {
+      await api.sendOrderEmail(order._id, 'confirmation');
+      toast({
+        title: "📧 Email Sent Successfully",
+        description: `Order confirmation for ${order.orderNumber} sent to ${order.userId?.email || 'customer'}`,
+      });
+    } catch (error) {
+      console.error('Error sending order email:', error);
+      toast({
+        title: "❌ Email Failed",
+        description: "Unable to send order email. Please check email configuration.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportOrders = async (format: 'csv' | 'excel' | 'json') => {
+    try {
+      const dataToExport = filteredOrders.map(order => ({
+        orderNumber: order.orderNumber,
+        customerName: order.userId?.name || 'Unknown',
+        customerEmail: order.userId?.email || 'N/A',
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        totalAmount: order.totalAmount,
+        itemsCount: order.items.length,
+        createdAt: formatDate(order.createdAt),
+        shippingAddress: `${order.shippingAddress?.name || ''}, ${order.shippingAddress?.address || ''}, ${order.shippingAddress?.city || ''}`,
+        paymentMethod: order.paymentMethod || 'N/A',
+        notes: order.notes || ''
+      }));
+
+      if (format === 'json') {
+        const dataStr = JSON.stringify(dataToExport, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `orders_export_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'csv') {
+        const headers = Object.keys(dataToExport[0] || {});
+        const csvContent = [
+          headers.join(','),
+          ...dataToExport.map(row => 
+            headers.map(header => 
+              `"${String(row[header as keyof typeof row]).replace(/"/g, '""')}"`
+            ).join(',')
+          )
+        ].join('\n');
+        
+        const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `orders_export_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'excel') {
+        // For Excel export, we'll use CSV format with .xlsx extension
+        // In a real application, you'd want to use a library like xlsx
+        const headers = Object.keys(dataToExport[0] || {});
+        const csvContent = [
+          headers.join('\t'),
+          ...dataToExport.map(row => 
+            headers.map(header => String(row[header as keyof typeof row])).join('\t')
+          )
+        ].join('\n');
+        
+        const dataBlob = new Blob([csvContent], { type: 'application/vnd.ms-excel' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `orders_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      toast({
+        title: "📁 Export Completed",
+        description: `${filteredOrders.length} orders exported as ${format.toUpperCase()} file`,
+      });
+    } catch (error) {
+      console.error('Error exporting orders:', error);
+      toast({
+        title: "❌ Export Failed",
+        description: "Unable to export orders. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -701,10 +976,25 @@ export default function AdminOrders() {
             <Button variant="outline" size="sm" onClick={loadData}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              {t.export}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  {t.export}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExportOrders('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportOrders('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportOrders('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
               Create Order
@@ -759,32 +1049,32 @@ export default function AdminOrders() {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
+          <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t.searchPlaceholder}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+            <Input
+              placeholder={t.searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
-                  />
-                </div>
+            />
+          </div>
               </div>
               <div className="flex gap-2">
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t.filterByStatus} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t.allStatuses}</SelectItem>
-                    <SelectItem value="pending">{t.pending}</SelectItem>
-                    <SelectItem value="processing">{t.processing}</SelectItem>
-                    <SelectItem value="shipped">{t.shipped}</SelectItem>
-                    <SelectItem value="delivered">{t.delivered}</SelectItem>
-                    <SelectItem value="completed">{t.completed}</SelectItem>
-                    <SelectItem value="cancelled">{t.cancelled}</SelectItem>
-                  </SelectContent>
-                </Select>
+              <SelectValue placeholder={t.filterByStatus} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t.allStatuses}</SelectItem>
+              <SelectItem value="pending">{t.pending}</SelectItem>
+              <SelectItem value="processing">{t.processing}</SelectItem>
+              <SelectItem value="shipped">{t.shipped}</SelectItem>
+              <SelectItem value="delivered">{t.delivered}</SelectItem>
+              <SelectItem value="completed">{t.completed}</SelectItem>
+              <SelectItem value="cancelled">{t.cancelled}</SelectItem>
+            </SelectContent>
+          </Select>
 
                 <Select value={selectedPaymentStatus} onValueChange={setSelectedPaymentStatus}>
                   <SelectTrigger className="w-40">
@@ -832,13 +1122,13 @@ export default function AdminOrders() {
                   {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
                 </Button>
               </div>
-            </div>
+        </div>
           </CardContent>
         </Card>
 
         {/* Bulk Actions */}
         {selectedOrders.length > 0 && (
-          <Card>
+            <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -866,15 +1156,18 @@ export default function AdminOrders() {
                       <DropdownMenuItem onClick={() => handleBulkStatusUpdate('shipped')}>
                         {t.shipped}
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkStatusUpdate('delivered')}>
+                        {t.delivered}
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleBulkStatusUpdate('completed')}>
                         {t.completed}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
         )}
 
         {/* Orders Table */}
@@ -912,13 +1205,13 @@ export default function AdminOrders() {
                         <div className="font-medium">{order.orderNumber}</div>
                         <div className="text-sm text-muted-foreground">
                           {order.items.length} items
-                        </div>
+                      </div>
                       </td>
                       <td className="p-4">
-                        <div>
+                      <div>
                           <div className="font-medium">{order.userId?.name || 'Unknown'}</div>
                           <div className="text-sm text-muted-foreground">{order.userId?.email}</div>
-                        </div>
+                      </div>
                       </td>
                       <td className="p-4 font-medium">
                         {formatCurrencyForDisplay(order.totalAmount)}
@@ -937,22 +1230,22 @@ export default function AdminOrders() {
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
                               <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                        </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleViewOrderDetail(order)}>
                               <Eye className="h-4 w-4 mr-2" />
                               {t.view}
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditDialog(order)}>
                               <Edit className="h-4 w-4 mr-2" />
                               {t.edit}
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePrintOrder(order)}>
                               <Printer className="h-4 w-4 mr-2" />
                               {t.print}
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSendOrderEmail(order)}>
                               <Mail className="h-4 w-4 mr-2" />
                               {t.email}
                             </DropdownMenuItem>
@@ -967,6 +1260,9 @@ export default function AdminOrders() {
                             <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order._id, 'shipped')}>
                               {t.shipped}
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order._id, 'delivered')}>
+                              {t.delivered}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order._id, 'completed')}>
                               {t.completed}
                             </DropdownMenuItem>
@@ -977,9 +1273,9 @@ export default function AdminOrders() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </CardContent>
-        </Card>
+                  </div>
+                </CardContent>
+              </Card>
 
         {/* Empty State */}
         {filteredOrders.length === 0 && (
@@ -1002,17 +1298,11 @@ export default function AdminOrders() {
             order={selectedOrderForDetail}
             isOpen={isDetailDialogOpen}
             onClose={handleOrderDetailClose}
-            onUpdateStatus={handleOrderStatusUpdate}
+            onUpdateStatus={handleUpdateOrderStatus}
             onEdit={openEditDialog}
             onDelete={handleDeleteOrder}
-            onPrint={(order) => {
-              // TODO: Implement print functionality
-              console.log('Print order:', order);
-            }}
-            onSendEmail={(order) => {
-              // TODO: Implement email functionality
-              console.log('Send email for order:', order);
-            }}
+            onPrint={handlePrintOrder}
+            onSendEmail={handleSendOrderEmail}
           />
         )}
 
@@ -1046,6 +1336,42 @@ export default function AdminOrders() {
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Delete Order</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to permanently delete order <strong>{orderToDelete?.orderNumber}</strong>?
+                <br />
+                <br />
+                <span className="text-sm text-muted-foreground">
+                  This action cannot be undone. The order will be permanently removed from the system.
+                  {orderToDelete?.status === 'cancelled' && (
+                    <span className="block mt-2 text-yellow-600">
+                      ⚠️ This will also restore product stock quantities.
+                    </span>
+                  )}
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setOrderToDelete(null);
+              }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteOrderConfirm}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete Order
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );
