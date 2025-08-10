@@ -20,7 +20,8 @@ import {
   Database,
   Activity,
   TrendingUp,
-  HelpCircle
+  HelpCircle,
+  MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -122,6 +123,14 @@ const menuGroups: MenuGroup[] = [
         labelJa: "ユーザー",
         icon: Users,
         path: "/admin/users"
+      },
+      {
+        id: "reviews",
+        label: "Đánh giá",
+        labelEn: "Reviews",
+        labelJa: "レビュー",
+        icon: MessageSquare,
+        path: "/admin/reviews"
       }
     ]
   },

@@ -1049,6 +1049,22 @@ class ApiClient {
     });
   }
 
+  async updateReview(reviewId: string, updateData: Partial<CreateReviewRequest & { verified: boolean }>): Promise<{ message: string; review: Review }> {
+    return this.request<{ message: string; review: Review }>(`/reviews/${reviewId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteReview(reviewId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/reviews/${reviewId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Settings methods
   async getSettings(): Promise<Settings> {
     return this.request<Settings>('/settings');

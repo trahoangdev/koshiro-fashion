@@ -142,6 +142,65 @@ export const markReviewHelpful = async (req: Request, res: Response) => {
   }
 };
 
+// Update review
+export const updateReview = async (req: Request, res: Response) => {
+  try {
+    const { reviewId } = req.params;
+    const { rating, title, comment, verified } = req.body;
+
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Validate rating if provided
+    if (rating && (rating < 1 || rating > 5)) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+
+    // Update fields
+    if (rating !== undefined) review.rating = rating;
+    if (title !== undefined) review.title = title;
+    if (comment !== undefined) review.comment = comment;
+    if (verified !== undefined) review.verified = verified;
+
+    await review.save();
+
+    // Populate user and product info
+    await review.populate('userId', 'name email');
+    await review.populate('productId', 'name nameEn nameJa');
+
+    res.json({
+      message: 'Review updated successfully',
+      review
+    });
+  } catch (error) {
+    console.error('Update review error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Delete review
+export const deleteReview = async (req: Request, res: Response) => {
+  try {
+    const { reviewId } = req.params;
+
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    await Review.findByIdAndDelete(reviewId);
+
+    res.json({
+      message: 'Review deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete review error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Get review statistics
 export const getReviewStats = async (req: Request, res: Response) => {
   try {

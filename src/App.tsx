@@ -37,6 +37,7 @@ import AdminCategories from "./pages/AdminCategories";
 import AdminOrders from "./pages/AdminOrders";
 import AdminUsers from "./pages/AdminUsers";
 import AdminActivity from "./pages/AdminActivity";
+import AdminReviews from "./pages/AdminReviews";
 import AdminSettings from "./pages/AdminSettings";
 import NotFound from "./pages/NotFound";
 
@@ -112,6 +113,11 @@ const App = () => (
               <Route path="/admin/activity" element={
                 <ProtectedAdminRoute>
                   <AdminActivity />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/admin/reviews" element={
+                <ProtectedAdminRoute>
+                  <AdminReviews />
                 </ProtectedAdminRoute>
               } />
               <Route path="/admin/settings" element={
