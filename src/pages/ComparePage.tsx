@@ -263,27 +263,14 @@ const ComparePage = () => {
                     <td className="p-4 font-medium">{t.price}</td>
                     {compareList.map((product) => (
                       <td key={product._id} className="p-4 text-center">
-                        <div className="space-y-1">
-                          <div className="text-lg font-semibold">
-                            {product.salePrice && product.salePrice < product.price ? formatCurrency(product.salePrice, language) : formatCurrency(product.price, language)}
-                          </div>
-                          {product.salePrice && product.salePrice < product.price && (
-                            <div className="flex flex-col items-center space-y-1">
-                              <span className="text-sm text-muted-foreground line-through">
-                                {formatCurrency(product.price, language)}
-                              </span>
-                              <Badge variant="destructive" className="text-xs">
-                                -{Math.round(((product.price - product.salePrice) / product.price) * 100)}% 
-                                {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
-                              </Badge>
-                            </div>
-                          )}
-                          {product.onSale && !(product.salePrice && product.salePrice < product.price) && (
-                            <Badge variant="destructive" className="mt-1 text-xs">
-                              {language === 'vi' ? 'KHUYẾN MÃI' : language === 'ja' ? 'セール' : 'SALE'}
-                            </Badge>
-                          )}
+                        <div className="text-lg font-semibold">
+                          {formatCurrency(product.price, language)}
                         </div>
+                        {product.onSale && (
+                          <Badge variant="destructive" className="mt-1">
+                            {language === 'vi' ? 'Giảm Giá' : language === 'ja' ? 'セール' : 'Sale'}
+                          </Badge>
+                        )}
                       </td>
                     ))}
                   </tr>

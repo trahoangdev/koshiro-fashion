@@ -115,21 +115,9 @@ const Cart = ({
                   <Badge variant="secondary">{item.selectedSize}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="font-semibold">
-                      {item.product.salePrice && item.product.salePrice < item.product.price ? formatCurrency(item.product.salePrice) : formatCurrency(item.product.price)}
-                    </span>
-                    {item.product.salePrice && item.product.salePrice < item.product.price && (
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground line-through">
-                          {formatCurrency(item.product.price)}
-                        </span>
-                        <Badge variant="destructive" className="text-xs">
-                          -{Math.round(((item.product.price - item.product.salePrice) / item.product.price) * 100)}%
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
+                  <span className="font-semibold">
+                    {formatCurrency(item.product.price)}
+                  </span>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
