@@ -145,88 +145,12 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
     { code: 'ja', name: '日本語', flag: '🇯🇵' }
   ];
 
-  const translations = {
-    en: {
-      menu: "Menu",
-      search: "Search products...",
-      signIn: "Sign In",
-      signUp: "Sign Up",
-      home: "Home",
-      categories: "Categories",
-      sale: "Sale",
-      about: "About",
-      contact: "Contact",
-      profile: "Profile",
-      orders: "Orders",
-      addresses: "Addresses",
-      payment: "Payment",
-      compare: "Compare",
-      signOut: "Sign Out",
-      language: "Language",
-      cart: "Cart",
-      wishlist: "Wishlist",
-      viewAll: "View All"
-    },
-    vi: {
-      menu: "Menu",
-      search: "Tìm kiếm sản phẩm...",
-      signIn: "Đăng nhập",
-      signUp: "Đăng ký",
-      home: "Trang chủ",
-      categories: "Danh mục",
-      sale: "Khuyến mãi",
-      about: "Giới thiệu",
-      contact: "Liên hệ",
-      profile: "Hồ sơ",
-      orders: "Đơn hàng",
-      addresses: "Địa chỉ",
-      payment: "Thanh toán",
-      compare: "So sánh",
-      signOut: "Đăng xuất",
-      language: "Ngôn ngữ",
-      cart: "Giỏ hàng",
-      wishlist: "Yêu thích",
-      viewAll: "Xem tất cả"
-    },
-    ja: {
-      menu: "メニュー",
-      search: "商品を検索...",
-      signIn: "ログイン",
-      signUp: "登録",
-      home: "ホーム",
-      categories: "カテゴリ",
-      sale: "セール",
-      about: "について",
-      contact: "お問い合わせ",
-      profile: "プロフィール",
-      orders: "注文",
-      addresses: "住所",
-      payment: "支払い",
-      compare: "比較",
-      signOut: "ログアウト",
-      language: "言語",
-      cart: "カート",
-      wishlist: "ほしい物リスト",
-      viewAll: "すべて表示"
-    }
-  };
-
-  const tr = translations[language as keyof typeof translations] || translations.en;
-
-  if (!isOpen) {
-    return null;
-  }
-
   return (
     <>
       {/* Backdrop */}
       <div 
         className="mobile-menu-backdrop fixed inset-0 bg-black/80 lg:hidden"
         onClick={onClose}
-        style={{
-          animation: 'fadeIn 300ms ease-out',
-          opacity: 1
-        }}
       />
 
       {/* Menu */}
@@ -240,17 +164,10 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
         {/* Header - Enhanced */}
         <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-full bg-primary/10">
-              <Menu className="h-5 w-5 text-primary" />
-            </div>
-            <span className="font-bold text-xl tracking-tight">{tr.menu}</span>
+            <Menu className="h-5 w-5 text-primary" />
+            <span className="font-semibold text-lg">Menu</span>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onClose}
-            className="h-10 w-10 hover:bg-destructive/10 hover:text-destructive transition-colors rounded-full"
-          >
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -261,10 +178,10 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
           <div className="p-6 border-b border-border flex-shrink-0">
             <form onSubmit={handleSearch}>
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   type="search"
-                  placeholder={tr.search}
+                  placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-4 py-3 text-base rounded-full border-2 border-border focus:border-primary transition-all duration-300 bg-muted"
@@ -273,36 +190,32 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
             </form>
           </div>
 
-          {/* Enhanced User Section */}
+          {/* User Section */}
           {isAuthenticated ? (
             <div className="p-6 border-b border-border flex-shrink-0">
               <div className="flex items-center space-x-4 mb-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-border">
                 <Avatar className="h-14 w-14 ring-2 ring-primary/20">
                   <AvatarImage src={user?.avatar} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                  <AvatarFallback>
                     {getUserInitials(user?.name || '')}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-lg truncate">{user?.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
-                  <div className="flex items-center mt-1">
-                    <Star className="h-3 w-3 text-yellow-500 mr-1" />
-                    <span className="text-xs text-muted-foreground">Premium Member</span>
-                  </div>
+                <div className="flex-1">
+                  <p className="font-semibold">{user?.name}</p>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
 
-              {/* Enhanced Quick Stats */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 gap-3">
                 <Link to="/cart" onClick={handleLinkClick}>
                   <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-blue-200 dark:border-blue-800">
                     <div className="p-2 bg-blue-500/10 rounded-full group-hover:bg-blue-500/20 transition-colors">
                       <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">{tr.cart}</span>
+                                         <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('cart')}</span>
                     {cartItemsCount > 0 && (
-                      <Badge variant="destructive" className="h-6 w-6 text-xs p-0 flex items-center justify-center animate-pulse">
+                      <Badge variant="destructive" className="h-5 w-5 text-xs p-0 flex items-center justify-center">
                         {cartItemsCount}
                       </Badge>
                     )}
@@ -313,9 +226,9 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
                       <Heart className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                     </div>
-                    <span className="text-sm font-semibold text-pink-900 dark:text-pink-100">{tr.wishlist}</span>
+                                         <span className="text-sm font-semibold text-pink-900 dark:text-pink-100">{t('wishlist')}</span>
                     {wishlistCount > 0 && (
-                      <Badge variant="secondary" className="h-6 w-6 text-xs p-0 flex items-center justify-center">
+                      <Badge variant="secondary" className="h-5 w-5 text-xs p-0 flex items-center justify-center">
                         {wishlistCount}
                       </Badge>
                     )}
@@ -333,39 +246,34 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                 <p className="text-sm text-muted-foreground">Sign in to access your account</p>
               </div>
               <Link to="/login" onClick={handleLinkClick}>
-                <Button className="w-full justify-center h-12 text-base font-semibold rounded-xl" size="lg">
-                  <LogIn className="h-5 w-5 mr-3" />
-                  {tr.signIn}
+                <Button className="w-full justify-start" size="lg">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In
                 </Button>
               </Link>
               <Link to="/register" onClick={handleLinkClick}>
-                <Button variant="outline" className="w-full justify-center h-12 text-base font-semibold rounded-xl border-2" size="lg">
-                  <UserPlus className="h-5 w-5 mr-3" />
-                  {tr.signUp}
+                <Button variant="outline" className="w-full justify-start" size="lg">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Sign Up
                 </Button>
               </Link>
             </div>
           )}
 
-          {/* Enhanced Navigation - Scrollable Area */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden mobile-menu-scroll">
-            <div className="p-6 space-y-4 pb-8">
+          {/* Navigation */}
+          <div className="flex-1 p-4 space-y-2">
             {/* Main Navigation */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                Main Menu
-              </h4>
-              
+            <div className="space-y-1">
               <Link to="/" onClick={handleLinkClick}>
                 <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="p-2 bg-green-500/10 rounded-lg mr-4">
                     <Home className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
-                  {tr.home}
+                                     {t('home')}
                 </Button>
               </Link>
 
-              {/* Enhanced Categories with Collapsible */}
+              {/* Categories with Collapsible */}
               <div>
                 <Button
                   variant="ghost"
@@ -373,23 +281,21 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   onClick={() => setActiveSection(activeSection === 'categories' ? null : 'categories')}
                 >
                   <div className="flex items-center">
-                    <div className="p-2 bg-blue-500/10 rounded-lg mr-4">
-                      <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    {tr.categories}
+                    <ShoppingBag className="h-5 w-5 mr-4" />
+                    Categories
                   </div>
-                  <ChevronDown 
+                  <ChevronRight 
                     className={cn(
-                      "h-5 w-5 transition-transform duration-300",
-                      activeSection === 'categories' && "rotate-180"
+                      "h-4 w-4 transition-transform duration-200",
+                      activeSection === 'categories' && "rotate-90"
                     )} 
                   />
                 </Button>
                 
-                {/* Enhanced Categories Submenu */}
+                {/* Categories Submenu */}
                 <div className={cn(
-                  "overflow-hidden transition-all duration-400 ease-out",
-                  activeSection === 'categories' ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"
+                  "overflow-hidden transition-all duration-300 ease-out",
+                  activeSection === 'categories' ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                 )}>
                   <div className="ml-4 space-y-1 p-2 bg-muted rounded-xl border border-border">
                     {isLoading ? (
@@ -409,7 +315,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                         <Link to="/categories" onClick={handleLinkClick}>
                           <Button variant="ghost" className="w-full justify-start text-sm h-11 rounded-lg hover:bg-muted font-medium text-primary">
                             <ChevronRight className="h-4 w-4 mr-3" />
-                            {tr.viewAll}
+                            {t('viewAll')}
                           </Button>
                         </Link>
                       </>
@@ -424,7 +330,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-red-500/10 rounded-lg mr-4">
                       <Percent className="h-5 w-5 text-red-600 dark:text-red-400" />
                     </div>
-                    {tr.sale}
+                                         {t('sale')}
                   </div>
                   <Badge variant="destructive" className="animate-pulse font-semibold">HOT</Badge>
                 </Button>
@@ -435,16 +341,16 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
                     <Info className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
-                  {tr.about}
-                </Button>
-              </Link>
+                                     {t('about')}
+                 </Button>
+               </Link>
 
-              <Link to="/contact" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                  <div className="p-2 bg-orange-500/10 rounded-lg mr-4">
-                    <Phone className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  {tr.contact}
+               <Link to="/contact" onClick={handleLinkClick}>
+                 <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                   <div className="p-2 bg-orange-500/10 rounded-lg mr-4">
+                     <Phone className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                   </div>
+                   {t('contact')}
                 </Button>
               </Link>
             </div>
@@ -480,69 +386,63 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
 
             <Separator className="my-6" />
 
-            {/* Enhanced User Menu (if authenticated) */}
+            {/* User Menu (if authenticated) */}
             {isAuthenticated && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                  Account
-                </h4>
-                
+              <div className="space-y-1">
                 <Link to="/profile" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                     <div className="p-2 bg-blue-500/10 rounded-lg mr-4">
                       <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    {tr.profile}
+                                         {t('profile')}
+                   </Button>
+                 </Link>
+
+                 <Link to="/profile/orders" onClick={handleLinkClick}>
+                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                     <div className="p-2 bg-green-500/10 rounded-lg mr-4">
+                       <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
+                     </div>
+                     {t('orders')}
+                   </Button>
+                 </Link>
+
+                 <Link to="/profile/addresses" onClick={handleLinkClick}>
+                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                     <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
+                       <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                     </div>
+                     {t('addresses')}
+                   </Button>
+                 </Link>
+
+                 <Link to="/profile/payment" onClick={handleLinkClick}>
+                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                     <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
+                       <CreditCard className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                     </div>
+                     {t('payment')}
+                   </Button>
+                 </Link>
+
+                 <Link to="/compare" onClick={handleLinkClick}>
+                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                     <div className="p-2 bg-indigo-500/10 rounded-lg mr-4">
+                       <GitCompare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                     </div>
+                     {t('compare')}
                   </Button>
                 </Link>
 
-                <Link to="/profile/orders" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                    <div className="p-2 bg-green-500/10 rounded-lg mr-4">
-                      <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    {tr.orders}
-                  </Button>
-                </Link>
-
-                <Link to="/profile/addresses" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                    <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
-                      <MapPin className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    {tr.addresses}
-                  </Button>
-                </Link>
-
-                <Link to="/profile/payment" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                    <div className="p-2 bg-yellow-500/10 rounded-lg mr-4">
-                      <CreditCard className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                    </div>
-                    {tr.payment}
-                  </Button>
-                </Link>
-
-                <Link to="/compare" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                    <div className="p-2 bg-indigo-500/10 rounded-lg mr-4">
-                      <GitCompare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    {tr.compare}
-                  </Button>
-                </Link>
-
-                <Separator className="my-4" />
+                <Separator className="my-2" />
 
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start h-14 text-base font-medium rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
+                  className="w-full justify-start h-12 text-destructive hover:text-destructive hover:bg-destructive/10"
                   onClick={handleLogout}
                 >
-                  <div className="p-2 bg-red-500/10 rounded-lg mr-4">
-                    <LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  </div>
-                  {tr.signOut}
+                  <LogOut className="h-5 w-5 mr-3" />
+                  Sign Out
                 </Button>
               </div>
             )}
@@ -610,7 +510,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-emerald-500/10 rounded-lg mr-4">
                       <Globe className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    {tr.language}
+                                         {t('language')}
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-2 px-3 py-1 bg-muted/50 rounded-full">
@@ -659,33 +559,6 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
-
-            <Separator className="my-6" />
-
-            {/* Promotional Section */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                Special Offers
-              </h4>
-              
-              {/* Promo Card */}
-              <div className="mx-3 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/20">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="p-2 bg-primary/10 rounded-full">
-                    <Percent className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-sm">First Order Discount</h5>
-                    <p className="text-xs text-muted-foreground">Get 20% off your first purchase</p>
-                  </div>
-                </div>
-                <Link to="/sale" onClick={handleLinkClick}>
-                  <Button size="sm" className="w-full text-xs font-semibold">
-                    Shop Now
-                  </Button>
-                </Link>
-              </div>
 
               {/* Newsletter Signup */}
               <div className="mx-3 p-4 bg-gradient-to-r from-muted/30 to-muted/10 rounded-xl border border-border">
@@ -698,11 +571,12 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <p className="text-xs text-muted-foreground">Get latest fashion trends & deals</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="w-full text-xs font-semibold">
-                  Subscribe Newsletter
-                </Button>
+                <Link to="/sale" onClick={handleLinkClick}>
+                  <Button size="sm" className="w-full text-xs font-semibold">
+                    Shop Now
+                  </Button>
+                </Link>
               </div>
-            </div>
             </div>
           </div>
 
