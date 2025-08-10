@@ -38,23 +38,31 @@ function getSizesByCategorySlug(categorySlug: string): string[] {
   }
 }
 
+// Helper function to convert any remaining Vietnamese color names to English (standardized)
+function normalizeColorName(vietnameseColor: string): string {
+  const colorMap: Record<string, string> = {
+    'Đỏ rượu': 'burgundy'
+  };
+  return colorMap[vietnameseColor] || vietnameseColor.toLowerCase();
+}
+
 function getColorsByCategorySlug(categorySlug: string): string[] {
   switch (categorySlug) {
     case 'accessories':
-      return ['Đen', 'Trắng', 'Nâu', 'Đỏ', 'Xanh dương'];
+      return ['black', 'white', 'brown', 'red', 'blue'];
     case 'bottoms':
-      return ['Đen', 'Xanh đen', 'Xám', 'Nâu'];
+      return ['black', 'navy', 'grey', 'brown'];
     case 'tops':
     case 'kimono':
     case 'yukata':
     case 'haori':
-      return ['Đen', 'Trắng', 'Xanh dương', 'Hồng', 'Xám'];
+      return ['black', 'white', 'blue', 'pink', 'grey'];
     case 'hakama':
-      return ['Đen', 'Xanh đen', 'Tím đen'];
+      return ['black', 'navy', 'purple'];
     case 'obi-belts':
-      return ['Đỏ', 'Vàng', 'Xanh dương'];
+      return ['red', 'gold', 'blue'];
     default:
-      return ['Đen', 'Trắng'];
+      return ['black', 'white'];
   }
 }
 
@@ -393,7 +401,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/yukata-men-dragon.jpg', '/images/products/yukata-men-dragon-2.jpg'],
         sizes: ['M', 'L', 'XL', 'XXL'],
-        colors: ['Xanh dương', 'Đen', 'Xám'],
+        colors: ['blue', 'black', 'grey'],
         stock: 25,
         isActive: true,
         isFeatured: true,
@@ -410,7 +418,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/kimono-women-sakura.jpg', '/images/products/kimono-women-sakura-2.jpg'],
         sizes: ['S', 'M', 'L'],
-        colors: ['Hồng', 'Trắng', 'Xanh lá'],
+        colors: ['pink', 'white', 'green'],
         stock: 18,
         isActive: true,
         isFeatured: true,
@@ -427,7 +435,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/haori-modern.jpg', '/images/products/haori-modern-2.jpg'],
         sizes: ['S', 'M', 'L', 'XL'],
-        colors: ['Đen', 'Xanh đen', 'Nâu'],
+        colors: ['black', 'navy', 'brown'],
         stock: 22,
         isActive: true,
         isFeatured: false,
@@ -444,7 +452,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/jinbei-summer.jpg', '/images/products/jinbei-summer-2.jpg'],
         sizes: ['S', 'M', 'L', 'XL'],
-        colors: ['Xanh lá', 'Xanh dương', 'Trắng'],
+        colors: ['green', 'blue', 'white'],
         stock: 35,
         isActive: true,
         isFeatured: false,
@@ -461,7 +469,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/happi-festival.jpg', '/images/products/happi-festival-2.jpg'],
         sizes: ['M', 'L', 'XL'],
-        colors: ['Đỏ', 'Xanh dương', 'Trắng'],
+        colors: ['red', 'blue', 'white'],
         stock: 28,
         isActive: true,
         isFeatured: false,
@@ -477,7 +485,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/kosode-classic.jpg', '/images/products/kosode-classic-2.jpg'],
         sizes: ['S', 'M', 'L'],
-        colors: ['Tím', 'Xanh đen', 'Kem'],
+        colors: ['purple', 'navy', 'beige'],
         stock: 15,
         isActive: true,
         isFeatured: false,
@@ -494,7 +502,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/uchikake-wedding.jpg', '/images/products/uchikake-wedding-2.jpg'],
         sizes: ['S', 'M', 'L'],
-        colors: ['Đỏ', 'Vàng kim', 'Trắng'],
+        colors: ['red', 'gold', 'white'],
         stock: 5,
         isActive: true,
         isFeatured: true,
@@ -511,7 +519,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/michiyuki-travel.jpg', '/images/products/michiyuki-travel-2.jpg'],
         sizes: ['S', 'M', 'L', 'XL'],
-        colors: ['Xám', 'Đen', 'Xanh đen'],
+        colors: ['grey', 'black', 'navy'],
         stock: 20,
         isActive: true,
         isFeatured: false,
@@ -528,7 +536,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/noragi-work.jpg', '/images/products/noragi-work-2.jpg'],
         sizes: ['M', 'L', 'XL', 'XXL'],
-        colors: ['Nâu', 'Xanh đen', 'Xám'],
+        colors: ['brown', 'navy', 'grey'],
         stock: 30,
         isActive: true,
         isFeatured: false,
@@ -544,7 +552,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[0]._id,
         images: ['/images/products/samue-zen.jpg', '/images/products/samue-zen-2.jpg'],
         sizes: ['S', 'M', 'L', 'XL'],
-        colors: ['Xám', 'Đen', 'Trắng'],
+        colors: ['grey', 'black', 'white'],
         stock: 25,
         isActive: true,
         isFeatured: false,
@@ -563,7 +571,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/hakama-men-formal.jpg', '/images/products/hakama-men-formal-2.jpg'],
         sizes: ['M', 'L', 'XL'],
-        colors: ['Đen', 'Xanh đen'],
+        colors: ['black', 'navy'],
         stock: 12,
         isActive: true,
         isFeatured: true,
@@ -580,7 +588,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/yukata-women-chrysanthemum.jpg', '/images/products/yukata-women-chrysanthemum-2.jpg'],
         sizes: ['S', 'M', 'L'],
-        colors: ['Xanh lá', 'Hồng', 'Trắng'],
+        colors: ['green', 'pink', 'white'],
         stock: 22,
         isActive: true,
         isFeatured: false,
@@ -597,7 +605,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/jinbei-unisex.jpg', '/images/products/jinbei-unisex-2.jpg'],
         sizes: ['S', 'M', 'L', 'XL'],
-        colors: ['Xanh lá', 'Xanh dương', 'Trắng'],
+        colors: ['green', 'blue', 'white'],
         stock: 40,
         isActive: true,
         isFeatured: false,
@@ -613,7 +621,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/monpe-farmer.jpg', '/images/products/monpe-farmer-2.jpg'],
         sizes: ['S', 'M', 'L', 'XL'],
-        colors: ['Nâu', 'Xanh đen', 'Đen'],
+        colors: ['brown', 'navy', 'black'],
         stock: 28,
         isActive: true,
         isFeatured: false,
@@ -630,7 +638,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/sasiko-denim.jpg', '/images/products/sasiko-denim-2.jpg'],
         sizes: ['M', 'L', 'XL', 'XXL'],
-        colors: ['Xanh đen', 'Đen', 'Xám'],
+        colors: ['navy', 'black', 'grey'],
         stock: 18,
         isActive: true,
         isFeatured: true,
@@ -647,7 +655,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/hakama-women-graduation.jpg', '/images/products/hakama-women-graduation-2.jpg'],
         sizes: ['S', 'M', 'L'],
-        colors: ['Đen', 'Xanh đen', 'Tím đen'],
+        colors: ['black', 'navy', 'purple'],
         stock: 15,
         isActive: true,
         isFeatured: true,
@@ -664,7 +672,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/fundoshi-cotton.jpg', '/images/products/fundoshi-cotton-2.jpg'],
         sizes: ['M', 'L', 'XL'],
-        colors: ['Trắng', 'Xanh dương', 'Kem'],
+        colors: ['white', 'blue', 'beige'],
         stock: 25,
         isActive: true,
         isFeatured: false,
@@ -681,7 +689,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/momohiki-warm.jpg', '/images/products/momohiki-warm-2.jpg'],
         sizes: ['S', 'M', 'L', 'XL'],
-        colors: ['Đen', 'Xám', 'Nâu'],
+        colors: ['black', 'grey', 'brown'],
         stock: 20,
         isActive: true,
         isFeatured: false,
@@ -697,7 +705,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/karusan-wide.jpg', '/images/products/karusan-wide-2.jpg'],
         sizes: ['S', 'M', 'L', 'XL'],
-        colors: ['Kem', 'Xám', 'Xanh lá'],
+        colors: ['beige', 'grey', 'green'],
         stock: 24,
         isActive: true,
         isFeatured: false,
@@ -714,7 +722,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[1]._id,
         images: ['/images/products/samue-work.jpg', '/images/products/samue-work-2.jpg'],
         sizes: ['M', 'L', 'XL', 'XXL'],
-        colors: ['Xám', 'Đen', 'Nâu'],
+        colors: ['grey', 'black', 'brown'],
         stock: 30,
         isActive: true,
         isFeatured: false,
@@ -733,7 +741,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/geta-traditional.jpg', '/images/products/geta-traditional-2.jpg'],
         sizes: ['36', '37', '38', '39', '40', '41', '42'],
-        colors: ['Nâu', 'Đen', 'Tự nhiên'],
+        colors: ['brown', 'black', 'natural'],
         stock: 35,
         isActive: true,
         isFeatured: true,
@@ -750,7 +758,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/obi-silk.jpg', '/images/products/obi-silk-2.jpg'],
         sizes: ['One Size'],
-        colors: ['Đỏ', 'Vàng', 'Xanh dương'],
+        colors: ['red', 'yellow', 'blue'],
         stock: 25,
         isActive: true,
         isFeatured: true,
@@ -767,7 +775,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/kinchaku-premium.jpg', '/images/products/kinchaku-premium-2.jpg'],
         sizes: ['One Size'],
-        colors: ['Đỏ', 'Xanh dương', 'Hồng', 'Vàng'],
+        colors: ['red', 'blue', 'pink', 'yellow'],
         stock: 20,
         isActive: true,
         isFeatured: false,
@@ -784,7 +792,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/sensu-handpainted.jpg', '/images/products/sensu-handpainted-2.jpg'],
         sizes: ['One Size'],
-        colors: ['Trắng', 'Đen', 'Hồng', 'Xanh lá'],
+        colors: ['white', 'black', 'pink', 'green'],
         stock: 45,
         isActive: true,
         isFeatured: false,
@@ -801,7 +809,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/tabi-splittoe.jpg', '/images/products/tabi-splittoe-2.jpg'],
         sizes: ['S', 'M', 'L'],
-        colors: ['Trắng', 'Đen', 'Xanh dương', 'Kem'],
+        colors: ['white', 'black', 'blue', 'beige'],
         stock: 50,
         isActive: true,
         isFeatured: false,
@@ -817,7 +825,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/furoshiki-floral.jpg', '/images/products/furoshiki-floral-2.jpg'],
         sizes: ['50cm', '70cm', '90cm'],
-        colors: ['Hồng', 'Xanh lá', 'Tím', 'Cam'],
+        colors: ['pink', 'green', 'purple', 'coral'],
         stock: 30,
         isActive: true,
         isFeatured: false,
@@ -834,7 +842,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/kanzashi-flowers.jpg', '/images/products/kanzashi-flowers-2.jpg'],
         sizes: ['One Size'],
-        colors: ['Hồng', 'Trắng', 'Đỏ', 'Vàng'],
+        colors: ['pink', 'white', 'red', 'yellow'],
         stock: 15,
         isActive: true,
         isFeatured: true,
@@ -850,7 +858,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/gamaguchi-traditional.jpg', '/images/products/gamaguchi-traditional-2.jpg'],
         sizes: ['Small', 'Medium', 'Large'],
-        colors: ['Đỏ', 'Đen', 'Xanh dương', 'Hồng'],
+        colors: ['red', 'black', 'blue', 'pink'],
         stock: 25,
         isActive: true,
         isFeatured: false,
@@ -867,7 +875,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/zori-formal.jpg', '/images/products/zori-formal-2.jpg'],
         sizes: ['36', '37', '38', '39', '40', '41'],
-        colors: ['Đen', 'Đỏ', 'Vàng kim'],
+        colors: ['black', 'red', 'gold'],
         stock: 18,
         isActive: true,
         isFeatured: false,
@@ -884,7 +892,7 @@ const enhancedSeedData = async () => {
         categoryId: savedCategories[2]._id,
         images: ['/images/products/omamori-keychain.jpg', '/images/products/omamori-keychain-2.jpg'],
         sizes: ['One Size'],
-        colors: ['Đỏ', 'Xanh dương', 'Hồng', 'Vàng', 'Trắng'],
+        colors: ['red', 'blue', 'pink', 'yellow', 'white'],
         stock: 60,
         isActive: true,
         isFeatured: false,
