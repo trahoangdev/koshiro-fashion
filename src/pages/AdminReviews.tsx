@@ -171,9 +171,9 @@ const AdminReviews = () => {
     } catch (error) {
       console.error('Error loading reviews:', error);
       toast({
+        variant: "destructive",
         title: "Error Loading Reviews", 
-        description: "Failed to load reviews data",
-        variant: "destructive"
+        description: "Failed to load reviews data"
       });
     } finally {
       setIsLoading(false);
@@ -211,7 +211,8 @@ const AdminReviews = () => {
       });
       
       toast({
-        title: "✅ " + t.reviewCreated,
+        variant: "success",
+        title: t.reviewCreated,
         description: "New review has been created successfully"
       });
       
@@ -221,9 +222,9 @@ const AdminReviews = () => {
     } catch (error) {
       console.error('Error creating review:', error);
       toast({
-        title: "❌ " + t.creationFailed,
-        description: "Failed to create review",
-        variant: "destructive"
+        variant: "destructive",
+        title: t.creationFailed,
+        description: "Failed to create review"
       });
     }
   };
@@ -240,7 +241,8 @@ const AdminReviews = () => {
       });
       
       toast({
-        title: "✅ " + t.reviewUpdated,
+        variant: "success",
+        title: t.reviewUpdated,
         description: "Review has been updated successfully"
       });
       
@@ -251,9 +253,9 @@ const AdminReviews = () => {
     } catch (error) {
       console.error('Error updating review:', error);
       toast({
-        title: "❌ " + t.updateFailed,
-        description: "Failed to update review",
-        variant: "destructive"
+        variant: "destructive",
+        title: t.updateFailed,
+        description: "Failed to update review"
       });
     }
   };
@@ -265,7 +267,8 @@ const AdminReviews = () => {
       await api.deleteReview(currentReview._id);
       
       toast({
-        title: "✅ " + t.reviewDeleted,
+        variant: "success",
+        title: t.reviewDeleted,
         description: "Review has been deleted successfully"
       });
       
@@ -275,9 +278,9 @@ const AdminReviews = () => {
     } catch (error) {
       console.error('Error deleting review:', error);
       toast({
-        title: "❌ " + t.deleteFailed,
-        description: "Failed to delete review",
-        variant: "destructive"
+        variant: "destructive",
+        title: t.deleteFailed,
+        description: "Failed to delete review"
       });
     }
   };
@@ -285,9 +288,9 @@ const AdminReviews = () => {
   const handleBulkAction = async (action: string) => {
     if (selectedReviews.length === 0) {
       toast({
-        title: "⚠️ " + t.noSelection,
-        description: t.selectReviews,
-        variant: "destructive"
+        variant: "warning",
+        title: t.noSelection,
+        description: t.selectReviews
       });
       return;
     }
@@ -299,7 +302,8 @@ const AdminReviews = () => {
             api.updateReview(id, { verified: true })
           ));
           toast({
-            title: "✅ " + t.reviewsVerified,
+            variant: "success",
+            title: t.reviewsVerified,
             description: `${selectedReviews.length} reviews marked as verified`
           });
           break;
@@ -308,14 +312,16 @@ const AdminReviews = () => {
             api.updateReview(id, { verified: false })
           ));
           toast({
-            title: "✅ " + t.reviewsUnverified,
+            variant: "info",
+            title: t.reviewsUnverified,
             description: `${selectedReviews.length} reviews marked as unverified`
           });
           break;
         case 'delete':
           await Promise.all(selectedReviews.map(id => api.deleteReview(id)));
           toast({
-            title: "✅ " + t.reviewsDeleted,
+            variant: "success",
+            title: t.reviewsDeleted,
             description: `${selectedReviews.length} reviews deleted`
           });
           break;
@@ -326,9 +332,9 @@ const AdminReviews = () => {
     } catch (error) {
       console.error('Error performing bulk action:', error);
       toast({
-        title: "❌ " + t.bulkActionFailed,
-        description: "Failed to perform bulk action",
-        variant: "destructive"
+        variant: "destructive",
+        title: t.bulkActionFailed,
+        description: "Failed to perform bulk action"
       });
     }
   };
