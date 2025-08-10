@@ -221,7 +221,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
     <>
       {/* Backdrop */}
       <div 
-        className="mobile-menu-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm lg:hidden"
+        className="mobile-menu-backdrop fixed inset-0 bg-black/80 lg:hidden"
         onClick={onClose}
         style={{
           animation: 'fadeIn 300ms ease-out',
@@ -231,14 +231,14 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
 
       {/* Menu */}
       <div 
-        className="mobile-menu-panel fixed top-0 right-0 h-screen w-[380px] bg-background/98 backdrop-blur-xl border-l border-border/50 shadow-2xl lg:hidden overflow-hidden"
+        className="mobile-menu-panel fixed top-0 right-0 h-screen w-[380px] bg-background border-l border-border shadow-2xl lg:hidden overflow-hidden"
         style={{
           transform: 'translateX(0)',
           transition: 'transform 300ms ease-out'
         }}
       >
         {/* Header - Enhanced */}
-        <div className="flex items-center justify-between p-6 border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
+        <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5">
           <div className="flex items-center space-x-3">
             <div className="p-2 rounded-full bg-primary/10">
               <Menu className="h-5 w-5 text-primary" />
@@ -258,7 +258,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
         {/* Content */}
         <div className="flex flex-col h-full">
           {/* Enhanced Search */}
-          <div className="p-6 border-b border-border/30 flex-shrink-0">
+          <div className="p-6 border-b border-border flex-shrink-0">
             <form onSubmit={handleSearch}>
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
@@ -267,7 +267,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   placeholder={tr.search}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 pr-4 py-3 text-base rounded-full border-2 border-border/30 focus:border-primary transition-all duration-300 bg-muted/20"
+                  className="pl-12 pr-4 py-3 text-base rounded-full border-2 border-border focus:border-primary transition-all duration-300 bg-muted"
                 />
               </div>
             </form>
@@ -275,8 +275,8 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
 
           {/* Enhanced User Section */}
           {isAuthenticated ? (
-            <div className="p-6 border-b border-border/30 flex-shrink-0">
-              <div className="flex items-center space-x-4 mb-6 p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-xl border border-border/20">
+            <div className="p-6 border-b border-border flex-shrink-0">
+              <div className="flex items-center space-x-4 mb-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-border">
                 <Avatar className="h-14 w-14 ring-2 ring-primary/20">
                   <AvatarImage src={user?.avatar} />
                   <AvatarFallback className="bg-primary/10 text-primary font-bold">
@@ -296,7 +296,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               {/* Enhanced Quick Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <Link to="/cart" onClick={handleLinkClick}>
-                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-xl hover:shadow-lg transition-all duration-300 border border-blue-200/50 dark:border-blue-800/50">
+                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-blue-200 dark:border-blue-800">
                     <div className="p-2 bg-blue-500/10 rounded-full group-hover:bg-blue-500/20 transition-colors">
                       <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
@@ -309,7 +309,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   </div>
                 </Link>
                 <Link to="/wishlist" onClick={handleLinkClick}>
-                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950/30 dark:to-pink-900/30 rounded-xl hover:shadow-lg transition-all duration-300 border border-pink-200/50 dark:border-pink-800/50">
+                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-pink-200 dark:border-pink-800">
                     <div className="p-2 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
                       <Heart className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                     </div>
@@ -324,9 +324,9 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </div>
             </div>
           ) : (
-            <div className="p-6 border-b border-border/30 space-y-4 flex-shrink-0">
+            <div className="p-6 border-b border-border space-y-4 flex-shrink-0">
               <div className="text-center mb-6">
-                <div className="p-4 bg-muted/30 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <div className="p-4 bg-muted rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <User className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <h3 className="font-semibold text-lg mb-1">Welcome to Koshiro</h3>
@@ -357,7 +357,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </h4>
               
               <Link to="/" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="p-2 bg-green-500/10 rounded-lg mr-4">
                     <Home className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
@@ -369,7 +369,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               <div>
                 <Button
                   variant="ghost"
-                  className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200"
+                  className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200"
                   onClick={() => setActiveSection(activeSection === 'categories' ? null : 'categories')}
                 >
                   <div className="flex items-center">
@@ -391,7 +391,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   "overflow-hidden transition-all duration-400 ease-out",
                   activeSection === 'categories' ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"
                 )}>
-                  <div className="ml-4 space-y-1 p-2 bg-muted/20 rounded-xl border border-border/30">
+                  <div className="ml-4 space-y-1 p-2 bg-muted rounded-xl border border-border">
                     {isLoading ? (
                       <div className="flex items-center justify-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -400,14 +400,14 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                       <>
                         {categories.map((category) => (
                           <Link key={category._id} to={`/category/${category.slug}`} onClick={handleLinkClick}>
-                            <Button variant="ghost" className="w-full justify-start text-sm h-11 rounded-lg hover:bg-background/50">
+                            <Button variant="ghost" className="w-full justify-start text-sm h-11 rounded-lg hover:bg-muted">
                               <div className="w-2 h-2 bg-primary/50 rounded-full mr-3"></div>
                               {category.name}
                             </Button>
                           </Link>
                         ))}
                         <Link to="/categories" onClick={handleLinkClick}>
-                          <Button variant="ghost" className="w-full justify-start text-sm h-11 rounded-lg hover:bg-background/50 font-medium text-primary">
+                          <Button variant="ghost" className="w-full justify-start text-sm h-11 rounded-lg hover:bg-muted font-medium text-primary">
                             <ChevronRight className="h-4 w-4 mr-3" />
                             {tr.viewAll}
                           </Button>
@@ -419,7 +419,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </div>
 
               <Link to="/sale" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                <Button variant="ghost" className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="flex items-center">
                     <div className="p-2 bg-red-500/10 rounded-lg mr-4">
                       <Percent className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -431,7 +431,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </Link>
 
               <Link to="/about" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
                     <Info className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
@@ -440,7 +440,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </Link>
 
               <Link to="/contact" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="p-2 bg-orange-500/10 rounded-lg mr-4">
                     <Phone className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   </div>
@@ -459,7 +459,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               
               <div className="grid grid-cols-2 gap-3">
                 <Link to="/reviews" onClick={handleLinkClick}>
-                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 rounded-xl hover:shadow-lg transition-all duration-300 border border-yellow-200/50 dark:border-yellow-800/50">
+                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-yellow-200 dark:border-yellow-800">
                     <div className="p-2 bg-yellow-500/10 rounded-full group-hover:bg-yellow-500/20 transition-colors">
                       <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     </div>
@@ -468,7 +468,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                 </Link>
                 
                 <Link to="/order-tracking" onClick={handleLinkClick}>
-                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-xl hover:shadow-lg transition-all duration-300 border border-green-200/50 dark:border-green-800/50">
+                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-green-200 dark:border-green-800">
                     <div className="p-2 bg-green-500/10 rounded-full group-hover:bg-green-500/20 transition-colors">
                       <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
@@ -488,7 +488,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                 </h4>
                 
                 <Link to="/profile" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                     <div className="p-2 bg-blue-500/10 rounded-lg mr-4">
                       <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
@@ -497,7 +497,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                 </Link>
 
                 <Link to="/profile/orders" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                     <div className="p-2 bg-green-500/10 rounded-lg mr-4">
                       <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
@@ -506,7 +506,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                 </Link>
 
                 <Link to="/profile/addresses" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                     <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
                       <MapPin className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                     </div>
@@ -515,7 +515,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                 </Link>
 
                 <Link to="/profile/payment" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                     <div className="p-2 bg-yellow-500/10 rounded-lg mr-4">
                       <CreditCard className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     </div>
@@ -524,7 +524,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                 </Link>
 
                 <Link to="/compare" onClick={handleLinkClick}>
-                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                     <div className="p-2 bg-indigo-500/10 rounded-lg mr-4">
                       <GitCompare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
@@ -556,7 +556,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </h4>
               
               <Link to="/size-guide" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="p-2 bg-cyan-500/10 rounded-lg mr-4">
                     <Settings className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                   </div>
@@ -565,7 +565,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </Link>
 
               <Link to="/faq" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="p-2 bg-teal-500/10 rounded-lg mr-4">
                     <Info className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                   </div>
@@ -574,7 +574,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </Link>
 
               <Link to="/shipping-info" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="p-2 bg-slate-500/10 rounded-lg mr-4">
                     <Package className="h-5 w-5 text-slate-600 dark:text-slate-400" />
                   </div>
@@ -583,7 +583,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </Link>
 
               <Link to="/return-policy" onClick={handleLinkClick}>
-                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200">
+                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
                   <div className="p-2 bg-amber-500/10 rounded-lg mr-4">
                     <Settings className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                   </div>
@@ -603,7 +603,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               <div>
                 <Button
                   variant="ghost"
-                  className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/5 transition-all duration-200"
+                  className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200"
                   onClick={() => setActiveSection(activeSection === 'language' ? null : 'language')}
                 >
                   <div className="flex items-center">
@@ -635,7 +635,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   "overflow-hidden transition-all duration-400 ease-out",
                   activeSection === 'language' ? "max-h-48 opacity-100 mt-2" : "max-h-0 opacity-0"
                 )}>
-                  <div className="ml-4 space-y-1 p-2 bg-muted/20 rounded-xl border border-border/30">
+                  <div className="ml-4 space-y-1 p-2 bg-muted rounded-xl border border-border">
                     {languages.map((lang) => (
                       <Button
                         key={lang.code}
@@ -688,7 +688,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               </div>
 
               {/* Newsletter Signup */}
-              <div className="mx-3 p-4 bg-gradient-to-r from-muted/30 to-muted/10 rounded-xl border border-border/30">
+              <div className="mx-3 p-4 bg-gradient-to-r from-muted/30 to-muted/10 rounded-xl border border-border">
                 <div className="flex items-center space-x-3 mb-3">
                   <div className="p-2 bg-secondary/50 rounded-full">
                     <Bell className="h-5 w-5 text-secondary-foreground" />
@@ -707,7 +707,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
           </div>
 
           {/* Enhanced Footer */}
-          <div className="p-6 border-t border-border/30 bg-gradient-to-r from-muted/30 to-muted/10 flex-shrink-0">
+          <div className="p-6 border-t border-border bg-gradient-to-r from-muted/30 to-muted/10 flex-shrink-0">
             <div className="text-center space-y-3">
               <div className="flex items-center justify-center space-x-2">
                 <div className="p-2 bg-primary/10 rounded-lg">
