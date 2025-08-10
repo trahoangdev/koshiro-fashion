@@ -1,10 +1,14 @@
+import mongoose from 'mongoose';
 import { connectDB, disconnectDB } from '../config/database';
 import { User } from '../models/User';
-import { Category } from '../models/Category';
+import { Category, ICategory } from '../models/Category';
 import { Product } from '../models/Product';
 
 // Helper function to generate Vietnamese, English, and Japanese product names
-const generateProductData = (baseName: { vi: string; en: string; ja: string }, baseDescription: { vi: string; en: string; ja: string }) => ({
+const generateProductData = (
+  baseName: { vi: string; en: string; ja: string },
+  baseDescription: { vi: string; en: string; ja: string }
+) => ({
   name: baseName.vi,
   nameEn: baseName.en,
   nameJa: baseName.ja,
@@ -12,6 +16,118 @@ const generateProductData = (baseName: { vi: string; en: string; ja: string }, b
   descriptionEn: baseDescription.en,
   descriptionJa: baseDescription.ja
 });
+
+// helpers for generator
+function getSizesByCategorySlug(categorySlug: string): string[] {
+  switch (categorySlug) {
+    case 'accessories':
+      return ['One Size'];
+    case 'bottoms':
+      return ['S', 'M', 'L', 'XL', 'XXL'];
+    case 'tops':
+    case 'kimono':
+    case 'yukata':
+    case 'haori':
+      return ['S', 'M', 'L', 'XL'];
+    case 'hakama':
+      return ['M', 'L', 'XL'];
+    case 'obi-belts':
+      return ['One Size'];
+    default:
+      return ['S', 'M', 'L'];
+  }
+}
+
+function getColorsByCategorySlug(categorySlug: string): string[] {
+  switch (categorySlug) {
+    case 'accessories':
+      return ['Đen', 'Trắng', 'Nâu', 'Đỏ', 'Xanh dương'];
+    case 'bottoms':
+      return ['Đen', 'Xanh đen', 'Xám', 'Nâu'];
+    case 'tops':
+    case 'kimono':
+    case 'yukata':
+    case 'haori':
+      return ['Đen', 'Trắng', 'Xanh dương', 'Hồng', 'Xám'];
+    case 'hakama':
+      return ['Đen', 'Xanh đen', 'Tím đen'];
+    case 'obi-belts':
+      return ['Đỏ', 'Vàng', 'Xanh dương'];
+    default:
+      return ['Đen', 'Trắng'];
+  }
+}
+
+type SeedCategory = Pick<ICategory,
+  'slug' | 'name' | 'nameEn' | 'nameJa' | 'description' | 'descriptionEn' | 'descriptionJa'
+> & { _id: mongoose.Types.ObjectId };
+
+type SeedProduct = {
+  name: string;
+  nameEn?: string;
+  nameJa?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionJa?: string;
+  price: number;
+  salePrice?: number;
+  categoryId: mongoose.Types.ObjectId;
+  images: string[];
+  sizes: string[];
+  colors: string[];
+  stock: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  tags: string[];
+  sku: string;
+};
+
+function createProductsForCategory(category: SeedCategory, indexWithinAllCategories: number): SeedProduct[] {
+  const productsForCategory: SeedProduct[] = [];
+  const sizes = getSizesByCategorySlug(category.slug);
+  const colors = getColorsByCategorySlug(category.slug);
+
+  for (let i = 1; i <= 10; i += 1) {
+    const basePrice = 150000 + indexWithinAllCategories * 80000 + i * 25000;
+    const hasSale = i % 2 === 0;
+    const salePrice = hasSale ? Math.max(50000, Math.floor(basePrice * 0.8)) : undefined;
+    const stock = 10 + ((indexWithinAllCategories * 7 + i * 3) % 41); // 10..50
+    const isFeatured = i % 5 === 0;
+    const baseName = {
+      vi: `${category.name} ${i}`,
+      en: `${category.nameEn} ${i}`,
+      ja: `${category.nameJa} ${i}`
+    };
+    const baseDescription = {
+      vi: `${category.description} · Sản phẩm số ${i} thuộc danh mục ${category.name}. Thiết kế tinh tế, chất liệu cao cấp và phù hợp sử dụng hàng ngày.`,
+      en: `${category.descriptionEn} · Item ${i} in ${category.nameEn} category. Refined design, premium materials, suitable for daily use.`,
+      ja: `${category.descriptionJa} · カテゴリ${category.nameJa}のアイテム${i}。洗練されたデザイン、上質な素材、日常使いに最適。`
+    };
+
+    const skuPrefix = category.slug.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const sku = `${skuPrefix}-${String(i).padStart(3, '0')}`;
+
+    productsForCategory.push({
+      ...generateProductData(baseName, baseDescription),
+      price: basePrice,
+      ...(salePrice ? { salePrice } : {}),
+      categoryId: category._id,
+      images: [
+        `/images/products/${category.slug}-${i}.jpg`,
+        `/images/products/${category.slug}-${i}-2.jpg`
+      ],
+      sizes,
+      colors,
+      stock,
+      isActive: true,
+      isFeatured,
+      tags: [category.slug, (category.nameEn || category.name).toLowerCase(), category.name.toLowerCase()],
+      sku
+    });
+  }
+
+  return productsForCategory;
+}
 
 const enhancedSeedData = async () => {
   try {
@@ -775,11 +891,25 @@ const enhancedSeedData = async () => {
       }
     ];
 
-    // Continue with remaining categories... (This is a sample showing the enhanced structure)
-    // For brevity, I'm showing the first 3 categories. The actual implementation would include all 8 categories with 10 products each.
+    // Generate products for all categories (10 each), include sale products
+    const allProducts: SeedProduct[] = (savedCategories as unknown as SeedCategory[]).flatMap((category, catIndex: number) =>
+      createProductsForCategory(category, catIndex + 1)
+    );
 
-    await Product.insertMany(products);
-    console.log('👕 Created enhanced products');
+    // Ensure at least 20% products are on sale
+    const minSaleCount = Math.ceil(allProducts.length * 0.2);
+    let currentSaleCount = allProducts.filter(p => typeof p.salePrice === 'number').length;
+    let j = 0;
+    while (currentSaleCount < minSaleCount && j < allProducts.length) {
+      if (typeof allProducts[j].salePrice !== 'number') {
+        allProducts[j].salePrice = Math.max(50000, Math.floor(allProducts[j].price * 0.85));
+        currentSaleCount += 1;
+      }
+      j += 1;
+    }
+
+    await Product.insertMany(allProducts);
+    console.log('👕 Created enhanced products:', allProducts.length);
 
     // Update category product counts
     for (const category of savedCategories) {
@@ -794,7 +924,7 @@ const enhancedSeedData = async () => {
     console.log('   - customer1@example.com / customer123 (Vietnamese)');
     console.log('   - customer2@example.com / customer123 (English)');
     console.log('   - customer3@example.com / customer123 (Japanese)');
-    console.log('📦 Total products created: ' + products.length);
+    console.log('📦 Total products created: ' + allProducts.length);
     console.log('📂 Total categories created: ' + savedCategories.length);
 
   } catch (error) {
