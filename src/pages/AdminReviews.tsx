@@ -300,14 +300,10 @@ const AdminReviews = () => {
           <h1 className="text-3xl font-bold">Reviews Management</h1>
           <p className="text-muted-foreground">Manage customer reviews and ratings</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Review
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        <Button onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Review
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -566,61 +562,63 @@ const AdminReviews = () => {
       </Card>
 
       {/* Create Dialog */}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create New Review</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Product ID</label>
-            <Input
-              value={formData.productId}
-              onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-              placeholder="Enter product ID"
-            />
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Review</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Product ID</label>
+              <Input
+                value={formData.productId}
+                onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+                placeholder="Enter product ID"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Rating</label>
+              <Select value={formData.rating.toString()} onValueChange={(value) => setFormData({ ...formData, rating: parseInt(value) })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 Stars</SelectItem>
+                  <SelectItem value="4">4 Stars</SelectItem>
+                  <SelectItem value="3">3 Stars</SelectItem>
+                  <SelectItem value="2">2 Stars</SelectItem>
+                  <SelectItem value="1">1 Star</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Title</label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Review title"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Comment</label>
+              <Textarea
+                value={formData.comment}
+                onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                placeholder="Review comment"
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateReview}>
+                Create Review
+              </Button>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium">Rating</label>
-            <Select value={formData.rating.toString()} onValueChange={(value) => setFormData({ ...formData, rating: parseInt(value) })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5 Stars</SelectItem>
-                <SelectItem value="4">4 Stars</SelectItem>
-                <SelectItem value="3">3 Stars</SelectItem>
-                <SelectItem value="2">2 Stars</SelectItem>
-                <SelectItem value="1">1 Star</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Title</label>
-            <Input
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Review title"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Comment</label>
-            <Textarea
-              value={formData.comment}
-              onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-              placeholder="Review comment"
-              rows={4}
-            />
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateReview}>
-              Create Review
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
