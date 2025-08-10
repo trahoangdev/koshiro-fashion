@@ -90,14 +90,13 @@ export default function CategoryForm({
     isFeatured: false,
     isVisible: true,
     displayType: 'grid',
-    color: '#3B82F6',
+    color: '',
     icon: '',
     bannerImage: '',
     seoUrl: '',
     canonicalUrl: '',
     schemaMarkup: '',
-    ...initialData,
-    parentId: initialData?.parentId || ''
+    ...initialData
   });
 
   const translations = {
@@ -316,7 +315,7 @@ export default function CategoryForm({
                                  <SelectContent>
                    <SelectItem value="none">{t.noParent}</SelectItem>
                    {categories
-                     .filter(cat => cat._id !== initialData?._id) // Exclude current category from parent options
+                     .filter(cat => cat._id !== (initialData as any)?._id) // Exclude current category from parent options
                      .map(category => (
                        <SelectItem key={category._id} value={category._id}>
                          {category.name}

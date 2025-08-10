@@ -113,7 +113,9 @@ export default function OrderDetailDialog({
       paymentMethod: 'Payment Method',
       trackingNumber: 'Tracking Number',
       notes: 'Notes',
-      noNotes: 'No notes available'
+      noNotes: 'No notes available',
+      orderDeleted: 'Order deleted successfully',
+      deleteFailed: 'Failed to delete order'
     },
     vi: {
       title: 'Chi tiết đơn hàng',
@@ -156,7 +158,9 @@ export default function OrderDetailDialog({
       paymentMethod: 'Phương thức thanh toán',
       trackingNumber: 'Mã theo dõi',
       notes: 'Ghi chú',
-      noNotes: 'Không có ghi chú'
+      noNotes: 'Không có ghi chú',
+      orderDeleted: 'Đã xóa đơn hàng thành công',
+      deleteFailed: 'Xóa đơn hàng thất bại'
     },
     ja: {
       title: '注文詳細',
@@ -199,7 +203,9 @@ export default function OrderDetailDialog({
       paymentMethod: '支払い方法',
       trackingNumber: '追跡番号',
       notes: '備考',
-      noNotes: '備考なし'
+      noNotes: '備考なし',
+      orderDeleted: '注文が正常に削除されました',
+      deleteFailed: '注文の削除に失敗しました'
     }
   };
 
@@ -439,12 +445,11 @@ export default function OrderDetailDialog({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <p className="font-medium">{order.shippingAddress?.fullName}</p>
+                <p className="font-medium">{order.shippingAddress?.name}</p>
                 <p className="text-sm">{order.shippingAddress?.address}</p>
                 <p className="text-sm">
-                  {order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}
+                  {order.shippingAddress?.city}, {order.shippingAddress?.district}
                 </p>
-                <p className="text-sm">{order.shippingAddress?.country}</p>
               </CardContent>
             </Card>
           </div>
@@ -459,10 +464,10 @@ export default function OrderDetailDialog({
                 {order.items.map((item, index) => (
                   <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
                     <div className="w-16 h-16 bg-muted rounded overflow-hidden">
-                      {item.product?.images && item.product.images.length > 0 ? (
+                      {item.productId?.images && item.productId.images.length > 0 ? (
                         <img
-                          src={item.product.images[0]}
-                          alt={item.product.name}
+                          src={item.productId.images[0]}
+                          alt={item.productId.name}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -472,7 +477,7 @@ export default function OrderDetailDialog({
                       )}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium">{item.product?.name}</h4>
+                      <h4 className="font-medium">{item.productId?.name}</h4>
                       <p className="text-sm text-muted-foreground">
                         {item.size} • {item.color}
                       </p>
@@ -504,19 +509,6 @@ export default function OrderDetailDialog({
             <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span>{t.subtotal}</span>
-                  <span>{formatCurrencyForDisplay(order.subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{t.shipping}</span>
-                  <span>{formatCurrencyForDisplay(order.shippingCost)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{t.tax}</span>
-                  <span>{formatCurrencyForDisplay(order.taxAmount)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
                   <span>{t.total}</span>
                   <span>{formatCurrencyForDisplay(order.totalAmount)}</span>
                 </div>
@@ -534,21 +526,11 @@ export default function OrderDetailDialog({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p>{order.paymentMethod?.name || 'N/A'}</p>
+                <p>{order.paymentMethod || 'N/A'}</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Truck className="h-5 w-5" />
-                  {t.trackingNumber}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{order.trackingNumber || 'N/A'}</p>
-              </CardContent>
-            </Card>
+
           </div>
 
           {/* Notes */}

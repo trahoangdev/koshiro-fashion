@@ -70,7 +70,7 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
     const loadCategories = async () => {
       try {
         const response = await api.getCategories();
-        setCategories(response.slice(0, 8)); // Show only first 8 categories
+        setCategories(response.categories.slice(0, 8)); // Show only first 8 categories
       } catch (error) {
         console.error('Error loading categories:', error);
       }
@@ -185,7 +185,7 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
   // Helper function to get category name based on language
   const getCategoryName = (category: Category) => {
     switch (language) {
-      case 'vi': return category.nameVi || category.name;
+      case 'vi': return category.nameEn || category.name; // Use English name for Vietnamese
       case 'ja': return category.nameJa || category.name;
       default: return category.nameEn || category.name;
     }
