@@ -39,6 +39,9 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
 
   // Calculate discount percentage
   const getDiscountPercentage = () => {
+    if (product.salePrice && product.salePrice < product.price) {
+      return Math.round(((product.price - product.salePrice) / product.price) * 100);
+    }
     if (product.originalPrice && product.originalPrice > product.price) {
       return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
     }
@@ -46,6 +49,9 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
   };
 
   const discountPercentage = getDiscountPercentage();
+  const isOnSale = product.onSale || (product.salePrice && product.salePrice < product.price);
+  const displayPrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
+  const originalDisplayPrice = product.salePrice && product.salePrice < product.price ? product.price : product.originalPrice;
 
   const handleAddToWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -90,19 +96,24 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
               alt={getName()}
               className="w-full h-full object-cover"
             />
+            {/* Stock Status - Higher priority */}
             {product.stock <= 0 && (
-              <Badge variant="secondary" className="absolute top-3 left-3">
-                {t('outOfStock')}
+              <Badge variant="secondary" className="absolute top-3 left-3 z-10">
+                {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
               </Badge>
             )}
-            {discountPercentage > 0 && (
-              <Badge variant="destructive" className="absolute top-3 left-3">
-                -{discountPercentage}% {t('off')}
+            
+            {/* Sale Badge - Show when on sale and in stock */}
+            {product.stock > 0 && isOnSale && discountPercentage > 0 && (
+              <Badge variant="destructive" className="absolute top-3 left-3 z-10">
+                -{discountPercentage}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
               </Badge>
             )}
-            {product.isFeatured && !discountPercentage && (
+            
+            {/* Featured Badge - Show when not on sale and in stock */}
+            {product.stock > 0 && !isOnSale && product.isFeatured && (
               <Badge variant="default" className="absolute top-3 right-3">
-                Featured
+                {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
               </Badge>
             )}
           </div>
@@ -152,11 +163,11 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="flex items-center space-x-2">
                   <span className="text-xl font-bold text-primary">
-                    {formatCurrency(product.price, language)}
+                    {formatCurrency(displayPrice, language)}
                   </span>
-                  {product.originalPrice && product.originalPrice > product.price && (
+                  {originalDisplayPrice && originalDisplayPrice > displayPrice && (
                     <span className="text-base text-muted-foreground line-through">
-                      {formatCurrency(product.originalPrice, language)}
+                      {formatCurrency(originalDisplayPrice, language)}
                     </span>
                   )}
                 </div>
@@ -210,42 +221,47 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           alt={getName()}
           className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
         />
+        {/* Stock Status - Higher priority */}
         {product.stock <= 0 && (
-          <Badge variant="secondary" className="absolute top-3 left-3">
-            {t('outOfStock')}
+          <Badge variant="secondary" className="absolute top-3 left-3 z-10">
+            {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
           </Badge>
         )}
-        {discountPercentage > 0 && (
-          <Badge variant="destructive" className="absolute top-3 left-3">
-            -{discountPercentage}% {t('off')}
+        
+        {/* Sale Badge - Show when on sale and in stock */}
+        {product.stock > 0 && isOnSale && discountPercentage > 0 && (
+          <Badge variant="destructive" className="absolute top-3 left-3 z-10">
+            -{discountPercentage}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
           </Badge>
         )}
-        {product.isFeatured && !discountPercentage && (
+        
+        {/* Featured Badge - Show when not on sale and in stock */}
+        {product.stock > 0 && !isOnSale && product.isFeatured && (
           <Badge variant="default" className="absolute top-3 right-3">
-            Featured
+            {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
           </Badge>
         )}
         
-        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="bg-background/80 backdrop-blur-sm"
-            onClick={handleAddToWishlist}
-          >
-            <Heart className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="bg-background/80 backdrop-blur-sm"
-            onClick={handleAddToCompare}
-          >
-            <GitCompare className="h-4 w-4" />
-          </Button>
+        {/* Action Buttons - Positioned to avoid conflicts with badges */}
+        <div className="absolute top-12 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-col space-y-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-background/80 backdrop-blur-sm"
+              onClick={handleAddToWishlist}
+            >
+              <Heart className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-background/80 backdrop-blur-sm"
+              onClick={handleAddToCompare}
+            >
+              <GitCompare className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -291,11 +307,11 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
               <span className="text-lg font-bold text-primary">
-                {formatCurrency(product.price, language)}
+                {formatCurrency(displayPrice, language)}
               </span>
-              {product.originalPrice && product.originalPrice > product.price && (
+              {originalDisplayPrice && originalDisplayPrice > displayPrice && (
                 <span className="text-sm text-muted-foreground line-through">
-                  {formatCurrency(product.originalPrice, language)}
+                  {formatCurrency(originalDisplayPrice, language)}
                 </span>
               )}
             </div>

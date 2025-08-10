@@ -163,7 +163,7 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-20 items-center justify-between px-6">
+      <div className="container flex h-20 items-center justify-between px-8">
         {/* Logo - Golden ratio proportions */}
         <div className="flex items-center min-w-[130px]">
           <Link to="/">
@@ -174,9 +174,9 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
         </div>
 
         {/* Desktop Navigation - Golden ratio spacing */}
-        <nav className="hidden lg:flex items-center space-x-10 flex-1 justify-center max-w-[420px]">
+        <nav className="hidden lg:flex items-center space-x-7 flex-1 justify-center max-w-[420px]">
           <Link to="/categories">
-            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">
+            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-2 py-2">
               {t.categories}
             </Button>
           </Link>

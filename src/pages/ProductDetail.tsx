@@ -631,10 +631,28 @@ const ProductDetail: React.FC = () => {
                 )}
 
                 {/* Sale Badge */}
-                {product.salePrice && (
-                  <div className="absolute top-4 left-4">
+                {(product.onSale || product.salePrice) && (
+                  <div className="absolute top-4 left-4 z-10">
                     <Badge variant="destructive" className="px-3 py-1 text-sm font-bold">
-                      -{Math.round(((product.price - product.salePrice) / product.price) * 100)}%
+                      {product.salePrice && product.salePrice < product.price ? (
+                        <>
+                          -{Math.round(((product.price - product.salePrice) / product.price) * 100)}%
+                          <span className="ml-1">
+                            {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'SALE'}
+                          </span>
+                        </>
+                      ) : product.originalPrice && product.originalPrice > product.price ? (
+                        <>
+                          -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                          <span className="ml-1">
+                            {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'SALE'}
+                          </span>
+                        </>
+                      ) : (
+                        <span>
+                          {language === 'vi' ? 'KHUYẾN MÃI' : language === 'ja' ? 'セール' : 'SALE'}
+                        </span>
+                      )}
                     </Badge>
                   </div>
                 )}
@@ -712,20 +730,36 @@ const ProductDetail: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center space-x-4">
                   <span className="text-4xl font-bold text-primary">
-                    {product.salePrice ? formatCurrency(product.salePrice, language) : formatCurrency(product.price, language)}
+                    {product.salePrice && product.salePrice < product.price ? formatCurrency(product.salePrice, language) : formatCurrency(product.price, language)}
                   </span>
-                  {product.salePrice && (
+                  {product.salePrice && product.salePrice < product.price && (
                     <>
                       <span className="text-2xl text-muted-foreground line-through">
                         {formatCurrency(product.price, language)}
                       </span>
                       <Badge variant="destructive" className="text-sm">
-                        Save {formatCurrency(product.price - product.salePrice, language)}
+                        -{Math.round(((product.price - product.salePrice) / product.price) * 100)}% 
+                        {language === 'vi' ? ' GIẢM' : language === 'ja' ? ' セール' : ' OFF'}
+                      </Badge>
+                    </>
+                  )}
+                  {product.originalPrice && product.originalPrice > product.price && !product.salePrice && (
+                    <>
+                      <span className="text-2xl text-muted-foreground line-through">
+                        {formatCurrency(product.originalPrice, language)}
+                      </span>
+                      <Badge variant="destructive" className="text-sm">
+                        -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% 
+                        {language === 'vi' ? ' GIẢM' : language === 'ja' ? ' セール' : ' OFF'}
                       </Badge>
                     </>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">Free shipping on orders over $50</p>
+                <p className="text-sm text-muted-foreground">
+                  {language === 'vi' ? 'Miễn phí vận chuyển cho đơn hàng trên 500.000đ' : 
+                   language === 'ja' ? '5万円以上のご注文で送料無料' : 
+                   'Free shipping on orders over $50'}
+                </p>
               </div>
 
               {/* Trust Indicators */}

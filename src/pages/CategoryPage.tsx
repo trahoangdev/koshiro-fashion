@@ -242,7 +242,11 @@ const CategoryPage: React.FC<CategoryPageProps> = () => {
 
     // On sale filter
     if (onSale) {
-      filtered = filtered.filter(product => product.salePrice && product.salePrice < product.price);
+      filtered = filtered.filter(product => 
+        product.onSale || 
+        (product.salePrice && product.salePrice < product.price) ||
+        (product.originalPrice && product.originalPrice > product.price)
+      );
     }
 
     // Rating filter (only if product has rating property)

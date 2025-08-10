@@ -1,0 +1,26 @@
+SCOPE
+- Stack: Node 20+, TypeScript, Express/Fastify, Prisma (SQL) hoặc Mongoose (Mongo), Zod, JWT, Swagger/OpenAPI.
+
+ARCH
+- Structure: src/
+  - modules/<feature>/{controller,service,repo,types}.ts
+  - db/, middleware/, utils/, routes.ts, server.ts
+- Config qua process.env + schema (zod) at src/config.ts; fail-fast nếu thiếu.
+
+API
+- Contract-first: define OpenAPI (swagger.json/yaml) hoặc zod-to-openapi.
+- Validation: zod at boundary (req.body/params/query). Never trust client.
+- Error handling: global handler → JSON shape {error:{code,message,details}}; no stack in prod.
+- Auth: stateless JWT (short expiry) + refresh; permission middleware (RBAC).
+
+DATA
+- Prisma: schema.prisma with proper indexes & relations; use transactions cho multi-step writes.
+- Pagination: cursor-based cho lists lớn; always return {items, nextCursor, total?}.
+
+OPS
+- Logging: pino/winston JSON; request id; mask pii.
+- Rate limit + CORS; helmet; input size limit; file upload checks.
+- Seed scripts và migration scripts.
+
+TEST
+- Unit (service/repo) + integration (supertest). Use test db. Cover edge cases.

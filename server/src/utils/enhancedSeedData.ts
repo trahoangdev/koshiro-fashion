@@ -78,6 +78,7 @@ type SeedProduct = {
   stock: number;
   isActive: boolean;
   isFeatured: boolean;
+  onSale?: boolean;
   tags: string[];
   sku: string;
 };
@@ -121,6 +122,7 @@ function createProductsForCategory(category: SeedCategory, indexWithinAllCategor
       stock,
       isActive: true,
       isFeatured,
+      onSale: Boolean(salePrice && salePrice < basePrice),
       tags: [category.slug, (category.nameEn || category.name).toLowerCase(), category.name.toLowerCase()],
       sku
     });
@@ -903,6 +905,7 @@ const enhancedSeedData = async () => {
     while (currentSaleCount < minSaleCount && j < allProducts.length) {
       if (typeof allProducts[j].salePrice !== 'number') {
         allProducts[j].salePrice = Math.max(50000, Math.floor(allProducts[j].price * 0.85));
+        (allProducts[j] as any).onSale = true;
         currentSaleCount += 1;
       }
       j += 1;

@@ -328,7 +328,7 @@ export default function AdminProducts() {
 
   const filterProducts = () => {
     let filtered = products;
-
+    
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(product =>
@@ -337,7 +337,7 @@ export default function AdminProducts() {
         product.nameJa?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
+    
     // Filter by category
     if (selectedCategory !== "all") {
       filtered = filtered.filter(product => product.categoryId === selectedCategory);
@@ -366,7 +366,7 @@ export default function AdminProducts() {
           break;
       }
     }
-
+    
     setFilteredProducts(filtered);
   };
 
@@ -629,27 +629,27 @@ export default function AdminProducts() {
               <Upload className="h-4 w-4 mr-2" />
               {t.import}
             </Button>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t.addProduct}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{t.addProduct}</DialogTitle>
-                </DialogHeader>
-                <ProductForm
-                  categories={categories}
-                  onSubmit={handleCreateProduct}
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                {t.addProduct}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{t.addProduct}</DialogTitle>
+              </DialogHeader>
+              <ProductForm
+                categories={categories}
+                onSubmit={handleCreateProduct}
                   isSubmitting={isSubmitting}
                   mode="create"
-                  onCancel={() => setIsCreateDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
+                onCancel={() => setIsCreateDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
         </div>
 
         {/* Stats Cards */}
@@ -717,31 +717,31 @@ export default function AdminProducts() {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
+          <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t.searchPlaceholder}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+            <Input
+              placeholder={t.searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
-                  />
-                </div>
+            />
+          </div>
               </div>
               <div className="flex gap-2">
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder={t.filterByCategory} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t.allCategories}</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category._id} value={category._id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder={t.filterByCategory} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t.allCategories}</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category._id} value={category._id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder={t.filterByStatus} />
@@ -773,13 +773,13 @@ export default function AdminProducts() {
                   </Button>
                 </div>
               </div>
-            </div>
+        </div>
           </CardContent>
         </Card>
 
         {/* Bulk Actions */}
         {selectedProducts.length > 0 && (
-          <Card>
+            <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -810,9 +810,9 @@ export default function AdminProducts() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
         )}
 
         {/* Products Grid/List */}
@@ -1077,8 +1077,8 @@ export default function AdminProducts() {
                         >
                           {page}
                         </Button>
-                      )}
-                    </div>
+          )}
+        </div>
                   ))}
                   
                   <Button

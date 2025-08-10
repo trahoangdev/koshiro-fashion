@@ -35,9 +35,11 @@ const SalePage = () => {
           limit: 100 // Load more products for better filtering
         });
         
-        // Filter products that have sale prices or original prices for discounts
+        // Filter products that are on sale
         const saleProducts = (response.products || []).filter(product => 
-          product.salePrice || (product.originalPrice && product.originalPrice > product.price)
+          product.onSale || 
+          product.salePrice || 
+          (product.originalPrice && product.originalPrice > product.price)
         );
         
         setProducts(saleProducts);
@@ -76,9 +78,14 @@ const SalePage = () => {
     // Discount filter
     if (discountFilter !== 'all') {
       filtered = filtered.filter(product => {
-        const originalPrice = product.originalPrice || product.price;
-        const currentPrice = product.salePrice || product.price;
-        const discountPercent = ((originalPrice - currentPrice) / originalPrice) * 100;
+        // Calculate discount percentage from salePrice vs price, or originalPrice vs price
+        let discountPercent = 0;
+        
+        if (product.salePrice && product.salePrice < product.price) {
+          discountPercent = ((product.price - product.salePrice) / product.price) * 100;
+        } else if (product.originalPrice && product.originalPrice > product.price) {
+          discountPercent = ((product.originalPrice - product.price) / product.originalPrice) * 100;
+        }
         
         switch (discountFilter) {
           case 'high': return discountPercent >= 50;
@@ -106,9 +113,14 @@ const SalePage = () => {
     // Tab filter
     if (activeTab !== 'all') {
       filtered = filtered.filter(product => {
-        const originalPrice = product.originalPrice || product.price;
-        const currentPrice = product.salePrice || product.price;
-        const discountPercent = ((originalPrice - currentPrice) / originalPrice) * 100;
+        // Calculate discount percentage consistently
+        let discountPercent = 0;
+        
+        if (product.salePrice && product.salePrice < product.price) {
+          discountPercent = ((product.price - product.salePrice) / product.price) * 100;
+        } else if (product.originalPrice && product.originalPrice > product.price) {
+          discountPercent = ((product.originalPrice - product.price) / product.originalPrice) * 100;
+        }
         
         switch (activeTab) {
           case 'flash': return discountPercent >= 50;
