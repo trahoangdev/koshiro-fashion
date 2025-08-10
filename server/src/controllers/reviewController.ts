@@ -75,17 +75,20 @@ export const createReview = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Rating must be between 1 and 5' });
     }
 
-    // Check if user has already reviewed this product (if productId is provided)
+    // Check if product exists (if productId is provided)
     if (productId) {
-      const existingReview = await Review.findOne({ userId, productId });
-      if (existingReview) {
-        return res.status(400).json({ message: 'You have already reviewed this product' });
-      }
-
-      // Check if product exists
       const product = await Product.findById(productId);
       if (!product) {
         return res.status(404).json({ message: 'Product not found' });
+      }
+    }
+
+    // Check if user has already reviewed this product (skip for admin users)
+    const userRole = (req as any).user.role;
+    if (productId && userRole !== 'admin') {
+      const existingReview = await Review.findOne({ userId, productId });
+      if (existingReview) {
+        return res.status(400).json({ message: 'You have already reviewed this product' });
       }
     }
 
