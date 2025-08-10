@@ -1,0 +1,81 @@
+/* Mobile Menu Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Mobile Menu Z-Index Management */
+.mobile-menu-open {
+  /* Prevent any background interaction when menu is open */
+  pointer-events: auto;
+}
+
+.mobile-menu-open > * {
+  /* Reduce z-index of all other elements when menu is open */
+  position: relative;
+  z-index: 1;
+}
+
+/* Smooth scrollbar for mobile menu */
+.mobile-menu-scroll {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--primary) / 0.3) transparent;
+}
+
+.mobile-menu-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.mobile-menu-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mobile-menu-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--primary) / 0.3);
+  border-radius: 2px;
+}
+
+.mobile-menu-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--primary) / 0.5);
+}
+
+/* Ensure mobile menu is always on top */
+.mobile-menu-backdrop {
+  z-index: 9998 !important;
+}
+
+.mobile-menu-panel {
+  z-index: 9999 !important;
+}

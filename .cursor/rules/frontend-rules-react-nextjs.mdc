@@ -1,0 +1,22 @@
+SCOPE
+- Stack: Next.js (App Router), TypeScript, React Server Components, Tailwind, shadcn/ui optional.
+- State: server components first; client components only when cần interactivity.
+- Forms: react-hook-form + zod schema (shared @/lib/validators).
+
+CODING
+- Foldering: app/(routes)/page.tsx, app/api/*, components/ui/*, lib/*, hooks/*, styles/*.
+- Styling: Tailwind utility-first; avoid inline styles if có class.
+- Accessibility: label/aria, keyboard nav; test with Tab.
+- Data fetching: cache by default; revalidate tags or ISR; streaming cho trang lớn.
+- i18n: next-intl or built-in; keep copy tại messages/*.json.
+- Error: use error.tsx + not-found.tsx per route; show user-friendly boundaries.
+
+PERF
+- Image via next/image, proper sizes; dynamic import for heavy components.
+- Avoid blocking requests in client; prefer server actions or route handlers.
+
+TEST
+- Vitest/RTL cho components; Playwright basic happy-path flows.
+
+DELIVERABLE
+- When building a feature: produce route tree, component list, sample UI (skeleton), and tests.
