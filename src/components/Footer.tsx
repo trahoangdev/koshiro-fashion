@@ -1,9 +1,26 @@
+import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { api, Category } from "@/lib/api";
 
 const Footer = () => {
   const { language } = useLanguage();
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Load categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await api.getCategories();
+        setCategories(response.slice(0, 6)); // Show only first 6 categories
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+
+    loadCategories();
+  }, []);
   
   const translations = {
     en: {
@@ -64,6 +81,15 @@ const Footer = () => {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
+  // Helper function to get category name based on language
+  const getCategoryName = (category: Category) => {
+    switch (language) {
+      case 'vi': return category.nameVi || category.name;
+      case 'ja': return category.nameJa || category.name;
+      default: return category.nameEn || category.name;
+    }
+  };
+
   return (
     <footer className="bg-card border-t mt-20">
       <div className="container py-16">
@@ -104,23 +130,17 @@ const Footer = () => {
           <div className="space-y-6">
             <h4 className="text-lg font-semibold">{t.categories}</h4>
             <nav className="space-y-3">
-              <Link to="/category/ao-kimono" className="block text-muted-foreground hover:text-primary transition-colors">
-                Kimono
-              </Link>
-              <Link to="/category/ao-yukata" className="block text-muted-foreground hover:text-primary transition-colors">
-                Yukata
-              </Link>
-              <Link to="/category/tops" className="block text-muted-foreground hover:text-primary transition-colors">
-                Tops
-              </Link>
-              <Link to="/category/bottoms" className="block text-muted-foreground hover:text-primary transition-colors">
-                Bottoms
-              </Link>
-              <Link to="/category/hakama" className="block text-muted-foreground hover:text-primary transition-colors">
-                Hakama
-              </Link>
-              <Link to="/category/phu-kien" className="block text-muted-foreground hover:text-primary transition-colors">
-                Accessories
+              {categories.map((category) => (
+                <Link 
+                  key={category._id}
+                  to={`/category/${category.slug}`} 
+                  className="block text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {getCategoryName(category)}
+                </Link>
+              ))}
+              <Link to="/categories" className="block text-primary hover:text-primary/80 transition-colors font-medium">
+                View All Categories →
               </Link>
             </nav>
           </div>
@@ -138,7 +158,7 @@ const Footer = () => {
               <Link to="/info/faq" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.faq}
               </Link>
-              <Link to="/info/privacy-policy" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/privacy-policy" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.privacy}
               </Link>
               <Link to="/info/terms-of-service" className="block text-muted-foreground hover:text-primary transition-colors">

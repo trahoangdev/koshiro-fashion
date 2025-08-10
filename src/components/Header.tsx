@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Search, ShoppingBag, Menu, X, User, Globe, Heart, LogOut, Settings, Package, CreditCard, MapPin, Bell, LogIn, UserPlus, GitCompare } from "lucide-react";
+import { Search, ShoppingBag, Menu, X, User, Globe, Heart, LogOut, Settings, Package, CreditCard, MapPin, Bell, LogIn, UserPlus, GitCompare, ChevronDown } from "lucide-react";
 import EnhancedMobileMenu from "./EnhancedMobileMenu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { api, Product } from "@/lib/api";
+import { api, Product, Category } from "@/lib/api";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -29,6 +29,7 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [categories, setCategories] = useState<Category[]>([]);
   const { language, setLanguage } = useLanguage();
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -63,6 +64,20 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
 
     loadWishlistCount();
   }, [isAuthenticated, refreshWishlistTrigger]);
+
+  // Load categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await api.getCategories();
+        setCategories(response.slice(0, 8)); // Show only first 8 categories
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,25 +182,54 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
+  // Helper function to get category name based on language
+  const getCategoryName = (category: Category) => {
+    switch (language) {
+      case 'vi': return category.nameVi || category.name;
+      case 'ja': return category.nameJa || category.name;
+      default: return category.nameEn || category.name;
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-20 items-center justify-between px-8">
+      <div className="container flex h-20 items-center justify-between px-10">
         {/* Logo - Golden ratio proportions */}
         <div className="flex items-center min-w-[130px]">
           <Link to="/">
-            <h1 className="text-3xl font-bold tracking-tight cursor-pointer hover:text-primary transition-colors duration-300 transform hover:scale-105">
+            <h1 className="text-3xl font-bold tracking-tight cursor-pointer hover:text-primary transition-colors duration-500 transform hover:scale-105">
               KOSHIRO
             </h1>
           </Link>
         </div>
 
         {/* Desktop Navigation - Golden ratio spacing */}
-        <nav className="hidden lg:flex items-center space-x-7 flex-1 justify-center max-w-[420px]">
-          <Link to="/categories">
-            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-2 py-2">
-              {t.categories}
-            </Button>
-          </Link>
+        <nav className="hidden lg:flex items-center space-x-2 flex-1 justify-center max-w-[420px]">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-2 py-2">
+                {t.categories}
+                <ChevronDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuLabel>Shop by Category</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {categories.map((category) => (
+                <DropdownMenuItem key={category._id} asChild>
+                  <Link to={`/category/${category.slug}`} className="cursor-pointer">
+                    {getCategoryName(category)}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/categories" className="cursor-pointer font-medium text-primary">
+                  View All Categories
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Link to="/sale">
             <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">{t.sale}</Button>
           </Link>
