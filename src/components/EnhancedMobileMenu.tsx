@@ -34,7 +34,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '@/lib/api';
+import { api, Category } from '@/lib/api';
 
 interface EnhancedMobileMenuProps {
   isOpen: boolean;
@@ -56,30 +56,28 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Array<{_id: string; name: string; slug: string}>>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load categories
+  // Load categories when menu opens
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.getCategories();
-        const categoriesArray = Array.isArray(response) ? response : response.categories || [];
-        setCategories(categoriesArray.slice(0, 6)); // Limit to 6 categories for mobile
-      } catch (error) {
-        console.error('Failed to load categories:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (isOpen) {
+      const loadCategories = async () => {
+        setIsLoading(true);
+        try {
+          const response = await api.getCategories();
+          setCategories(response.categories || []);
+        } catch (error) {
+          console.error('Error loading categories:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
       loadCategories();
     }
   }, [isOpen]);
 
-  // Close menu on escape key and manage body scroll
+  // Close menu on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -89,22 +87,18 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      // Prevent body scroll when menu is open
       document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = '0px'; // Prevent layout shift
-      
-      // Add menu-open class to body for additional styling if needed
+      document.body.style.paddingRight = '0px';
       document.body.classList.add('mobile-menu-open');
     } else {
-      // Restore body scroll
-      document.body.style.overflow = '';
+      document.body.style.overflow = 'unset';
       document.body.style.paddingRight = '';
       document.body.classList.remove('mobile-menu-open');
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
+      document.body.style.overflow = 'unset';
       document.body.style.paddingRight = '';
       document.body.classList.remove('mobile-menu-open');
     };
@@ -213,7 +207,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-blue-500/10 rounded-full group-hover:bg-blue-500/20 transition-colors">
                       <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                                         <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('cart')}</span>
+                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('cart')}</span>
                     {cartItemsCount > 0 && (
                       <Badge variant="destructive" className="h-5 w-5 text-xs p-0 flex items-center justify-center">
                         {cartItemsCount}
@@ -226,7 +220,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
                       <Heart className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                     </div>
-                                         <span className="text-sm font-semibold text-pink-900 dark:text-pink-100">{t('wishlist')}</span>
+                    <span className="text-sm font-semibold text-pink-900 dark:text-pink-100">{t('wishlist')}</span>
                     {wishlistCount > 0 && (
                       <Badge variant="secondary" className="h-5 w-5 text-xs p-0 flex items-center justify-center">
                         {wishlistCount}
@@ -269,7 +263,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   <div className="p-2 bg-green-500/10 rounded-lg mr-4">
                     <Home className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
-                                     {t('home')}
+                  {t('home')}
                 </Button>
               </Link>
 
@@ -330,7 +324,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-red-500/10 rounded-lg mr-4">
                       <Percent className="h-5 w-5 text-red-600 dark:text-red-400" />
                     </div>
-                                         {t('sale')}
+                    {t('sale')}
                   </div>
                   <Badge variant="destructive" className="animate-pulse font-semibold">HOT</Badge>
                 </Button>
@@ -341,16 +335,16 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
                     <Info className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
-                                     {t('about')}
-                 </Button>
-               </Link>
+                  {t('about')}
+                </Button>
+              </Link>
 
-               <Link to="/contact" onClick={handleLinkClick}>
-                 <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                   <div className="p-2 bg-orange-500/10 rounded-lg mr-4">
-                     <Phone className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                   </div>
-                   {t('contact')}
+              <Link to="/contact" onClick={handleLinkClick}>
+                <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                  <div className="p-2 bg-orange-500/10 rounded-lg mr-4">
+                    <Phone className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  {t('contact')}
                 </Button>
               </Link>
             </div>
@@ -394,43 +388,43 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-blue-500/10 rounded-lg mr-4">
                       <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                                         {t('profile')}
-                   </Button>
-                 </Link>
+                    {t('profile')}
+                  </Button>
+                </Link>
 
-                 <Link to="/profile/orders" onClick={handleLinkClick}>
-                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                     <div className="p-2 bg-green-500/10 rounded-lg mr-4">
-                       <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
-                     </div>
-                     {t('orders')}
-                   </Button>
-                 </Link>
+                <Link to="/profile/orders" onClick={handleLinkClick}>
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                    <div className="p-2 bg-green-500/10 rounded-lg mr-4">
+                      <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    {t('orders')}
+                  </Button>
+                </Link>
 
-                 <Link to="/profile/addresses" onClick={handleLinkClick}>
-                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                     <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
-                       <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                     </div>
-                     {t('addresses')}
-                   </Button>
-                 </Link>
+                <Link to="/profile/addresses" onClick={handleLinkClick}>
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                    <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
+                      <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    {t('addresses')}
+                  </Button>
+                </Link>
 
-                 <Link to="/profile/payment" onClick={handleLinkClick}>
-                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                     <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
-                       <CreditCard className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                     </div>
-                     {t('payment')}
-                   </Button>
-                 </Link>
+                <Link to="/profile/payment" onClick={handleLinkClick}>
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                    <div className="p-2 bg-purple-500/10 rounded-lg mr-4">
+                      <CreditCard className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    {t('payment')}
+                  </Button>
+                </Link>
 
-                 <Link to="/compare" onClick={handleLinkClick}>
-                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
-                     <div className="p-2 bg-indigo-500/10 rounded-lg mr-4">
-                       <GitCompare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                     </div>
-                     {t('compare')}
+                <Link to="/compare" onClick={handleLinkClick}>
+                  <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-200">
+                    <div className="p-2 bg-indigo-500/10 rounded-lg mr-4">
+                      <GitCompare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    {t('compare')}
                   </Button>
                 </Link>
 
@@ -510,7 +504,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-emerald-500/10 rounded-lg mr-4">
                       <Globe className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                                         {t('language')}
+                    {t('language')}
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-2 px-3 py-1 bg-muted/50 rounded-full">
