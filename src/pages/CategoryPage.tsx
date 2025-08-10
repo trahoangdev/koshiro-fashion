@@ -177,6 +177,38 @@ const CategoryPage: React.FC<CategoryPageProps> = () => {
 
   const t = translations[language as keyof typeof translations] || translations.vi;
 
+  // Helper function for color translation
+  const getColorName = (color: string) => {
+    const colorTranslations = {
+      black: { vi: "Đen", en: "Black", ja: "ブラック" },
+      white: { vi: "Trắng", en: "White", ja: "ホワイト" },
+      beige: { vi: "Be", en: "Beige", ja: "ベージュ" },
+      brown: { vi: "Nâu", en: "Brown", ja: "ブラウン" },
+      navy: { vi: "Xanh đậm", en: "Navy", ja: "ネイビー" },
+      natural: { vi: "Tự nhiên", en: "Natural", ja: "ナチュラル" },
+      olive: { vi: "Xanh ô liu", en: "Olive", ja: "オリーブ" },
+      khaki: { vi: "Ka ki", en: "Khaki", ja: "カーキ" },
+      grey: { vi: "Xám", en: "Grey", ja: "グレー" },
+      pink: { vi: "Hồng", en: "Pink", ja: "ピンク" },
+      purple: { vi: "Tím", en: "Purple", ja: "パープル" },
+      green: { vi: "Xanh lá", en: "Green", ja: "グリーン" },
+      blue: { vi: "Xanh dương", en: "Blue", ja: "ブルー" },
+      burgundy: { vi: "Đỏ rượu", en: "Burgundy", ja: "バーガンディー" },
+      gold: { vi: "Vàng", en: "Gold", ja: "ゴールド" },
+      red: { vi: "Đỏ", en: "Red", ja: "レッド" },
+      emerald: { vi: "Ngọc lục bảo", en: "Emerald", ja: "エメラルド" },
+      coral: { vi: "Cam san hô", en: "Coral", ja: "コーラル" },
+      turquoise: { vi: "Xanh ngọc", en: "Turquoise", ja: "ターコイズ" },
+      yellow: { vi: "Vàng", en: "Yellow", ja: "イエロー" }
+    };
+    
+    const colorKey = color.toLowerCase() as keyof typeof colorTranslations;
+    if (colorTranslations[colorKey]) {
+      return colorTranslations[colorKey][language] || color;
+    }
+    return color; // Fallback to original if no translation found
+  };
+
   // Helper functions for multilingual support
   const getCategoryName = () => {
     if (!category) return '';
@@ -556,9 +588,9 @@ const CategoryPage: React.FC<CategoryPageProps> = () => {
                           variant={selectedColors.includes(color) ? "default" : "outline"}
                           size="sm"
                           onClick={() => handleColorToggle(color)}
-                          className="h-8 text-xs"
+                          className="h-8 text-xs truncate"
                         >
-                          {color}
+                          {getColorName(color)}
                         </Button>
                       ))}
                     </div>

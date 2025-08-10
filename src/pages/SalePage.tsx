@@ -123,9 +123,16 @@ const SalePage = () => {
         }
         
         switch (activeTab) {
-          case 'flash': return discountPercent >= 50;
-          case 'featured': return product.isFeatured;
-          case 'new': return product.tags?.includes('new') || false;
+          case 'flash': return discountPercent >= 50; // Flash sales (high discount)
+          case 'featured': return product.isFeatured; // Featured sale items
+          case 'new': {
+            // New products (created within last 30 days) that are also on sale
+            const createdDate = new Date(product.createdAt || '');
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays <= 30;
+          }
           default: return true;
         }
       });

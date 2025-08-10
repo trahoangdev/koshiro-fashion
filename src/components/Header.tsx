@@ -107,7 +107,9 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
       login: "Login",
       register: "Register",
       guest: "Guest",
-      wishlist: "Wishlist"
+      wishlist: "Wishlist",
+      about: "About",
+      contact: "Contact"
     },
     vi: {
       search: "Tìm kiếm sản phẩm...",
@@ -131,7 +133,9 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
       login: "Đăng nhập",
       register: "Đăng ký",
       guest: "Khách",
-      wishlist: "Danh sách yêu thích"
+      wishlist: "Danh sách yêu thích",
+      about: "Giới thiệu",
+      contact: "Liên hệ"
     },
     ja: {
       search: "商品を検索...",
@@ -155,7 +159,9 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
       login: "ログイン",
       register: "登録",
       guest: "ゲスト",
-      wishlist: "ほしい物リスト"
+      wishlist: "ほしい物リスト",
+      about: "会社概要",
+      contact: "お問い合わせ"
     }
   };
 
@@ -184,10 +190,10 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
             <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">{t.sale}</Button>
           </Link>
           <Link to="/about">
-            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">About</Button>
+            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">{t.about}</Button>
           </Link>
           <Link to="/contact">
-            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">Contact</Button>
+            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">{t.contact}</Button>
           </Link>
         </nav>
 
