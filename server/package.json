@@ -8,9 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
-    "seed": "ts-node src/utils/seedData.ts",
-    "seed:enhanced": "ts-node src/scripts/runEnhancedSeed.ts",
-    "seed:fresh": "ts-node src/scripts/runEnhancedSeed.ts"
+    "seed": "ts-node src/utils/seedData.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^6.4.17",

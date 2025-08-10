@@ -421,29 +421,12 @@ const WishlistPage = () => {
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center space-x-2">
                             <span className="text-lg font-bold text-primary">
-                              {product.salePrice && product.salePrice < product.price ? formatCurrency(product.salePrice, language) : formatCurrency(product.price, language)}
+                              {formatCurrency(product.price, language)}
                             </span>
-                            {product.salePrice && product.salePrice < product.price && (
-                              <>
-                                <span className="text-sm text-muted-foreground line-through">
-                                  {formatCurrency(product.price, language)}
-                                </span>
-                                <Badge variant="destructive" className="text-xs">
-                                  -{Math.round(((product.price - product.salePrice) / product.price) * 100)}% 
-                                  {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
-                                </Badge>
-                              </>
-                            )}
-                            {product.originalPrice && product.originalPrice > product.price && !product.salePrice && (
-                              <>
-                                <span className="text-sm text-muted-foreground line-through">
-                                  {formatCurrency(product.originalPrice, language)}
-                                </span>
-                                <Badge variant="destructive" className="text-xs">
-                                  -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% 
-                                  {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
-                                </Badge>
-                              </>
+                            {product.originalPrice > product.price && (
+                              <span className="text-sm text-muted-foreground line-through">
+                                {formatCurrency(product.originalPrice, language)}
+                              </span>
                             )}
                           </div>
                         </div>
