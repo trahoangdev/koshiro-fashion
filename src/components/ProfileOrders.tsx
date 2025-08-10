@@ -209,7 +209,7 @@ const ProfileOrders = () => {
                   {order.items.map((item, index) => (
                     <div key={index} className="flex items-center space-x-3">
                       <img
-                        src={item.productId.images[0]}
+                        src={item.productId?.images?.[0] || '/placeholder.svg'}
                         alt={item.name}
                         className="w-12 h-12 object-cover rounded"
                       />

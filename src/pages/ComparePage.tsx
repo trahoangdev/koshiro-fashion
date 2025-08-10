@@ -293,7 +293,7 @@ const ComparePage = () => {
                     <td className="p-4 font-medium">{t.category}</td>
                     {compareList.map((product) => (
                       <td key={product._id} className="p-4 text-center">
-                        {product.categoryId.name}
+                        {product.categoryId?.name || 'Unknown Category'}
                       </td>
                     ))}
                   </tr>

@@ -88,14 +88,14 @@ export interface Category {
 
 // Order types
 export interface OrderItem {
-  productId: {
+  productId?: {
     _id: string;
     name: string;
     nameEn?: string;
     nameJa?: string;
     images: string[];
     price: number;
-  };
+  } | null;
   name: string;
   nameVi: string;
   quantity: number;
@@ -162,15 +162,15 @@ export interface PaymentMethod {
 // Review types
 export interface Review {
   _id: string;
-  userId: {
+  userId?: {
     _id: string;
     name: string;
     email: string;
-  };
+  } | null;
   productId?: {
     _id: string;
     name: string;
-  };
+  } | null;
   rating: number;
   title: string;
   comment: string;

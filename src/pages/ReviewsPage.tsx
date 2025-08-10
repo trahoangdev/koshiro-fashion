@@ -397,7 +397,7 @@ const ReviewsPage = () => {
                           <User className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">{review.userId.name}</h3>
+                          <h3 className="font-semibold">{review.userId?.name || 'Anonymous User'}</h3>
                           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                             <div className="flex">
                               {renderStars(review.rating)}
@@ -423,7 +423,7 @@ const ReviewsPage = () => {
                       
                       {review.productId && (
                         <p className="text-sm text-muted-foreground">
-                          <span className="font-medium">Product:</span> {review.productId.name}
+                          <span className="font-medium">Product:</span> {review.productId?.name || 'Unknown Product'}
                         </p>
                       )}
                     </div>

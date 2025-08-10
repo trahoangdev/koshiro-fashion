@@ -248,12 +248,12 @@ const OrderTrackingPage = () => {
                     {order.items.map((item, index) => (
                       <div key={index} className="flex items-center space-x-4 p-4 border rounded-lg">
                         <img
-                          src={item.productId.images[0] || '/placeholder.svg'}
-                          alt={item.productId.name}
+                          src={item.productId?.images?.[0] || '/placeholder.svg'}
+                          alt={item.productId?.name || 'Product'}
                           className="w-16 h-16 object-cover rounded"
                         />
                         <div className="flex-1">
-                          <h5 className="font-medium">{item.productId.name}</h5>
+                          <h5 className="font-medium">{item.productId?.name || 'Unknown Product'}</h5>
                           <p className="text-sm text-muted-foreground">
                             {item.quantity} x {item.price.toLocaleString()} VND
                           </p>
