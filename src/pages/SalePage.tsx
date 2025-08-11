@@ -13,11 +13,18 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Percent, TrendingDown, Clock, Gift } from "lucide-react";
 
+interface CartItem {
+  product: Product;
+  selectedColor: string;
+  selectedSize: string;
+  quantity: number;
+}
+
 const SalePage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [discountFilter, setDiscountFilter] = useState<string>('all');
   const [priceRangeFilter, setPriceRangeFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -143,15 +150,15 @@ const SalePage = () => {
 
   const addToCart = (product: Product) => {
     setCartItems(prev => {
-      const existingItem = prev.find(item => item.id === product._id);
+      const existingItem = prev.find(item => item.product._id === product._id);
       if (existingItem) {
         return prev.map(item =>
-          item.id === product._id
+          item.product._id === product._id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prev, { id: product._id, product, quantity: 1 }];
+      return [...prev, { product, selectedColor: '', selectedSize: '', quantity: 1 }];
     });
 
     toast({

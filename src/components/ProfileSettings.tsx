@@ -131,7 +131,7 @@ const ProfileSettings = () => {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  const handleSettingChange = (key: keyof AccountSettings, value: any) => {
+  const handleSettingChange = (key: keyof AccountSettings, value: string | boolean) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

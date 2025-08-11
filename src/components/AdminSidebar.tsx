@@ -37,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { api } from "@/lib/api";
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -170,10 +171,60 @@ const menuGroups: MenuGroup[] = [
 function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const { language, setLanguage } = useLanguage();
-  const [notifications, setNotifications] = useState(3);
+  const { toast } = useToast();
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    type: 'info' | 'warning' | 'error' | 'success';
+    title: string;
+    message: string;
+    timestamp: string;
+    read: boolean;
+  }>>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [orderCount, setOrderCount] = useState(0);
+  const [isLoadingOrderCount, setIsLoadingOrderCount] = useState(false);
+
+  // Load notifications
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        setIsLoadingNotifications(true);
+        const response = await api.getNotifications({ limit: 10, read: false });
+        setNotifications(response.data || []);
+        setUnreadCount(response.data?.filter(n => !n.read).length || 0);
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+        // Fallback to empty notifications
+        setNotifications([]);
+        setUnreadCount(0);
+      } finally {
+        setIsLoadingNotifications(false);
+      }
+    };
+
+    loadNotifications();
+  }, []);
+
+  // Load order count
+  useEffect(() => {
+    const loadOrderCount = async () => {
+      try {
+        setIsLoadingOrderCount(true);
+        const response = await api.getAdminOrders({ limit: 1 });
+        setOrderCount(response.total || 0);
+      } catch (error) {
+        console.error('Error loading order count:', error);
+        setOrderCount(0);
+      } finally {
+        setIsLoadingOrderCount(false);
+      }
+    };
+
+    loadOrderCount();
+  }, []);
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
@@ -223,6 +274,17 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
     if (window.innerWidth < 1024) {
       onToggle();
     }
+  };
+
+  // Get menu items with dynamic data
+  const getMenuItems = () => {
+    return menuGroups.map(group => ({
+      ...group,
+      items: group.items.map(item => ({
+        ...item,
+        badge: item.id === 'orders' ? (orderCount > 0 ? orderCount.toString() : undefined) : item.badge
+      }))
+    }));
   };
 
   return (
@@ -275,7 +337,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-6">
-            {menuGroups.map((group, groupIndex) => (
+            {getMenuItems().map((group, groupIndex) => (
               <div key={groupIndex}>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   {getGroupTitle(group)}
@@ -320,36 +382,89 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="relative">
                     <Bell className="h-4 w-4" />
-                    {notifications > 0 && (
+                    {unreadCount > 0 && (
                       <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs">
-                        {notifications}
+                        {unreadCount}
                       </Badge>
                     )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <DropdownMenuLabel>
+                    {language === 'vi' ? 'Thông báo' : language === 'ja' ? '通知' : 'Notifications'}
+                    {unreadCount > 0 && (
+                      <Badge variant="destructive" className="ml-2">
+                        {unreadCount}
+                      </Badge>
+                    )}
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                      <div>
-                        <p className="text-sm font-medium">New order received</p>
-                        <p className="text-xs text-muted-foreground">Order #12345 has been placed</p>
-                        <p className="text-xs text-muted-foreground">2 minutes ago</p>
+                  
+                  {isLoadingNotifications ? (
+                    <DropdownMenuItem disabled>
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-sm text-muted-foreground">
+                          {language === 'vi' ? 'Đang tải...' : language === 'ja' ? '読み込み中...' : 'Loading...'}
+                        </span>
                       </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                      <div>
-                        <p className="text-sm font-medium">Low stock alert</p>
-                        <p className="text-xs text-muted-foreground">Product "Kimono" is running low</p>
-                        <p className="text-xs text-muted-foreground">1 hour ago</p>
+                    </DropdownMenuItem>
+                  ) : notifications.length > 0 ? (
+                    notifications.slice(0, 5).map((notification) => (
+                      <DropdownMenuItem key={notification.id} className="cursor-pointer">
+                        <div className="flex items-start space-x-3 w-full">
+                          <div className={`w-2 h-2 rounded-full mt-2 ${
+                            notification.type === 'success' ? 'bg-green-500' :
+                            notification.type === 'warning' ? 'bg-yellow-500' :
+                            notification.type === 'error' ? 'bg-red-500' :
+                            'bg-blue-500'
+                          }`}></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{notification.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(notification.timestamp).toLocaleString(
+                                language === 'vi' ? 'vi-VN' : language === 'ja' ? 'ja-JP' : 'en-US',
+                                {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  ) : (
+                    <DropdownMenuItem disabled>
+                      <div className="text-center py-4 w-full">
+                        <Bell className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          {language === 'vi' ? 'Không có thông báo mới' : 
+                           language === 'ja' ? '新しい通知はありません' : 
+                           'No new notifications'}
+                        </p>
                       </div>
-                    </div>
-                  </DropdownMenuItem>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {notifications.length > 5 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        className="text-center cursor-pointer"
+                        onClick={() => navigate('/admin/notifications')}
+                      >
+                        <span className="text-sm text-primary">
+                          {language === 'vi' ? 'Xem tất cả thông báo' : 
+                           language === 'ja' ? 'すべての通知を表示' : 
+                           'View all notifications'}
+                        </span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
 

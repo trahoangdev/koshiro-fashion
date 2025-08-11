@@ -77,6 +77,7 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import UserForm from "../components/UserForm";
+import { exportImportService } from "@/lib/exportImportService";
 
 interface UserStats {
   total: number;
@@ -113,10 +114,16 @@ export default function AdminUsers() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const { language } = useLanguage();
 
   const translations = {
@@ -684,6 +691,58 @@ export default function AdminUsers() {
     setIsEditDialogOpen(true);
   };
 
+  // Export handler
+  const handleExport = async (format: 'csv' | 'json' | 'excel') => {
+    try {
+      setIsExporting(true);
+      const exportData = exportImportService.transformUsersForExport(filteredUsers);
+      const job = await exportImportService.startExportJob('customers', format, exportData);
+      
+      toast({
+        title: "Export Started",
+        description: `Exporting ${filteredUsers.length} users to ${format.toUpperCase()}`,
+      });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getExportJob(job.id);
+        if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
+          const link = document.createElement('a');
+          link.href = updatedJob.downloadUrl;
+          link.download = `users_${new Date().toISOString().split('T')[0]}.${format}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: "Export Completed",
+            description: `Users exported successfully to ${format.toUpperCase()}`,
+          });
+          setIsExporting(false);
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: "Export Failed",
+            description: updatedJob.error || "Failed to export users",
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        } else {
+          setTimeout(checkJob, 1000);
+        }
+      };
+      
+      checkJob();
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Error",
+        description: "Failed to start export",
+        variant: "destructive",
+      });
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -707,13 +766,30 @@ export default function AdminUsers() {
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={loadData}>
+            <Button variant="outline" size="sm" onClick={() => loadData()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              {t.export}
-            </Button>
+            
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : t.export}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>

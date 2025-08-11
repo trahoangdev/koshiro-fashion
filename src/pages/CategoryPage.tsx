@@ -18,11 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Loader2, Grid, List, Filter, Search, X, SlidersHorizontal, Tag, Star, Heart, ShoppingCart, ArrowLeft, ChevronDown, Package, TrendingUp } from 'lucide-react';
 
-interface CategoryPageProps {
-  // Props can be added here when needed
-}
-
-const CategoryPage: React.FC<CategoryPageProps> = () => {
+const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -192,7 +188,7 @@ const CategoryPage: React.FC<CategoryPageProps> = () => {
       pink: { vi: "Hồng", en: "Pink", ja: "ピンク" },
       purple: { vi: "Tím", en: "Purple", ja: "パープル" },
       green: { vi: "Xanh lá", en: "Green", ja: "グリーン" },
-      blue: { vi: "Xanh dương", en: "Blue", ja: "ブルー" },
+      blue: { vi: "Xanh biển", en: "Blue", ja: "ブルー" },
       burgundy: { vi: "Đỏ rượu", en: "Burgundy", ja: "バーガンディー" },
       gold: { vi: "Vàng", en: "Gold", ja: "ゴールド" },
       red: { vi: "Đỏ", en: "Red", ja: "レッド" },
@@ -283,7 +279,7 @@ const CategoryPage: React.FC<CategoryPageProps> = () => {
 
     // Rating filter (only if product has rating property)
     if (minRating > 0) {
-      filtered = filtered.filter(product => ((product as any).rating || 0) >= minRating);
+      filtered = filtered.filter(product => ((product as Product & { rating?: number }).rating || 0) >= minRating);
     }
 
     // Sorting

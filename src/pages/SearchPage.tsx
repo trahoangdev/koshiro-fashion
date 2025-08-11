@@ -22,6 +22,18 @@ interface SearchFilters {
   sortBy: string;
 }
 
+interface QueryParams {
+  search?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+  onSale?: boolean;
+  isFeatured?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
 const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -48,7 +60,7 @@ const SearchPage: React.FC = () => {
     const loadTrendingProducts = async () => {
       try {
         const response = await api.getProducts({ 
-          featured: true, 
+          isFeatured: true, 
           limit: 8 
         });
         setTrendingProducts(response.products || []);
@@ -95,14 +107,14 @@ const SearchPage: React.FC = () => {
       setSearchParams(params);
 
       // Build API query parameters
-      const queryParams: any = {};
+      const queryParams: QueryParams = {};
       if (filters.query) queryParams.search = filters.query;
       if (filters.category) queryParams.category = filters.category;
       if (filters.priceRange[0] > 0) queryParams.minPrice = filters.priceRange[0];
       if (filters.priceRange[1] < 1000) queryParams.maxPrice = filters.priceRange[1];
       if (filters.inStock) queryParams.inStock = true;
       if (filters.onSale) queryParams.onSale = true;
-      if (filters.featured) queryParams.featured = true;
+      if (filters.featured) queryParams.isFeatured = true;
 
       // Map sort options to API params
       switch (filters.sortBy) {

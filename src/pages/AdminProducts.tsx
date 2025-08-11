@@ -71,6 +71,7 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import ProductForm from "@/components/ProductForm";
 import { api } from "@/lib/api";
+import { exportImportService } from "@/lib/exportImportService";
 
 interface ProductFormData {
   name: string;
@@ -101,6 +102,8 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -114,6 +117,9 @@ export default function AdminProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   const translations = {
     vi: {
@@ -561,38 +567,155 @@ export default function AdminProducts() {
 
   const getPageNumbers = () => {
     const totalPages = getTotalPages();
-    const pages = [];
-    const maxVisiblePages = 5;
-    
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
+    const current = currentPage;
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (let i = Math.max(2, current - delta); i <= Math.min(totalPages - 1, current + delta); i++) {
+      range.push(i);
+    }
+
+    if (current - delta > 2) {
+      rangeWithDots.push(1, '...');
     } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          pages.push(i);
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (current + delta < totalPages - 1) {
+      rangeWithDots.push('...', totalPages);
+    } else {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  };
+
+  // Export & Import handlers
+  const handleExport = async (format: 'csv' | 'json' | 'excel') => {
+    try {
+      setIsExporting(true);
+      const exportData = exportImportService.transformProductsForExport(filteredProducts);
+      const job = await exportImportService.startExportJob('products', format, exportData);
+      
+      toast({
+        title: "Export Started",
+        description: `Exporting ${filteredProducts.length} products to ${format.toUpperCase()}`,
+      });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getExportJob(job.id);
+        if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
+          const link = document.createElement('a');
+          link.href = updatedJob.downloadUrl;
+          link.download = `products_${new Date().toISOString().split('T')[0]}.${format}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: "Export Completed",
+            description: `Products exported successfully to ${format.toUpperCase()}`,
+          });
+          setIsExporting(false);
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: "Export Failed",
+            description: updatedJob.error || "Failed to export products",
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        } else {
+          setTimeout(checkJob, 1000);
         }
-        pages.push('...');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1);
-        pages.push('...');
-        for (let i = totalPages - 3; i <= totalPages; i++) {
-          pages.push(i);
+      };
+      
+      checkJob();
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Error",
+        description: "Failed to start export",
+        variant: "destructive",
+      });
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please select a file to import",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      const job = await exportImportService.startImportJob('products', importFile);
+      
+      toast({
+        title: "Import Started",
+        description: `Importing products from ${importFile.name}`,
+      });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getImportJob(job.id);
+        if (updatedJob?.status === 'completed') {
+          toast({
+            title: "Import Completed",
+            description: `Successfully imported ${updatedJob.processedRows} products`,
+          });
+          setIsImporting(false);
+          setImportFile(null);
+          loadData(); // Reload data
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: "Import Failed",
+            description: updatedJob.error || "Failed to import products",
+            variant: "destructive",
+          });
+          setIsImporting(false);
+        } else {
+          setTimeout(checkJob, 1000);
         }
+      };
+      
+      checkJob();
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Error",
+        description: "Failed to start import",
+        variant: "destructive",
+      });
+      setIsImporting(false);
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.name.endsWith('.csv') || file.name.endsWith('.json')) {
+        setImportFile(file);
+        toast({
+          title: "File Selected",
+          description: `${file.name} selected for import`,
+        });
       } else {
-        pages.push(1);
-        pages.push('...');
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pages.push(i);
-        }
-        pages.push('...');
-        pages.push(totalPages);
+        toast({
+          title: "Invalid File",
+          description: "Please select a CSV or JSON file",
+          variant: "destructive",
+        });
       }
     }
-    
-    return pages;
   };
 
   if (isLoading) {
@@ -621,35 +744,74 @@ export default function AdminProducts() {
             <Button variant="outline" size="sm" onClick={() => loadData()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              {t.export}
-            </Button>
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              {t.import}
-            </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                {t.addProduct}
+            
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : t.export}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Import */}
+            <div className="relative">
+              <input
+                type="file"
+                accept=".csv,.json"
+                onChange={handleFileSelect}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="import-file"
+              />
+              <Button variant="outline" size="sm" disabled={isImporting || !importFile}>
+                <Upload className="h-4 w-4 mr-2" />
+                {isImporting ? "Importing..." : importFile ? importFile.name : t.import}
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{t.addProduct}</DialogTitle>
-              </DialogHeader>
-              <ProductForm
-                categories={categories}
-                onSubmit={handleCreateProduct}
+            </div>
+            
+            {importFile && (
+              <Button 
+                size="sm" 
+                onClick={handleImport}
+                disabled={isImporting}
+              >
+                {isImporting ? "Importing..." : "Start Import"}
+              </Button>
+            )}
+
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t.addProduct}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{t.addProduct}</DialogTitle>
+                </DialogHeader>
+                <ProductForm
+                  categories={categories}
+                  onSubmit={handleCreateProduct}
                   isSubmitting={isSubmitting}
                   mode="create"
-                onCancel={() => setIsCreateDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+                  onCancel={() => setIsCreateDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Stats Cards */}

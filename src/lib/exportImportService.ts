@@ -25,12 +25,20 @@ export interface ImportJob {
   error?: string;
 }
 
+interface ExportableData {
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+interface ParsedData {
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 class ExportImportService {
   private exportJobs: ExportJob[] = [];
   private importJobs: ImportJob[] = [];
 
   // Export functions
-  async exportToCSV(data: any[], type: string): Promise<string> {
+  async exportToCSV(data: ExportableData[], type: string): Promise<string> {
     if (data.length === 0) return '';
     
     const headers = Object.keys(data[0]);
@@ -50,24 +58,24 @@ class ExportImportService {
     return csvContent;
   }
 
-  async exportToJSON(data: any[]): Promise<string> {
+  async exportToJSON(data: ExportableData[]): Promise<string> {
     return JSON.stringify(data, null, 2);
   }
 
-  async exportToExcel(data: any[], type: string): Promise<Blob> {
+  async exportToExcel(data: ExportableData[], type: string): Promise<Blob> {
     // This would require a library like xlsx
     // For now, we'll return a CSV as Excel
     const csv = await this.exportToCSV(data, type);
     return new Blob([csv], { type: 'text/csv' });
   }
 
-  async startExportJob(type: string, format: string, data: any[]): Promise<ExportJob> {
+  async startExportJob(type: string, format: string, data: ExportableData[]): Promise<ExportJob> {
     const jobId = `export_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const job: ExportJob = {
       id: jobId,
-      type: type as any,
-      format: format as any,
+      type: type as ExportJob['type'],
+      format: format as ExportJob['format'],
       status: 'pending',
       progress: 0,
       createdAt: new Date().toISOString()
@@ -119,7 +127,7 @@ class ExportImportService {
     
     const job: ImportJob = {
       id: jobId,
-      type: type as any,
+      type: type as ImportJob['type'],
       filename: file.name,
       status: 'pending',
       progress: 0,
@@ -137,7 +145,7 @@ class ExportImportService {
         job.progress = 25;
 
         const content = await file.text();
-        let data: any[] = [];
+        let data: ParsedData[] = [];
 
         if (file.name.endsWith('.csv')) {
           data = this.parseCSV(content);
@@ -170,18 +178,18 @@ class ExportImportService {
     return job;
   }
 
-  private parseCSV(content: string): any[] {
+  private parseCSV(content: string): ParsedData[] {
     const lines = content.split('\n');
     if (lines.length < 2) return [];
 
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const data = [];
+    const data: ParsedData[] = [];
 
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       
       const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: any = {};
+      const row: ParsedData = {};
       
       headers.forEach((header, index) => {
         row[header] = values[index] || '';
@@ -255,28 +263,24 @@ class ExportImportService {
   }
 
   // Data transformation helpers
-  transformOrdersForExport(orders: Order[]): any[] {
+  transformOrdersForExport(orders: Order[]): ExportableData[] {
     return orders.map(order => ({
-      orderNumber: order.orderNumber,
+      orderId: order._id,
       customerName: order.userId?.name || '',
       customerEmail: order.userId?.email || '',
       status: order.status,
       paymentStatus: order.paymentStatus,
       totalAmount: order.totalAmount,
-      subtotal: order.subtotal,
-      shippingCost: order.shippingCost,
-      taxAmount: order.taxAmount,
       orderDate: new Date(order.createdAt).toLocaleDateString(),
       itemsCount: order.items.length,
       shippingAddress: order.shippingAddress ? 
-        `${order.shippingAddress.address}, ${order.shippingAddress.city}, ${order.shippingAddress.state}` : '',
-      paymentMethod: order.paymentMethod?.name || '',
-      trackingNumber: order.trackingNumber || '',
+        `${order.shippingAddress.address}, ${order.shippingAddress.city}` : '',
+      paymentMethod: order.paymentMethod || '',
       notes: order.notes || ''
     }));
   }
 
-  transformProductsForExport(products: Product[]): any[] {
+  transformProductsForExport(products: Product[]): ExportableData[] {
     return products.map(product => ({
       name: product.name,
       nameEn: product.nameEn || '',
@@ -289,11 +293,6 @@ class ExportImportService {
       isActive: product.isActive,
       isFeatured: product.isFeatured,
       onSale: product.onSale,
-      sku: product.sku || '',
-      barcode: product.barcode || '',
-      weight: product.weight || 0,
-      dimensions: product.dimensions ? 
-        `${product.dimensions.length}x${product.dimensions.width}x${product.dimensions.height}` : '',
       colors: Array.isArray(product.colors) ? product.colors.join(', ') : '',
       sizes: Array.isArray(product.sizes) ? product.sizes.join(', ') : '',
       tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
@@ -303,24 +302,23 @@ class ExportImportService {
     }));
   }
 
-  transformUsersForExport(users: User[]): any[] {
+  transformUsersForExport(users: User[]): ExportableData[] {
     return users.map(user => ({
       name: user.name,
       email: user.email,
       phone: user.phone || '',
       role: user.role,
       status: user.status,
-      isEmailVerified: user.isEmailVerified,
+      isActive: user.isActive,
       totalOrders: user.totalOrders || 0,
       orderCount: user.orderCount || 0,
       createdAt: new Date(user.createdAt).toLocaleDateString(),
-      lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : '',
-      address: user.addresses && user.addresses.length > 0 ? 
-        `${user.addresses[0].address}, ${user.addresses[0].city}` : ''
+      lastActive: user.lastActive ? new Date(user.lastActive).toLocaleDateString() : '',
+      address: user.address || ''
     }));
   }
 
-  transformCategoriesForExport(categories: Category[]): any[] {
+  transformCategoriesForExport(categories: Category[]): ExportableData[] {
     return categories.map(category => ({
       name: category.name,
       nameEn: category.nameEn || '',
@@ -331,10 +329,7 @@ class ExportImportService {
       slug: category.slug,
       parentCategory: category.parentId || '',
       isActive: category.isActive,
-      isFeatured: category.isFeatured || false,
-      sortOrder: category.sortOrder || 0,
-      metaTitle: category.metaTitle || '',
-      metaDescription: category.metaDescription || '',
+      productCount: category.productCount || 0,
       image: category.image || '',
       createdAt: new Date(category.createdAt).toLocaleDateString(),
       updatedAt: new Date(category.updatedAt).toLocaleDateString()

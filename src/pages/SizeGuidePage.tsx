@@ -9,9 +9,20 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+interface SizeDataItem {
+  size: string;
+  height?: string;
+  waist: string;
+  length: string;
+  chest?: string;
+  sleeve?: string;
+  hips?: string;
+  inseam?: string;
+}
+
 export default function SizeGuidePage() {
-  const [activeTab, setActiveTab] = useState("tops");
   const { language } = useLanguage();
+  const [activeTab, setActiveTab] = useState("tops");
 
   const translations = {
     en: {
@@ -98,30 +109,32 @@ export default function SizeGuidePage() {
 
   const sizeData = {
     tops: [
-      { size: "XS", chest: "76-81", waist: "61-66", length: "58-60", sleeve: "58-60" },
-      { size: "S", chest: "81-86", waist: "66-71", length: "60-62", sleeve: "60-62" },
-      { size: "M", chest: "86-91", waist: "71-76", length: "62-64", sleeve: "62-64" },
-      { size: "L", chest: "91-96", waist: "76-81", length: "64-66", sleeve: "64-66" },
-      { size: "XL", chest: "96-101", waist: "81-86", length: "66-68", sleeve: "66-68" },
-      { size: "XXL", chest: "101-106", waist: "86-91", length: "68-70", sleeve: "68-70" }
-    ],
+      { size: "S", chest: "86-91", waist: "71-76", length: "65-70", sleeve: "58-63" },
+      { size: "M", chest: "91-96", waist: "76-81", length: "70-75", sleeve: "63-68" },
+      { size: "L", chest: "96-101", waist: "81-86", length: "75-80", sleeve: "68-73" },
+      { size: "XL", chest: "101-106", waist: "86-91", length: "80-85", sleeve: "73-78" }
+    ] as SizeDataItem[],
     bottoms: [
-      { size: "XS", waist: "61-66", hips: "81-86", inseam: "76-78", length: "96-98" },
-      { size: "S", waist: "66-71", hips: "86-91", inseam: "78-80", length: "98-100" },
-      { size: "M", waist: "71-76", hips: "91-96", inseam: "80-82", length: "100-102" },
-      { size: "L", waist: "76-81", hips: "96-101", inseam: "82-84", length: "102-104" },
-      { size: "XL", waist: "81-86", hips: "101-106", inseam: "84-86", length: "104-106" },
-      { size: "XXL", waist: "86-91", hips: "106-111", inseam: "86-88", length: "106-108" }
-    ],
+      { size: "S", waist: "71-76", hips: "91-96", inseam: "75-80", length: "95-100" },
+      { size: "M", waist: "76-81", hips: "96-101", inseam: "80-85", length: "100-105" },
+      { size: "L", waist: "81-86", hips: "101-106", inseam: "85-90", length: "105-110" },
+      { size: "XL", waist: "86-91", hips: "106-111", inseam: "90-95", length: "110-115" }
+    ] as SizeDataItem[],
     hakama: [
-      { size: "S", height: "150-160", waist: "61-71", length: "95-100" },
-      { size: "M", height: "160-170", waist: "71-81", length: "100-105" },
-      { size: "L", height: "170-180", waist: "81-91", length: "105-110" },
+      { size: "S", height: "160-170", waist: "71-81", length: "95-105" },
+      { size: "M", height: "170-180", waist: "81-91", length: "105-115" },
+      { size: "L", height: "175-185", waist: "86-96", length: "110-120" },
       { size: "XL", height: "180-190", waist: "91-101", length: "110-115" }
-    ]
+    ] as SizeDataItem[],
+    accessories: [
+      { size: "S", waist: "71-76", length: "95-100" },
+      { size: "M", waist: "76-81", length: "100-105" },
+      { size: "L", waist: "81-86", length: "105-110" },
+      { size: "XL", waist: "86-91", length: "110-115" }
+    ] as SizeDataItem[]
   };
 
-  const renderSizeTable = (data: any[], type: string) => (
+  const renderSizeTable = (data: SizeDataItem[], type: string) => (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
         <thead>

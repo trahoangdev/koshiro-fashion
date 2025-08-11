@@ -382,7 +382,7 @@ export default function AdminActivity() {
         case "thisMonth":
           startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
           break;
-        case "lastMonth":
+        case "lastMonth": {
           startDate = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
           const endDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
           filtered = filtered.filter(activity => {
@@ -391,6 +391,7 @@ export default function AdminActivity() {
           });
           setFilteredActivities(filtered);
           return;
+        }
         default:
           setFilteredActivities(filtered);
           return;

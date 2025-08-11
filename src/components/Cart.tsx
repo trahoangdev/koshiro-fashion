@@ -7,8 +7,24 @@ import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+interface CartItem {
+  product: {
+    id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    price: number;
+    salePrice?: number;
+    images?: string[];
+    image?: string;
+  };
+  selectedColor: string;
+  selectedSize: string;
+  quantity: number;
+}
+
 interface CartProps {
-  cartItems: any[];
+  cartItems: CartItem[];
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onCheckout: () => void;
@@ -65,7 +81,7 @@ const Cart = ({
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  const getProductName = (item: any) => {
+  const getProductName = (item: CartItem) => {
     switch (language) {
       case 'vi': return item.product.name;
       case 'ja': return item.product.nameJa || item.product.name;
@@ -103,7 +119,7 @@ const Cart = ({
           {cartItems.map((item) => (
             <div key={`${item.product.id}-${item.selectedColor}-${item.selectedSize}`} className="flex gap-4">
               <img
-                src={item.product.images[0] || item.product.image}
+                src={item.product.images?.[0] || item.product.image}
                 alt={getProductName(item)}
                 className="w-20 h-20 object-cover rounded"
               />

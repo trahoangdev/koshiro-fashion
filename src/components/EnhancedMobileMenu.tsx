@@ -52,7 +52,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
   onSearch
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -165,7 +165,31 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
       language: "Language",
       cart: "Cart",
       wishlist: "Wishlist",
-      viewAll: "View All"
+      viewAll: "View All",
+      mainMenu: "Main Menu",
+      quickActions: "Quick Actions",
+      account: "Account",
+      helpSupport: "Help & Support",
+      settings: "Settings",
+      specialOffers: "Special Offers",
+      reviews: "Reviews",
+      trackOrder: "Track Order",
+      sizeGuide: "Size Guide",
+      faq: "FAQ",
+      shippingInfo: "Shipping Info",
+      returnPolicy: "Return Policy",
+      firstOrderDiscount: "First Order Discount",
+      firstOrderDescription: "Get 20% off your first purchase",
+      shopNow: "Shop Now",
+      stayUpdated: "Stay Updated",
+      newsletterDescription: "Get latest fashion trends & deals",
+      subscribeNewsletter: "Subscribe Newsletter",
+      premiumMember: "Premium Member",
+      welcomeKoshiro: "Welcome to Koshiro",
+      signInAccess: "Sign in to access your account",
+      madeWithLove: "Made with",
+      inJapan: "in Japan",
+      authenticJapanese: "Authentic Japanese Fashion"
     },
     vi: {
       menu: "Menu",
@@ -186,7 +210,31 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
       language: "Ngôn ngữ",
       cart: "Giỏ hàng",
       wishlist: "Yêu thích",
-      viewAll: "Xem tất cả"
+      viewAll: "Xem tất cả",
+      mainMenu: "Menu Chính",
+      quickActions: "Thao Tác Nhanh",
+      account: "Tài Khoản",
+      helpSupport: "Trợ Giúp & Hỗ Trợ",
+      settings: "Cài Đặt",
+      specialOffers: "Ưu Đãi Đặc Biệt",
+      reviews: "Đánh Giá",
+      trackOrder: "Theo Dõi Đơn Hàng",
+      sizeGuide: "Hướng Dẫn Kích Thước",
+      faq: "Câu Hỏi Thường Gặp",
+      shippingInfo: "Thông Tin Giao Hàng",
+      returnPolicy: "Chính Sách Đổi Trả",
+      firstOrderDiscount: "Giảm Giá Đơn Hàng Đầu",
+      firstOrderDescription: "Giảm 20% cho đơn hàng đầu tiên",
+      shopNow: "Mua Ngay",
+      stayUpdated: "Cập Nhật Tin Tức",
+      newsletterDescription: "Nhận xu hướng thời trang và ưu đãi mới nhất",
+      subscribeNewsletter: "Đăng Ký Bản Tin",
+      premiumMember: "Thành Viên Cao Cấp",
+      welcomeKoshiro: "Chào mừng đến với Koshiro",
+      signInAccess: "Đăng nhập để truy cập tài khoản",
+      madeWithLove: "Được tạo với",
+      inJapan: "tại Nhật Bản",
+      authenticJapanese: "Thời Trang Nhật Bản Chính Hiệu"
     },
     ja: {
       menu: "メニュー",
@@ -207,7 +255,31 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
       language: "言語",
       cart: "カート",
       wishlist: "ほしい物リスト",
-      viewAll: "すべて表示"
+      viewAll: "すべて表示",
+      mainMenu: "メインメニュー",
+      quickActions: "クイックアクション",
+      account: "アカウント",
+      helpSupport: "ヘルプとサポート",
+      settings: "設定",
+      specialOffers: "特別オファー",
+      reviews: "レビュー",
+      trackOrder: "注文追跡",
+      sizeGuide: "サイズガイド",
+      faq: "よくある質問",
+      shippingInfo: "配送情報",
+      returnPolicy: "返品ポリシー",
+      firstOrderDiscount: "初回注文割引",
+      firstOrderDescription: "初回購入で20%オフ",
+      shopNow: "今すぐ購入",
+      stayUpdated: "最新情報を取得",
+      newsletterDescription: "最新のファッショントレンドとお得な情報を入手",
+      subscribeNewsletter: "ニュースレターを購読",
+      premiumMember: "プレミアムメンバー",
+      welcomeKoshiro: "Koshiroへようこそ",
+      signInAccess: "アカウントにアクセスするにはログインしてください",
+      madeWithLove: "愛を込めて作成",
+      inJapan: "日本で",
+      authenticJapanese: "本格的な日本ファッション"
     }
   };
 
@@ -276,7 +348,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
           {/* Enhanced User Section */}
           {isAuthenticated ? (
             <div className="p-6 border-b border-border flex-shrink-0">
-              <div className="flex items-center space-x-4 mb-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-border">
+              <div className="flex items-center space-x-3 mb-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-border">
                 <Avatar className="h-14 w-14 ring-2 ring-primary/20">
                   <AvatarImage src={user?.avatar} />
                   <AvatarFallback className="bg-primary/10 text-primary font-bold">
@@ -288,7 +360,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
                   <div className="flex items-center mt-1">
                     <Star className="h-3 w-3 text-yellow-500 mr-1" />
-                    <span className="text-xs text-muted-foreground">Premium Member</span>
+                    <span className="text-xs text-muted-foreground">{tr.premiumMember}</span>
                   </div>
                 </div>
               </div>
@@ -329,8 +401,8 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                 <div className="p-4 bg-muted rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <User className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="font-semibold text-lg mb-1">Welcome to Koshiro</h3>
-                <p className="text-sm text-muted-foreground">Sign in to access your account</p>
+                <h3 className="font-semibold text-lg mb-1">{tr.welcomeKoshiro}</h3>
+                <p className="text-sm text-muted-foreground">{tr.signInAccess}</p>
               </div>
               <Link to="/login" onClick={handleLinkClick}>
                 <Button className="w-full justify-center h-12 text-base font-semibold rounded-xl" size="lg">
@@ -353,7 +425,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
             {/* Main Navigation */}
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                Main Menu
+                {tr.mainMenu}
               </h4>
               
               <Link to="/" onClick={handleLinkClick}>
@@ -426,7 +498,9 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     </div>
                     {tr.sale}
                   </div>
-                  <Badge variant="destructive" className="animate-pulse font-semibold">HOT</Badge>
+                  <Badge variant="destructive" className="animate-pulse font-semibold">
+                    {language === 'vi' ? 'NÓNG' : language === 'ja' ? 'ホット' : 'HOT'}
+                  </Badge>
                 </Button>
               </Link>
 
@@ -454,7 +528,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
             {/* Quick Actions Section */}
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                Quick Actions
+                {tr.quickActions}
               </h4>
               
               <div className="grid grid-cols-2 gap-3">
@@ -463,16 +537,16 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <div className="p-2 bg-yellow-500/10 rounded-full group-hover:bg-yellow-500/20 transition-colors">
                       <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     </div>
-                    <span className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">Reviews</span>
+                    <span className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">{tr.reviews}</span>
                   </div>
                 </Link>
                 
                 <Link to="/order-tracking" onClick={handleLinkClick}>
-                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-green-200 dark:border-green-800">
+                  <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-green-200 dark:border-yellow-800">
                     <div className="p-2 bg-green-500/10 rounded-full group-hover:bg-green-500/20 transition-colors">
                       <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
-                    <span className="text-sm font-semibold text-green-900 dark:text-green-100">Track Order</span>
+                    <span className="text-sm font-semibold text-green-900 dark:text-green-100">{tr.trackOrder}</span>
                   </div>
                 </Link>
               </div>
@@ -484,7 +558,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
             {isAuthenticated && (
               <div className="space-y-2">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                  Account
+                  {tr.account}
                 </h4>
                 
                 <Link to="/profile" onClick={handleLinkClick}>
@@ -552,7 +626,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
             {/* Help & Support Section */}
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                Help & Support
+                {tr.helpSupport}
               </h4>
               
               <Link to="/size-guide" onClick={handleLinkClick}>
@@ -560,7 +634,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   <div className="p-2 bg-cyan-500/10 rounded-lg mr-4">
                     <Settings className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                   </div>
-                  Size Guide
+                  {tr.sizeGuide}
                 </Button>
               </Link>
 
@@ -569,7 +643,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   <div className="p-2 bg-teal-500/10 rounded-lg mr-4">
                     <Info className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                   </div>
-                  FAQ
+                  {tr.faq}
                 </Button>
               </Link>
 
@@ -578,7 +652,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   <div className="p-2 bg-slate-500/10 rounded-lg mr-4">
                     <Package className="h-5 w-5 text-slate-600 dark:text-slate-400" />
                   </div>
-                  Shipping Info
+                  {tr.shippingInfo}
                 </Button>
               </Link>
 
@@ -587,7 +661,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                   <div className="p-2 bg-amber-500/10 rounded-lg mr-4">
                     <Settings className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                   </div>
-                  Return Policy
+                  {tr.returnPolicy}
                 </Button>
               </Link>
             </div>
@@ -597,7 +671,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
             {/* Enhanced Language Selector */}
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                Settings
+                {tr.settings}
               </h4>
               
               <div>
@@ -666,7 +740,7 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
             {/* Promotional Section */}
             <div className="space-y-4">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                Special Offers
+                {tr.specialOffers}
               </h4>
               
               {/* Promo Card */}
@@ -676,13 +750,13 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <Percent className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h5 className="font-bold text-sm">First Order Discount</h5>
-                    <p className="text-xs text-muted-foreground">Get 20% off your first purchase</p>
+                    <h5 className="font-bold text-sm">{tr.firstOrderDiscount}</h5>
+                    <p className="text-xs text-muted-foreground">{tr.firstOrderDescription}</p>
                   </div>
                 </div>
                 <Link to="/sale" onClick={handleLinkClick}>
                   <Button size="sm" className="w-full text-xs font-semibold">
-                    Shop Now
+                    {tr.shopNow}
                   </Button>
                 </Link>
               </div>
@@ -694,12 +768,12 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
                     <Bell className="h-5 w-5 text-secondary-foreground" />
                   </div>
                   <div>
-                    <h5 className="font-bold text-sm">Stay Updated</h5>
-                    <p className="text-xs text-muted-foreground">Get latest fashion trends & deals</p>
+                    <h5 className="font-bold text-sm">{tr.stayUpdated}</h5>
+                    <p className="text-xs text-muted-foreground">{tr.newsletterDescription}</p>
                   </div>
                 </div>
                 <Button variant="outline" size="sm" className="w-full text-xs font-semibold">
-                  Subscribe Newsletter
+                  {tr.subscribeNewsletter}
                 </Button>
               </div>
             </div>
@@ -718,11 +792,11 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
               <div className="text-xs text-muted-foreground space-y-1">
                 <p className="font-medium">© 2024 Koshiro Fashion</p>
                 <p className="flex items-center justify-center space-x-1">
-                  <span>Made with</span>
+                  <span>{tr.madeWithLove}</span>
                   <span className="text-red-500 animate-pulse">❤️</span>
-                  <span>in Japan</span>
+                  <span>{tr.inJapan}</span>
                 </p>
-                <p className="text-primary/70">Authentic Japanese Fashion</p>
+                <p className="text-primary/70">{tr.authenticJapanese}</p>
               </div>
             </div>
           </div>

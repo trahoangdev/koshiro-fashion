@@ -52,6 +52,14 @@ interface DateRange {
   to: Date | undefined;
 }
 
+interface SavedFilter {
+  searchQuery: string;
+  selectedFilters: Record<string, string[]>;
+  dateRange: DateRange;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}
+
 interface SearchFilterConfig {
   searchFields: string[];
   filters: {
@@ -70,9 +78,9 @@ interface AdminSearchFilterProps {
   onDateRange: (dateRange: DateRange) => void;
   onSort: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   onClear: () => void;
-  onSaveFilter: (name: string, filters: any) => void;
+  onSaveFilter: (name: string, filters: SavedFilter) => void;
   onLoadFilter: (name: string) => void;
-  savedFilters?: Array<{ name: string; filters: any }>;
+  savedFilters?: Array<{ name: string; filters: SavedFilter }>;
   isLoading?: boolean;
   totalResults?: number;
   activeFilters?: Record<string, string[]>;
@@ -285,7 +293,7 @@ export default function AdminSearchFilter({
       return;
     }
 
-    const filterData = {
+    const filterData: SavedFilter = {
       searchQuery,
       selectedFilters,
       dateRange,
