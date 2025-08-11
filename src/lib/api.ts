@@ -88,14 +88,14 @@ export interface Category {
 
 // Order types
 export interface OrderItem {
-  productId: {
+  productId?: {
     _id: string;
     name: string;
     nameEn?: string;
     nameJa?: string;
     images: string[];
     price: number;
-  };
+  } | null;
   name: string;
   nameVi: string;
   quantity: number;
@@ -162,15 +162,15 @@ export interface PaymentMethod {
 // Review types
 export interface Review {
   _id: string;
-  userId: {
+  userId?: {
     _id: string;
     name: string;
     email: string;
-  };
+  } | null;
   productId?: {
     _id: string;
     name: string;
-  };
+  } | null;
   rating: number;
   title: string;
   comment: string;
@@ -182,6 +182,7 @@ export interface Review {
 
 export interface CreateReviewRequest {
   productId?: string;
+  userId?: string; // Allow admin to specify userId when creating review
   rating: number;
   title: string;
   comment: string;
@@ -1046,6 +1047,22 @@ class ApiClient {
   async markReviewHelpful(reviewId: string): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/reviews/${reviewId}/helpful`, {
       method: 'POST',
+    });
+  }
+
+  async updateReview(reviewId: string, updateData: Partial<CreateReviewRequest & { verified: boolean }>): Promise<{ message: string; review: Review }> {
+    return this.request<{ message: string; review: Review }>(`/reviews/${reviewId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteReview(reviewId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/reviews/${reviewId}`, {
+      method: 'DELETE',
     });
   }
 

@@ -415,6 +415,84 @@ const Index = () => {
       
       <main className="py-16">
         <div className="container space-y-12">
+          {/* Flash Sale Section */}
+          <section className="bg-gradient-to-r from-red-50 via-orange-50 to-yellow-50 dark:from-red-950/20 dark:via-orange-950/20 dark:to-yellow-950/20 rounded-2xl p-8 border border-red-200/50 dark:border-red-800/30">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                🔥 {language === 'vi' ? 'Flash Sale' : language === 'ja' ? 'フラッシュセール' : 'Flash Sale'}
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                {language === 'vi' ? 'Giảm giá lên đến 50% cho các sản phẩm được tuyển chọn' :
+                 language === 'ja' ? '厳選商品が最大50%オフ' : 'Up to 50% off on selected items'}
+              </p>
+            </div>
+            {(() => {
+              const flashSaleProducts = products.filter(product => {
+                const isOnSale = product.onSale || product.salePrice || (product.originalPrice && product.originalPrice > product.price);
+                if (!isOnSale) return false;
+                
+                let discountPercent = 0;
+                if (product.salePrice && product.salePrice < product.price) {
+                  discountPercent = ((product.price - product.salePrice) / product.price) * 100;
+                } else if (product.originalPrice && product.originalPrice > product.price) {
+                  discountPercent = ((product.originalPrice - product.price) / product.originalPrice) * 100;
+                }
+                return discountPercent >= 50;
+              }).slice(0, 4);
+              
+              return flashSaleProducts.length > 0 ? (
+                <EnhancedProductGrid
+                  products={flashSaleProducts}
+                  onAddToCart={addToCart}
+                  onAddToWishlist={addToWishlist}
+                  onAddToCompare={addToCompare}
+                  loading={isLoading}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  {language === 'vi' ? 'Hiện tại không có sản phẩm Flash Sale' :
+                   language === 'ja' ? '現在フラッシュセール商品はありません' : 'No flash sale items currently available'}
+                </div>
+              );
+            })()}
+          </section>
+
+          {/* New Arrivals Section */}
+          <section className="bg-gradient-to-r from-blue-50 via-cyan-50 to-emerald-50 dark:from-blue-950/20 dark:via-cyan-950/20 dark:to-emerald-950/20 rounded-2xl p-8 border border-blue-200/50 dark:border-blue-800/30">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+                ✨ {language === 'vi' ? 'Sản Phẩm Mới' : language === 'ja' ? '新着商品' : 'New Arrivals'}
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                {language === 'vi' ? 'Khám phá những sản phẩm mới nhất trong bộ sưu tập của chúng tôi' :
+                 language === 'ja' ? '最新コレクションの新商品をご覧ください' : 'Discover the latest additions to our collection'}
+              </p>
+            </div>
+            {(() => {
+              const newProducts = products.filter(product => {
+                const createdDate = new Date(product.createdAt || '');
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 30;
+              }).slice(0, 4);
+              
+              return newProducts.length > 0 ? (
+                <EnhancedProductGrid
+                  products={newProducts}
+                  onAddToCart={addToCart}
+                  onAddToWishlist={addToWishlist}
+                  onAddToCompare={addToCompare}
+                  loading={isLoading}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  {language === 'vi' ? 'Hiện tại không có sản phẩm mới' :
+                   language === 'ja' ? '現在新着商品はありません' : 'No new arrivals currently available'}
+                </div>
+              );
+            })()}
+          </section>
           <section>
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">

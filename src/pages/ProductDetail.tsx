@@ -179,6 +179,34 @@ const ProductDetail: React.FC = () => {
 
   const t = translations[language as keyof typeof translations] || translations.vi;
 
+  // Helper functions for multilingual support
+  const getProductName = () => {
+    if (!product) return '';
+    switch (language) {
+      case 'vi': return product.name;
+      case 'ja': return product.nameJa || product.name;
+      default: return product.nameEn || product.name;
+    }
+  };
+
+  const getProductDescription = () => {
+    if (!product) return '';
+    switch (language) {
+      case 'vi': return product.description;
+      case 'ja': return product.descriptionJa || product.description;
+      default: return product.descriptionEn || product.description;
+    }
+  };
+
+  const getCategoryName = () => {
+    if (!product || typeof product.categoryId === 'string') return 'Category';
+    switch (language) {
+      case 'vi': return product.categoryId.name;
+      case 'ja': return product.categoryId.nameJa || product.categoryId.name;
+      default: return product.categoryId.nameEn || product.categoryId.name;
+    }
+  };
+
   useEffect(() => {
     const loadProduct = async () => {
       if (!id) return;
@@ -484,10 +512,10 @@ const ProductDetail: React.FC = () => {
               onClick={() => navigate(`/category/${typeof product.categoryId === 'string' ? product.categoryId : product.categoryId.slug}`)}
               className="p-0 h-auto hover:text-primary"
             >
-              {typeof product.categoryId === 'string' ? 'Category' : product.categoryId.name}
+              {getCategoryName()}
             </Button>
             <ChevronRight className="h-4 w-4" />
-            <span className="text-foreground font-medium">{product.name}</span>
+            <span className="text-foreground font-medium">{getProductName()}</span>
           </div>
 
           {/* Share Button */}
@@ -560,14 +588,14 @@ const ProductDetail: React.FC = () => {
                   <DialogTrigger asChild>
                     <img
                       src={product.images[selectedImage] || '/placeholder.svg'}
-                      alt={product.name}
+                      alt={getProductName()}
                       className="w-full h-full object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-105"
                     />
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl max-h-[90vh] p-0">
                     <img
                       src={product.images[selectedImage] || '/placeholder.svg'}
-                      alt={product.name}
+                      alt={getProductName()}
                       className="w-full h-full object-contain"
                     />
                   </DialogContent>
@@ -603,10 +631,28 @@ const ProductDetail: React.FC = () => {
                 )}
 
                 {/* Sale Badge */}
-                {product.salePrice && (
-                  <div className="absolute top-4 left-4">
+                {(product.onSale || product.salePrice) && (
+                  <div className="absolute top-4 left-4 z-10">
                     <Badge variant="destructive" className="px-3 py-1 text-sm font-bold">
-                      -{Math.round(((product.price - product.salePrice) / product.price) * 100)}%
+                      {product.salePrice && product.salePrice < product.price ? (
+                        <>
+                          -{Math.round(((product.price - product.salePrice) / product.price) * 100)}%
+                          <span className="ml-1">
+                            {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'SALE'}
+                          </span>
+                        </>
+                      ) : product.originalPrice && product.originalPrice > product.price ? (
+                        <>
+                          -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                          <span className="ml-1">
+                            {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'SALE'}
+                          </span>
+                        </>
+                      ) : (
+                        <span>
+                          {language === 'vi' ? 'KHUYẾN MÃI' : language === 'ja' ? 'セール' : 'SALE'}
+                        </span>
+                      )}
                     </Badge>
                   </div>
                 )}
@@ -627,7 +673,7 @@ const ProductDetail: React.FC = () => {
                     >
                       <img
                         src={image}
-                        alt={`${product.name} ${index + 1}`}
+                        alt={`${getProductName()} ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </button>
@@ -642,7 +688,7 @@ const ProductDetail: React.FC = () => {
             {/* Header Section */}
             <div className="space-y-4">
               <div>
-                <h1 className="text-4xl font-bold mb-3 leading-tight">{product.name}</h1>
+                <h1 className="text-4xl font-bold mb-3 leading-tight">{getProductName()}</h1>
                 <div className="flex items-center space-x-3 mb-4">
                   <Button
                     variant="ghost"
@@ -684,20 +730,36 @@ const ProductDetail: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center space-x-4">
                   <span className="text-4xl font-bold text-primary">
-                    {product.salePrice ? formatCurrency(product.salePrice, language) : formatCurrency(product.price, language)}
+                    {product.salePrice && product.salePrice < product.price ? formatCurrency(product.salePrice, language) : formatCurrency(product.price, language)}
                   </span>
-                  {product.salePrice && (
+                  {product.salePrice && product.salePrice < product.price && (
                     <>
                       <span className="text-2xl text-muted-foreground line-through">
                         {formatCurrency(product.price, language)}
                       </span>
                       <Badge variant="destructive" className="text-sm">
-                        Save {formatCurrency(product.price - product.salePrice, language)}
+                        -{Math.round(((product.price - product.salePrice) / product.price) * 100)}% 
+                        {language === 'vi' ? ' GIẢM' : language === 'ja' ? ' セール' : ' OFF'}
+                      </Badge>
+                    </>
+                  )}
+                  {product.originalPrice && product.originalPrice > product.price && !product.salePrice && (
+                    <>
+                      <span className="text-2xl text-muted-foreground line-through">
+                        {formatCurrency(product.originalPrice, language)}
+                      </span>
+                      <Badge variant="destructive" className="text-sm">
+                        -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% 
+                        {language === 'vi' ? ' GIẢM' : language === 'ja' ? ' セール' : ' OFF'}
                       </Badge>
                     </>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">Free shipping on orders over $50</p>
+                <p className="text-sm text-muted-foreground">
+                  {language === 'vi' ? 'Miễn phí vận chuyển cho đơn hàng trên 500.000đ' : 
+                   language === 'ja' ? '5万円以上のご注文で送料無料' : 
+                   'Free shipping on orders over $50'}
+                </p>
               </div>
 
               {/* Trust Indicators */}
@@ -852,7 +914,7 @@ const ProductDetail: React.FC = () => {
                 <CardContent className="pt-6">
                   <div className="prose max-w-none">
                     <p className="text-base leading-7 text-muted-foreground">
-                      {product.description || 'No description available for this product.'}
+                      {getProductDescription() || 'No description available for this product.'}
                     </p>
                     
                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -896,7 +958,7 @@ const ProductDetail: React.FC = () => {
                       <div className="flex justify-between py-2 border-b">
                         <span className="font-medium">Category</span>
                         <span className="text-muted-foreground">
-                          {typeof product.categoryId === 'string' ? 'Category' : product.categoryId.name}
+                          {getCategoryName()}
                         </span>
                       </div>
                       <div className="flex justify-between py-2 border-b">
@@ -1033,17 +1095,23 @@ const ProductDetail: React.FC = () => {
           <h2 className="text-2xl font-bold mb-8">You might also like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {relatedProducts.slice(0, 4).map((relatedProduct) => (
-              <Card key={relatedProduct._id} className="group cursor-pointer hover:shadow-lg transition-shadow">
-                <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
+              <Card key={relatedProduct._id} className="group cursor-pointer hover:shadow-lg transition-shadow rounded-md">
+                <div className="aspect-square bg-muted rounded-t-md overflow-hidden">
                   <img
                     src={relatedProduct.images[0] || '/placeholder.svg'}
-                    alt={relatedProduct.name}
+                    alt={language === 'vi' ? relatedProduct.name : 
+                          language === 'ja' ? (relatedProduct.nameJa || relatedProduct.name) : 
+                          (relatedProduct.nameEn || relatedProduct.name)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onClick={() => navigate(`/product/${relatedProduct._id}`)}
                   />
                 </div>
                 <CardContent className="pt-4">
-                  <h3 className="font-semibold text-sm mb-2 line-clamp-2">{relatedProduct.name}</h3>
+                  <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+                    {language === 'vi' ? relatedProduct.name : 
+                     language === 'ja' ? (relatedProduct.nameJa || relatedProduct.name) : 
+                     (relatedProduct.nameEn || relatedProduct.name)}
+                  </h3>
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-primary">
                       {relatedProduct.salePrice 

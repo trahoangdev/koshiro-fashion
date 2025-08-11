@@ -46,7 +46,27 @@ const FilterBar = ({
       over100: "Over $100",
       color: "Color",
       allColors: "All Colors",
-      clearFilters: "Clear Filters"
+      clearFilters: "Clear Filters",
+      black: "Black",
+      white: "White", 
+      beige: "Beige",
+      brown: "Brown",
+      navy: "Navy",
+      natural: "Natural",
+      olive: "Olive",
+      khaki: "Khaki",
+      grey: "Grey",
+      pink: "Pink",
+      purple: "Purple",
+      green: "Green",
+      blue: "Blue",
+      burgundy: "Burgundy",
+      gold: "Gold",
+      red: "Red",
+      emerald: "Emerald",
+      coral: "Coral",
+      turquoise: "Turquoise",
+      yellow: "Yellow"
     },
     vi: {
       allCategories: "Tất Cả Danh Mục",
@@ -63,7 +83,27 @@ const FilterBar = ({
       over100: "Trên $100",
       color: "Màu Sắc",
       allColors: "Tất Cả Màu",
-      clearFilters: "Xóa Bộ Lọc"
+      clearFilters: "Xóa Bộ Lọc",
+      black: "Đen",
+      white: "Trắng",
+      beige: "Be",
+      brown: "Nâu",
+      navy: "Xanh đậm",
+      natural: "Tự nhiên",
+      olive: "Xanh ô liu",
+      khaki: "Ka ki",
+      grey: "Xám",
+      pink: "Hồng",
+      purple: "Tím",
+      green: "Xanh lá",
+      blue: "Xanh dương",
+      burgundy: "Đỏ rượu",
+      gold: "Vàng",
+      red: "Đỏ",
+      emerald: "Ngọc lục bảo",
+      coral: "Cam san hô",
+      turquoise: "Xanh ngọc",
+      yellow: "Vàng"
     },
     ja: {
       allCategories: "すべてのカテゴリ",
@@ -80,7 +120,27 @@ const FilterBar = ({
       over100: "$100以上",
       color: "色",
       allColors: "すべての色",
-      clearFilters: "フィルターをクリア"
+      clearFilters: "フィルターをクリア",
+      black: "ブラック",
+      white: "ホワイト",
+      beige: "ベージュ",
+      brown: "ブラウン",
+      navy: "ネイビー",
+      natural: "ナチュラル",
+      olive: "オリーブ",
+      khaki: "カーキ",
+      grey: "グレー",
+      pink: "ピンク",
+      purple: "パープル",
+      green: "グリーン",
+      blue: "ブルー",
+      burgundy: "バーガンディー",
+      gold: "ゴールド",
+      red: "レッド",
+      emerald: "エメラルド",
+      coral: "コーラル",
+      turquoise: "ターコイズ",
+      yellow: "イエロー"
     }
   };
 
@@ -124,28 +184,28 @@ const FilterBar = ({
         <SelectTrigger className="w-48">
           <SelectValue placeholder={t.color} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60 overflow-y-auto">
           <SelectItem value="all">{t.allColors}</SelectItem>
-          <SelectItem value="black">Black</SelectItem>
-          <SelectItem value="white">White</SelectItem>
-          <SelectItem value="beige">Beige</SelectItem>
-          <SelectItem value="brown">Brown</SelectItem>
-          <SelectItem value="navy">Navy</SelectItem>
-          <SelectItem value="natural">Natural</SelectItem>
-          <SelectItem value="olive">Olive</SelectItem>
-          <SelectItem value="khaki">Khaki</SelectItem>
-          <SelectItem value="grey">Grey</SelectItem>
-          <SelectItem value="pink">Pink</SelectItem>
-          <SelectItem value="purple">Purple</SelectItem>
-          <SelectItem value="green">Green</SelectItem>
-          <SelectItem value="blue">Blue</SelectItem>
-          <SelectItem value="burgundy">Burgundy</SelectItem>
-          <SelectItem value="gold">Gold</SelectItem>
-          <SelectItem value="red">Red</SelectItem>
-          <SelectItem value="emerald">Emerald</SelectItem>
-          <SelectItem value="coral">Coral</SelectItem>
-          <SelectItem value="turquoise">Turquoise</SelectItem>
-          <SelectItem value="yellow">Yellow</SelectItem>
+          <SelectItem value="black" className="truncate">{t.black}</SelectItem>
+          <SelectItem value="white" className="truncate">{t.white}</SelectItem>
+          <SelectItem value="beige" className="truncate">{t.beige}</SelectItem>
+          <SelectItem value="brown" className="truncate">{t.brown}</SelectItem>
+          <SelectItem value="navy" className="truncate">{t.navy}</SelectItem>
+          <SelectItem value="natural" className="truncate">{t.natural}</SelectItem>
+          <SelectItem value="olive" className="truncate">{t.olive}</SelectItem>
+          <SelectItem value="khaki" className="truncate">{t.khaki}</SelectItem>
+          <SelectItem value="grey" className="truncate">{t.grey}</SelectItem>
+          <SelectItem value="pink" className="truncate">{t.pink}</SelectItem>
+          <SelectItem value="purple" className="truncate">{t.purple}</SelectItem>
+          <SelectItem value="green" className="truncate">{t.green}</SelectItem>
+          <SelectItem value="blue" className="truncate">{t.blue}</SelectItem>
+          <SelectItem value="burgundy" className="truncate">{t.burgundy}</SelectItem>
+          <SelectItem value="gold" className="truncate">{t.gold}</SelectItem>
+          <SelectItem value="red" className="truncate">{t.red}</SelectItem>
+          <SelectItem value="emerald" className="truncate">{t.emerald}</SelectItem>
+          <SelectItem value="coral" className="truncate">{t.coral}</SelectItem>
+          <SelectItem value="turquoise" className="truncate">{t.turquoise}</SelectItem>
+          <SelectItem value="yellow" className="truncate">{t.yellow}</SelectItem>
         </SelectContent>
       </Select>
 

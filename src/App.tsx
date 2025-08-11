@@ -28,6 +28,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SizeGuidePage from "./pages/SizeGuidePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminAnalytics from "./pages/AdminAnalytics";
@@ -37,6 +38,7 @@ import AdminCategories from "./pages/AdminCategories";
 import AdminOrders from "./pages/AdminOrders";
 import AdminUsers from "./pages/AdminUsers";
 import AdminActivity from "./pages/AdminActivity";
+import AdminReviews from "./pages/AdminReviews";
 import AdminSettings from "./pages/AdminSettings";
 import NotFound from "./pages/NotFound";
 
@@ -73,6 +75,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/size-guide" element={<SizeGuidePage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={
                 <ProtectedAdminRoute>
@@ -112,6 +115,11 @@ const App = () => (
               <Route path="/admin/activity" element={
                 <ProtectedAdminRoute>
                   <AdminActivity />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/admin/reviews" element={
+                <ProtectedAdminRoute>
+                  <AdminReviews />
                 </ProtectedAdminRoute>
               } />
               <Route path="/admin/settings" element={
