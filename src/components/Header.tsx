@@ -70,7 +70,19 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
     const loadCategories = async () => {
       try {
         const response = await api.getCategories();
-        setCategories(response.slice(0, 8)); // Show only first 8 categories
+        // Handle different response structures
+        let categoriesData: Category[] = [];
+        if (Array.isArray(response)) {
+          categoriesData = response;
+        } else if (response && typeof response === 'object') {
+          const responseObj = response as unknown as Record<string, unknown>;
+          if ('categories' in responseObj && Array.isArray(responseObj.categories)) {
+            categoriesData = responseObj.categories as Category[];
+          } else if ('data' in responseObj && Array.isArray(responseObj.data)) {
+            categoriesData = responseObj.data as Category[];
+          }
+        }
+        setCategories(categoriesData.slice(0, 8)); // Show only first 8 categories
       } catch (error) {
         console.error('Error loading categories:', error);
       }
@@ -185,7 +197,7 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
   // Helper function to get category name based on language
   const getCategoryName = (category: Category) => {
     switch (language) {
-      case 'vi': return category.nameVi || category.name;
+      case 'vi': return category.nameEn || category.name; // Use English name for Vietnamese
       case 'ja': return category.nameJa || category.name;
       default: return category.nameEn || category.name;
     }

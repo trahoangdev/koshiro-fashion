@@ -138,7 +138,9 @@ export default function AdminSearchFilter({
       last30Days: 'Last 30 days',
       thisMonth: 'This month',
       lastMonth: 'Last month',
-      custom: 'Custom range'
+      custom: 'Custom range',
+      error: 'Error',
+      success: 'Success'
     },
     vi: {
       search: 'Tìm kiếm',
@@ -170,7 +172,9 @@ export default function AdminSearchFilter({
       last30Days: '30 ngày qua',
       thisMonth: 'Tháng này',
       lastMonth: 'Tháng trước',
-      custom: 'Tùy chỉnh'
+      custom: 'Tùy chỉnh',
+      error: 'Lỗi',
+      success: 'Thành công'
     },
     ja: {
       search: '検索',
@@ -202,7 +206,9 @@ export default function AdminSearchFilter({
       last30Days: '過去30日間',
       thisMonth: '今月',
       lastMonth: '先月',
-      custom: 'カスタム範囲'
+      custom: 'カスタム範囲',
+      error: 'エラー',
+      success: '成功'
     }
   };
 
