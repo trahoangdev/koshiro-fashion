@@ -1,16 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { api, AuthResponse } from '@/lib/api';
+import { api, AuthResponse, User } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  phone?: string;
-  address?: string;
-  avatar?: string;
-}
 
 interface AuthContextType {
   user: User | null;
@@ -58,6 +48,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update API client token
       api.updateToken(response.token);
       
+      // Save token to localStorage
+      localStorage.setItem('token', response.token);
+      
       setUser(response.user);
       
       toast({
@@ -86,6 +79,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update API client token
       api.updateToken(response.token);
       
+      // Save token to localStorage
+      localStorage.setItem('token', response.token);
+      
       setUser(response.user);
       
       toast({
@@ -100,7 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
     } catch (error) {
       console.error('Admin login error:', error);
-      const errorMessage = error instanceof Error ? error.message : "Có lỗi xảy ra khi đăng nhập Admin";
+      const errorMessage = error instanceof Error ? error.message : "Có lỗi xảy ra khi đăng nhập admin";
       toast({
         title: "Đăng nhập Admin thất bại",
         description: errorMessage,
@@ -126,6 +122,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update API client token
       api.updateToken(response.token);
       
+      // Save token to localStorage
+      localStorage.setItem('token', response.token);
+      
       setUser(response.user);
       
       toast({
@@ -148,6 +147,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     api.logout();
+    // Remove token from localStorage
+    localStorage.removeItem('token');
     setUser(null);
     toast({
       title: "Đăng xuất thành công",
