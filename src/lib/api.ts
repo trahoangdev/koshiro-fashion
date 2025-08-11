@@ -182,6 +182,7 @@ export interface Review {
 
 export interface CreateReviewRequest {
   productId?: string;
+  userId?: string; // Allow admin to specify userId when creating review
   rating: number;
   title: string;
   comment: string;

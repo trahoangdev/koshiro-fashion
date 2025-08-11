@@ -13,7 +13,7 @@ const Footer = () => {
     const loadCategories = async () => {
       try {
         const response = await api.getCategories();
-        setCategories(response.categories.slice(0, 6)); // Show only first 6 categories
+        setCategories(response.slice(0, 6)); // Show only first 6 categories
       } catch (error) {
         console.error('Error loading categories:', error);
       }
@@ -84,7 +84,7 @@ const Footer = () => {
   // Helper function to get category name based on language
   const getCategoryName = (category: Category) => {
     switch (language) {
-      case 'vi': return category.nameEn || category.name;
+      case 'vi': return category.nameVi || category.name;
       case 'ja': return category.nameJa || category.name;
       default: return category.nameEn || category.name;
     }

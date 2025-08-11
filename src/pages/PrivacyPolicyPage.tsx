@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -20,12 +20,6 @@ import {
 
 const PrivacyPolicyPage = () => {
   const { language } = useLanguage();
-  const [cartItemsCount, setCartItemsCount] = useState(0);
-
-  const handleSearch = (query: string) => {
-    // Handle search functionality if needed
-    console.log('Search query:', query);
-  };
 
   const translations = {
     en: {
@@ -274,7 +268,7 @@ const PrivacyPolicyPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header cartItemsCount={cartItemsCount} onSearch={handleSearch} />
+      <Header />
       
       <main className="flex-1">
         {/* Hero Section */}

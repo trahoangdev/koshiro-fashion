@@ -37,6 +37,8 @@ const AdminReviews = () => {
   const { toast } = useToast();
   const { language } = useLanguage();
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [users, setUsers] = useState<Array<{_id: string; name: string; email: string}>>([]);
+  const [products, setProducts] = useState<Array<{_id: string; name: string; nameEn?: string; nameJa?: string}>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReviews, setSelectedReviews] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,9 +182,29 @@ const AdminReviews = () => {
     }
   }, [toast]);
 
+  const loadUsers = useCallback(async () => {
+    try {
+      const response = await api.getAdminUsers({ limit: 100 });
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  }, []);
+
+  const loadProducts = useCallback(async () => {
+    try {
+      const response = await api.getAdminProducts({ limit: 100 });
+      setProducts(response.data);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadReviews();
-  }, [loadReviews]);
+    loadUsers();
+    loadProducts();
+  }, [loadReviews, loadUsers, loadProducts]);
 
   // Filter reviews
   const filteredReviews = reviews.filter(review => {
@@ -203,8 +225,19 @@ const AdminReviews = () => {
   // Handle review actions
   const handleCreateReview = async () => {
     try {
+      if (!formData.userId) {
+        toast({
+          variant: "warning",
+          title: "Missing Information",
+          description: "Please select a user"
+        });
+        return;
+      }
+
+      // productId is optional for admin-created reviews
       await api.createReview({
-        productId: formData.productId,
+        userId: formData.userId,
+        productId: formData.productId || undefined,
         rating: formData.rating,
         title: formData.title,
         comment: formData.comment
@@ -233,7 +266,27 @@ const AdminReviews = () => {
     if (!currentReview) return;
     
     try {
+      if (!formData.userId) {
+        toast({
+          variant: "warning",
+          title: "Missing Information",
+          description: "Please select a user"
+        });
+        return;
+      }
+
+      if (!formData.productId) {
+        toast({
+          variant: "warning",
+          title: "Missing Information",
+          description: "Please select a product"
+        });
+        return;
+      }
+
       await api.updateReview(currentReview._id, {
+        userId: formData.userId,
+        productId: formData.productId,
         rating: formData.rating,
         title: formData.title,
         comment: formData.comment,
@@ -689,12 +742,35 @@ const AdminReviews = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Product ID</label>
-              <Input
-                value={formData.productId}
-                onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-                placeholder="Enter product ID"
-              />
+              <label className="text-sm font-medium">User</label>
+              <Select value={formData.userId} onValueChange={(value) => setFormData({ ...formData, userId: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user._id} value={user._id}>
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Product (Optional)</label>
+              <Select value={formData.productId} onValueChange={(value) => setFormData({ ...formData, productId: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a product (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Product</SelectItem>
+                  {products.map((product) => (
+                    <SelectItem key={product._id} value={product._id}>
+                      {product.nameEn || product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-sm font-medium">Rating</label>
@@ -747,6 +823,36 @@ const AdminReviews = () => {
             <DialogTitle>Edit Review</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">User</label>
+              <Select value={formData.userId} onValueChange={(value) => setFormData({ ...formData, userId: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user._id} value={user._id}>
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Product</label>
+              <Select value={formData.productId} onValueChange={(value) => setFormData({ ...formData, productId: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((product) => (
+                    <SelectItem key={product._id} value={product._id}>
+                      {product.nameEn || product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <label className="text-sm font-medium">Rating</label>
               <Select value={formData.rating.toString()} onValueChange={(value) => setFormData({ ...formData, rating: parseInt(value) })}>

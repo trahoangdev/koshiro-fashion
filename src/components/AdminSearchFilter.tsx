@@ -63,20 +63,6 @@ interface SearchFilterConfig {
   sortOptions: FilterOption[];
 }
 
-// New interface for filter data to replace 'any' types
-interface FilterData {
-  searchQuery: string;
-  selectedFilters: Record<string, string[]>;
-  dateRange: DateRange;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-}
-
-interface SavedFilter {
-  name: string;
-  filters: FilterData;
-}
-
 interface AdminSearchFilterProps {
   config: SearchFilterConfig;
   onSearch: (query: string) => void;
@@ -84,9 +70,9 @@ interface AdminSearchFilterProps {
   onDateRange: (dateRange: DateRange) => void;
   onSort: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   onClear: () => void;
-  onSaveFilter: (name: string, filters: FilterData) => void;
+  onSaveFilter: (name: string, filters: any) => void;
   onLoadFilter: (name: string) => void;
-  savedFilters?: SavedFilter[];
+  savedFilters?: Array<{ name: string; filters: any }>;
   isLoading?: boolean;
   totalResults?: number;
   activeFilters?: Record<string, string[]>;
@@ -152,9 +138,7 @@ export default function AdminSearchFilter({
       last30Days: 'Last 30 days',
       thisMonth: 'This month',
       lastMonth: 'Last month',
-      custom: 'Custom range',
-      error: 'Error',
-      success: 'Success'
+      custom: 'Custom range'
     },
     vi: {
       search: 'Tìm kiếm',
@@ -186,9 +170,7 @@ export default function AdminSearchFilter({
       last30Days: '30 ngày qua',
       thisMonth: 'Tháng này',
       lastMonth: 'Tháng trước',
-      custom: 'Tùy chỉnh',
-      error: 'Lỗi',
-      success: 'Thành công'
+      custom: 'Tùy chỉnh'
     },
     ja: {
       search: '検索',
@@ -220,9 +202,7 @@ export default function AdminSearchFilter({
       last30Days: '過去30日間',
       thisMonth: '今月',
       lastMonth: '先月',
-      custom: 'カスタム範囲',
-      error: 'エラー',
-      success: '成功'
+      custom: 'カスタム範囲'
     }
   };
 
@@ -299,7 +279,7 @@ export default function AdminSearchFilter({
       return;
     }
 
-    const filterData: FilterData = {
+    const filterData = {
       searchQuery,
       selectedFilters,
       dateRange,
