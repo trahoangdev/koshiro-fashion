@@ -52,7 +52,7 @@ const AdminReviews = () => {
   const [currentReview, setCurrentReview] = useState<Review | null>(null);
   const [formData, setFormData] = useState({
     userId: '',
-    productId: '',
+    productId: 'no-product',
     rating: 5,
     title: '',
     comment: '',
@@ -237,7 +237,7 @@ const AdminReviews = () => {
       // productId is optional for admin-created reviews
       await api.createReview({
         userId: formData.userId,
-        productId: formData.productId || undefined,
+        productId: formData.productId === 'no-product' ? undefined : formData.productId,
         rating: formData.rating,
         title: formData.title,
         comment: formData.comment
@@ -275,7 +275,7 @@ const AdminReviews = () => {
         return;
       }
 
-      if (!formData.productId) {
+      if (!formData.productId || formData.productId === 'no-product') {
         toast({
           variant: "warning",
           title: "Missing Information",
@@ -286,7 +286,7 @@ const AdminReviews = () => {
 
       await api.updateReview(currentReview._id, {
         userId: formData.userId,
-        productId: formData.productId,
+        productId: formData.productId === 'no-product' ? undefined : formData.productId,
         rating: formData.rating,
         title: formData.title,
         comment: formData.comment,
@@ -396,7 +396,7 @@ const AdminReviews = () => {
     setCurrentReview(review);
     setFormData({
       userId: review.userId?._id || '',
-      productId: review.productId?._id || '',
+      productId: review.productId?._id || 'no-product',
       rating: review.rating,
       title: review.title,
       comment: review.comment,
@@ -418,7 +418,7 @@ const AdminReviews = () => {
   const resetForm = () => {
     setFormData({
       userId: '',
-      productId: '',
+      productId: 'no-product',
       rating: 5,
       title: '',
       comment: '',
@@ -763,7 +763,7 @@ const AdminReviews = () => {
                   <SelectValue placeholder="Select a product (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Product</SelectItem>
+                  <SelectItem value="no-product">No Product</SelectItem>
                   {products.map((product) => (
                     <SelectItem key={product._id} value={product._id}>
                       {product.nameEn || product.name}
@@ -845,6 +845,7 @@ const AdminReviews = () => {
                   <SelectValue placeholder="Select a product" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="no-product">No Product</SelectItem>
                   {products.map((product) => (
                     <SelectItem key={product._id} value={product._id}>
                       {product.nameEn || product.name}
