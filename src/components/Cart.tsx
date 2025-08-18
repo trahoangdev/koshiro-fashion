@@ -3,38 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-interface CartItem {
-  product: {
-    id: string;
-    name: string;
-    nameEn?: string;
-    nameJa?: string;
-    price: number;
-    salePrice?: number;
-    images?: string[];
-    image?: string;
-  };
-  selectedColor: string;
-  selectedSize: string;
-  quantity: number;
-}
+import { CartItem } from "@/types/cart";
 
 interface CartProps {
   cartItems: CartItem[];
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onCheckout: () => void;
+  onClose: () => void;
 }
 
 const Cart = ({
   cartItems,
   onUpdateQuantity,
   onRemoveItem,
-  onCheckout
+  onCheckout,
+  onClose
 }: CartProps) => {
   const { language } = useLanguage();
   const translations = {
@@ -110,16 +97,21 @@ const Cart = ({
     <div className="max-w-2xl mx-auto space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5" />
-            {t.cart} ({cartItems.length} {cartItems.length === 1 ? t.item : t.items})
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="h-5 w-5" />
+              {t.cart} ({cartItems.length} {cartItems.length === 1 ? t.item : t.items})
+            </div>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {cartItems.map((item) => (
-            <div key={`${item.product.id}-${item.selectedColor}-${item.selectedSize}`} className="flex gap-4">
+            <div key={`${item.product._id}-${item.selectedColor}-${item.selectedSize}`} className="flex gap-4">
               <img
-                src={item.product.images?.[0] || item.product.image}
+                src={item.product.images?.[0]}
                 alt={getProductName(item)}
                 className="w-20 h-20 object-cover rounded"
               />
@@ -151,7 +143,7 @@ const Cart = ({
                       variant="outline"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => onUpdateQuantity(`${item.product.id}-${item.selectedColor}-${item.selectedSize}`, item.quantity - 1)}
+                      onClick={() => onUpdateQuantity(`${item.product._id}-${item.selectedColor}-${item.selectedSize}`, item.quantity - 1)}
                       disabled={item.quantity <= 1}
                     >
                       <Minus className="h-3 w-3" />
@@ -161,7 +153,7 @@ const Cart = ({
                       variant="outline"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => onUpdateQuantity(`${item.product.id}-${item.selectedColor}-${item.selectedSize}`, item.quantity + 1)}
+                      onClick={() => onUpdateQuantity(`${item.product._id}-${item.selectedColor}-${item.selectedSize}`, item.quantity + 1)}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
@@ -169,7 +161,7 @@ const Cart = ({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-destructive"
-                      onClick={() => onRemoveItem(`${item.product.id}-${item.selectedColor}-${item.selectedSize}`)}
+                      onClick={() => onRemoveItem(`${item.product._id}-${item.selectedColor}-${item.selectedSize}`)}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>

@@ -13,13 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ShoppingBag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-interface CartItem {
-  product: Product;
-  quantity: number;
-  selectedColor: string;
-  selectedSize: string;
-}
+import { CartItem } from "@/types/cart";
 
 const Index = () => {
   // Data state
@@ -571,6 +565,7 @@ const Index = () => {
           onUpdateQuantity={updateCartQuantity}
           onRemoveItem={removeFromCart}
           onCheckout={handleCheckout}
+          onClose={() => setShowCart(false)}
         />
       )}
       
