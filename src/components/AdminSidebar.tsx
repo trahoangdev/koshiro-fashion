@@ -171,7 +171,7 @@ const menuGroups: MenuGroup[] = [
 function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<Array<{
@@ -214,7 +214,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
       try {
         setIsLoadingOrderCount(true);
         const response = await api.getAdminOrders({ limit: 1 });
-        setOrderCount(response.total || 0);
+        setOrderCount(response.pagination?.total || 0);
       } catch (error) {
         console.error('Error loading order count:', error);
         setOrderCount(0);
