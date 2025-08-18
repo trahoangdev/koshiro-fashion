@@ -1,66 +1,51 @@
 import mongoose from 'mongoose';
-import { Product } from '../models/Product';
-import { Category } from '../models/Category';
 import { User } from '../models/User';
+import { Product } from '../models/Product';
 import { Order } from '../models/Order';
+import { Notification } from '../models/Notification';
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://trahoangdev:7RMlso6ZQp6OcTtQ@cluster0.zgzpftw.mongodb.net/koshiro-fashion';
 
 async function checkData() {
   try {
-    console.log('🔍 Checking database data...\n');
-    
-    // Check categories
-    const categories = await Category.find({});
-    console.log(`📁 Categories: ${categories.length}`);
-    categories.forEach(cat => {
-      console.log(`  - ${cat.name} (${cat.slug}) - Products: ${cat.productCount}`);
-    });
-    
-    // Check products
-    const products = await Product.find({});
-    console.log(`\n📦 Products: ${products.length}`);
-    products.forEach(prod => {
-      console.log(`  - ${prod.name} - Category: ${prod.categoryId} - Active: ${prod.isActive}`);
-    });
-    
+    // Connect to MongoDB
+    await mongoose.connect(MONGODB_URI);
+    console.log('Connected to MongoDB');
+
     // Check users
-    const users = await User.find({});
-    console.log(`\n👥 Users: ${users.length}`);
+    const userCount = await User.countDocuments();
+    const users = await User.find().limit(3);
+    console.log(`\n📊 Users: ${userCount}`);
     users.forEach(user => {
       console.log(`  - ${user.name} (${user.email}) - Role: ${user.role}`);
     });
-    
-    // Check orders
-    const orders = await Order.find({});
-    console.log(`\n📋 Orders: ${orders.length}`);
-    orders.forEach(order => {
-      console.log(`  - ${order.orderNumber} - Status: ${order.status} - Amount: ${order.totalAmount}`);
+
+    // Check products
+    const productCount = await Product.countDocuments();
+    const products = await Product.find().limit(3);
+    console.log(`\n📦 Products: ${productCount}`);
+    products.forEach(product => {
+      console.log(`  - ${product.name} - Price: ${product.price}`);
     });
-    
+
+    // Check orders
+    const orderCount = await Order.countDocuments();
+    const pendingOrders = await Order.countDocuments({ status: 'pending' });
+    console.log(`\n📋 Orders: ${orderCount} (Pending: ${pendingOrders})`);
+
+    // Check notifications
+    const notificationCount = await Notification.countDocuments();
+    const unreadNotifications = await Notification.countDocuments({ read: false });
+    console.log(`\n🔔 Notifications: ${notificationCount} (Unread: ${unreadNotifications})`);
+
+    console.log('\n✅ Data check completed!');
   } catch (error) {
     console.error('Error checking data:', error);
+  } finally {
+    await mongoose.disconnect();
+    console.log('Disconnected from MongoDB');
   }
 }
 
-// Connect to MongoDB and run check
-async function main() {
-  try {
-    // Connect to MongoDB using the same connection string as seedData
-    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://trahoangdev:7RMlso6ZQp6OcTtQ@cluster0.zgzpftw.mongodb.net/koshiro-fashion';
-    await mongoose.connect(mongoUri);
-    console.log('Connected to MongoDB\n');
-    
-    // Check data
-    await checkData();
-    
-    // Close connection
-    await mongoose.connection.close();
-    console.log('\nMongoDB connection closed');
-    
-  } catch (error) {
-    console.error('Error:', error);
-    process.exit(1);
-  }
-}
-
-// Run the check
-main(); 
+// Run the script
+checkData(); 

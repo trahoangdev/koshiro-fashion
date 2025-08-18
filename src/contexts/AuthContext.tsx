@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { api, AuthResponse, User } from '@/lib/api';
+import { api, AuthResponse } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  phone?: string;
+  address?: string;
+  avatar?: string;
+}
 
 interface AuthContextType {
   user: User | null;

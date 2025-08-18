@@ -114,8 +114,7 @@ const menuGroups: MenuGroup[] = [
         labelEn: "Orders",
         labelJa: "注文",
         icon: ShoppingCart,
-        path: "/admin/orders",
-        badge: "5"
+        path: "/admin/orders"
       },
       {
         id: "users",
@@ -171,60 +170,12 @@ const menuGroups: MenuGroup[] = [
 function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
-  const { language, setLanguage } = useLanguage();
   const { toast } = useToast();
-  const [notifications, setNotifications] = useState<Array<{
-    id: string;
-    type: 'info' | 'warning' | 'error' | 'success';
-    title: string;
-    message: string;
-    timestamp: string;
-    read: boolean;
-  }>>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
-  const [orderCount, setOrderCount] = useState(0);
-  const [isLoadingOrderCount, setIsLoadingOrderCount] = useState(false);
-
-  // Load notifications
-  useEffect(() => {
-    const loadNotifications = async () => {
-      try {
-        setIsLoadingNotifications(true);
-        const response = await api.getNotifications({ limit: 10, read: false });
-        setNotifications(response.data || []);
-        setUnreadCount(response.data?.filter(n => !n.read).length || 0);
-      } catch (error) {
-        console.error('Error loading notifications:', error);
-        // Fallback to empty notifications
-        setNotifications([]);
-        setUnreadCount(0);
-      } finally {
-        setIsLoadingNotifications(false);
-      }
-    };
-
-    loadNotifications();
-  }, []);
-
-  // Load order count
-  useEffect(() => {
-    const loadOrderCount = async () => {
-      try {
-        setIsLoadingOrderCount(true);
-        const response = await api.getAdminOrders({ limit: 1 });
-        setOrderCount(response.pagination?.total || 0);
-      } catch (error) {
-        console.error('Error loading order count:', error);
-        setOrderCount(0);
-      } finally {
-        setIsLoadingOrderCount(false);
-      }
-    };
-
-    loadOrderCount();
-  }, []);
+  const { logout, user } = useAuth();
+  const { language, setLanguage } = useLanguage();
+  const [notifications, setNotifications] = useState(0);
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
@@ -276,16 +227,38 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
     }
   };
 
-  // Get menu items with dynamic data
-  const getMenuItems = () => {
-    return menuGroups.map(group => ({
-      ...group,
-      items: group.items.map(item => ({
-        ...item,
-        badge: item.id === 'orders' ? (orderCount > 0 ? orderCount.toString() : undefined) : item.badge
-      }))
-    }));
-  };
+  // Load real data for counts
+  useEffect(() => {
+    const loadCounts = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load notifications count
+        try {
+          const notificationsResponse = await api.getNotifications({ limit: 1 });
+          setNotifications(notificationsResponse.unreadCount || 0);
+        } catch (error) {
+          console.error('Failed to load notifications count:', error);
+          setNotifications(0);
+        }
+
+        // Load orders count (total orders)
+        try {
+          const ordersResponse = await api.getAdminOrders({ limit: 1 });
+          setOrdersCount(ordersResponse.pagination?.total || 0);
+        } catch (error) {
+          console.error('Failed to load orders count:', error);
+          setOrdersCount(0);
+        }
+      } catch (error) {
+        console.error('Error loading counts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCounts();
+  }, []);
 
   return (
     <>
@@ -337,7 +310,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-6">
-            {getMenuItems().map((group, groupIndex) => (
+            {menuGroups.map((group, groupIndex) => (
               <div key={groupIndex}>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   {getGroupTitle(group)}
@@ -354,9 +327,19 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                     >
                       <item.icon className="h-4 w-4 mr-3" />
                       <span className="flex-1 text-left">{getLabel(item)}</span>
-                      {item.badge && (
+                      {item.id === "orders" && ordersCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto text-xs">
+                          {isLoading ? "..." : ordersCount.toString()}
+                        </Badge>
+                      )}
+                      {item.badge && item.badge !== "0" && item.badge !== "..." && (
                         <Badge variant="destructive" className="ml-auto text-xs">
                           {item.badge}
+                        </Badge>
+                      )}
+                      {item.badge === "..." && (
+                        <Badge variant="secondary" className="ml-auto text-xs">
+                          ...
                         </Badge>
                       )}
                       {item.isNew && (
@@ -382,88 +365,45 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="relative">
                     <Bell className="h-4 w-4" />
-                    {unreadCount > 0 && (
+                    {notifications > 0 && (
                       <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs">
-                        {unreadCount}
+                        {notifications}
                       </Badge>
                     )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel>
-                    {language === 'vi' ? 'Thông báo' : language === 'ja' ? '通知' : 'Notifications'}
-                    {unreadCount > 0 && (
-                      <Badge variant="destructive" className="ml-2">
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </DropdownMenuLabel>
+                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  
-                  {isLoadingNotifications ? (
-                    <DropdownMenuItem disabled>
-                      <div className="flex items-center space-x-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                        <span className="text-sm text-muted-foreground">
-                          {language === 'vi' ? 'Đang tải...' : language === 'ja' ? '読み込み中...' : 'Loading...'}
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
-                  ) : notifications.length > 0 ? (
-                    notifications.slice(0, 5).map((notification) => (
-                      <DropdownMenuItem key={notification.id} className="cursor-pointer">
-                        <div className="flex items-start space-x-3 w-full">
-                          <div className={`w-2 h-2 rounded-full mt-2 ${
-                            notification.type === 'success' ? 'bg-green-500' :
-                            notification.type === 'warning' ? 'bg-yellow-500' :
-                            notification.type === 'error' ? 'bg-red-500' :
-                            'bg-blue-500'
-                          }`}></div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{notification.title}</p>
-                            <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(notification.timestamp).toLocaleString(
-                                language === 'vi' ? 'vi-VN' : language === 'ja' ? 'ja-JP' : 'en-US',
-                                {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                }
-                              )}
-                            </p>
+                  {notifications > 0 ? (
+                    <div className="max-h-64 overflow-y-auto">
+                      <DropdownMenuItem>
+                        <div className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                          <div>
+                            <p className="text-sm font-medium">New order received</p>
+                            <p className="text-xs text-muted-foreground">Order #12345 has been placed</p>
+                            <p className="text-xs text-muted-foreground">2 minutes ago</p>
                           </div>
                         </div>
                       </DropdownMenuItem>
-                    ))
+                      <DropdownMenuItem>
+                        <div className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+                          <div>
+                            <p className="text-sm font-medium">Low stock alert</p>
+                            <p className="text-xs text-muted-foreground">Product "Kimono Traditional" is running low</p>
+                            <p className="text-xs text-muted-foreground">1 hour ago</p>
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                    </div>
                   ) : (
                     <DropdownMenuItem disabled>
-                      <div className="text-center py-4 w-full">
-                        <Bell className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          {language === 'vi' ? 'Không có thông báo mới' : 
-                           language === 'ja' ? '新しい通知はありません' : 
-                           'No new notifications'}
-                        </p>
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">No new notifications</p>
                       </div>
                     </DropdownMenuItem>
-                  )}
-                  
-                  {notifications.length > 5 && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        className="text-center cursor-pointer"
-                        onClick={() => navigate('/admin/notifications')}
-                      >
-                        <span className="text-sm text-primary">
-                          {language === 'vi' ? 'Xem tất cả thông báo' : 
-                           language === 'ja' ? 'すべての通知を表示' : 
-                           'View all notifications'}
-                        </span>
-                      </DropdownMenuItem>
-                    </>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>

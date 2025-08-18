@@ -1220,6 +1220,44 @@ class ApiClient {
     return this.request(`/admin/analytics?${searchParams}`);
   }
 
+  // Comprehensive Analytics APIs
+  async getOrderAnalytics(): Promise<{
+    byStatus: Array<{ status: string; count: number; percentage: number }>;
+    byHour: Array<{ hour: string; orders: number }>;
+    byMonth: Array<{ month: string; orders: number; revenue: number }>;
+  }> {
+    return this.request('/admin/analytics/orders');
+  }
+
+  async getCustomerAnalytics(): Promise<{
+    topSpenders: Array<{ name: string; email: string; totalSpent: number; orders: number }>;
+    byLocation: Array<{ location: string; customers: number; revenue: number }>;
+    activity: Array<{ date: string; newCustomers: number; activeCustomers: number }>;
+  }> {
+    return this.request('/admin/analytics/customers');
+  }
+
+  async getSalesAnalytics(): Promise<{
+    byPaymentMethod: Array<{ method: string; count: number; amount: number }>;
+    conversionRate: number;
+    cartAbandonment: number;
+    averageOrderValue: number;
+  }> {
+    return this.request('/admin/analytics/sales');
+  }
+
+  async getProductAnalytics(): Promise<{
+    topSelling: Array<{ name: string; sales: number; revenue: number; stock: number }>;
+    performance: Array<{ name: string; views: number; sales: number; rating: number }>;
+    lowStock: Array<{ name: string; stock: number; category: string }>;
+  }> {
+    return this.request('/admin/analytics/products');
+  }
+
+  async getDailyRevenueData(days: number = 30): Promise<Array<{ date: string; revenue: number; orders: number }>> {
+    return this.request(`/admin/analytics/daily-revenue?days=${days}`);
+  }
+
   // Reports APIs
   async generateReport(type: 'sales' | 'customers' | 'inventory' | 'performance', params?: {
     dateFrom?: string;
@@ -1237,13 +1275,13 @@ class ApiClient {
     page?: number;
     limit?: number;
     read?: boolean;
-  }): Promise<PaginationResponse<Notification>> {
+  }): Promise<PaginationResponse<Notification> & { unreadCount: number }> {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.read !== undefined) searchParams.append('read', params.read.toString());
 
-    return this.request<PaginationResponse<Notification>>(`/admin/notifications?${searchParams}`);
+    return this.request<PaginationResponse<Notification> & { unreadCount: number }>(`/admin/notifications?${searchParams}`);
   }
 
   async markNotificationAsRead(id: string): Promise<{ message: string }> {

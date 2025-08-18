@@ -919,4 +919,374 @@ const generatePDFReport = async (data: any, type: string): Promise<Buffer> => {
   // This would integrate with a PDF generation library like PDFKit
   // For now, return a simple buffer
   return Buffer.from('PDF Report Placeholder');
+};
+
+// Order Analytics
+export const getOrderAnalytics = async (req: Request, res: Response) => {
+  try {
+    // Get orders by status
+    const statusCounts = await Order.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const totalOrders = await Order.countDocuments();
+    const byStatus = statusCounts.map(item => ({
+      status: item._id,
+      count: item.count,
+      percentage: Math.round((item.count / totalOrders) * 100)
+    }));
+
+    // Get orders by hour (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const hourlyOrders = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo }
+        }
+      },
+      {
+        $group: {
+          _id: { $hour: '$createdAt' },
+          orders: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id': 1 }
+      }
+    ]);
+
+    const byHour = Array.from({ length: 24 }, (_, i) => {
+      const hourData = hourlyOrders.find(h => h._id === i);
+      return {
+        hour: `${i}:00`,
+        orders: hourData ? hourData.orders : 0
+      };
+    });
+
+    // Get monthly data (last 6 months)
+    const monthlyData = [];
+    for (let i = 5; i >= 0; i--) {
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - i);
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+      endDate.setDate(0);
+      endDate.setHours(23, 59, 59, 999);
+      
+      const monthName = startDate.toLocaleDateString('en-US', { month: 'short' });
+      
+      const monthOrders = await Order.find({
+        createdAt: { $gte: startDate, $lte: endDate }
+      });
+      
+      const monthRevenue = monthOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+      
+      monthlyData.push({
+        month: monthName,
+        orders: monthOrders.length,
+        revenue: monthRevenue
+      });
+    }
+
+    res.json({
+      byStatus,
+      byHour,
+      byMonth: monthlyData
+    });
+  } catch (error) {
+    console.error('Error getting order analytics:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Customer Analytics
+export const getCustomerAnalytics = async (req: Request, res: Response) => {
+  try {
+    // Get top spenders
+    const topSpenders = await Order.aggregate([
+      {
+        $match: { status: 'completed' }
+      },
+      {
+        $group: {
+          _id: '$userId',
+          totalSpent: { $sum: '$totalAmount' },
+          orders: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { totalSpent: -1 }
+      },
+      {
+        $limit: 5
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $unwind: '$user'
+      },
+      {
+        $project: {
+          name: '$user.name',
+          email: '$user.email',
+          totalSpent: 1,
+          orders: 1
+        }
+      }
+    ]);
+
+    // Get customers by location (simplified - using address field)
+    const locationData = await Order.aggregate([
+      {
+        $match: { status: 'completed' }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $unwind: '$user'
+      },
+      {
+        $group: {
+          _id: '$user.address',
+          customers: { $addToSet: '$userId' },
+          revenue: { $sum: '$totalAmount' }
+        }
+      },
+      {
+        $project: {
+          location: { $ifNull: ['$_id', 'Unknown'] },
+          customers: { $size: '$customers' },
+          revenue: 1
+        }
+      },
+      {
+        $sort: { revenue: -1 }
+      },
+      {
+        $limit: 5
+      }
+    ]);
+
+    // Get daily customer activity (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const dailyActivity = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+      
+      const newCustomers = await User.countDocuments({
+        createdAt: { $gte: date, $lt: nextDate }
+      });
+      
+      const activeCustomers = await Order.distinct('userId', {
+        createdAt: { $gte: date, $lt: nextDate }
+      });
+      
+      dailyActivity.push({
+        date: `${i + 1}`,
+        newCustomers,
+        activeCustomers: activeCustomers.length
+      });
+    }
+
+    res.json({
+      topSpenders,
+      byLocation: locationData,
+      activity: dailyActivity
+    });
+  } catch (error) {
+    console.error('Error getting customer analytics:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Sales Analytics
+export const getSalesAnalytics = async (req: Request, res: Response) => {
+  try {
+    // Get sales by payment method
+    const paymentMethodData = await Order.aggregate([
+      {
+        $match: { status: 'completed' }
+      },
+      {
+        $group: {
+          _id: '$paymentMethod',
+          count: { $sum: 1 },
+          amount: { $sum: '$totalAmount' }
+        }
+      },
+      {
+        $project: {
+          method: { $ifNull: ['$_id', 'Unknown'] },
+          count: 1,
+          amount: 1
+        }
+      }
+    ]);
+
+    // Calculate conversion rate (simplified)
+    const totalVisitors = 10000; // This would come from analytics tracking
+    const totalOrders = await Order.countDocuments({ status: 'completed' });
+    const conversionRate = totalVisitors > 0 ? (totalOrders / totalVisitors) * 100 : 0;
+
+    // Calculate cart abandonment (simplified)
+    const abandonedCarts = 500; // This would come from cart tracking
+    const totalCarts = totalOrders + abandonedCarts;
+    const cartAbandonment = totalCarts > 0 ? (abandonedCarts / totalCarts) * 100 : 0;
+
+    // Calculate average order value
+    const completedOrders = await Order.find({ status: 'completed' });
+    const totalRevenue = completedOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
+
+    res.json({
+      byPaymentMethod: paymentMethodData,
+      conversionRate: Math.round(conversionRate * 100) / 100,
+      cartAbandonment: Math.round(cartAbandonment * 100) / 100,
+      averageOrderValue
+    });
+  } catch (error) {
+    console.error('Error getting sales analytics:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Product Analytics
+export const getProductAnalytics = async (req: Request, res: Response) => {
+  try {
+    // Get top selling products
+    const topSelling = await Order.aggregate([
+      {
+        $match: { status: 'completed' }
+      },
+      {
+        $unwind: '$items'
+      },
+      {
+        $group: {
+          _id: '$items.productId',
+          sales: { $sum: '$items.quantity' },
+          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+        }
+      },
+      {
+        $sort: { sales: -1 }
+      },
+      {
+        $limit: 5
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      {
+        $unwind: '$product'
+      },
+      {
+        $project: {
+          name: '$product.name',
+          sales: 1,
+          revenue: 1,
+          stock: '$product.stock'
+        }
+      }
+    ]);
+
+    // Get product performance (simplified - using mock data for views and ratings)
+    const performance = topSelling.map(item => ({
+      name: item.name,
+      views: Math.floor(Math.random() * 1000) + 500, // Mock data
+      sales: item.sales,
+      rating: Math.round((Math.random() * 2 + 3) * 10) / 10 // Mock rating between 3-5
+    }));
+
+    // Get low stock products
+    const lowStock = await Product.find({ stock: { $lt: 10 } })
+      .populate('categoryId', 'name')
+      .limit(5)
+      .then(products => products.map(p => ({
+        name: p.name,
+        stock: p.stock,
+        category: p.categoryId ? (p.categoryId as any).name : 'Unknown'
+      })));
+
+    res.json({
+      topSelling,
+      performance,
+      lowStock
+    });
+  } catch (error) {
+    console.error('Error getting product analytics:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Daily Revenue Data
+export const getDailyRevenueData = async (req: Request, res: Response) => {
+  try {
+    const days = parseInt(req.query.days as string) || 30;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const dailyData = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+      
+      const dayOrders = await Order.find({
+        status: 'completed',
+        createdAt: { $gte: date, $lt: nextDate }
+      });
+      
+      const dayRevenue = dayOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+      
+      dailyData.push({
+        date: `${i + 1}`,
+        revenue: dayRevenue,
+        orders: dayOrders.length
+      });
+    }
+
+    res.json(dailyData);
+  } catch (error) {
+    console.error('Error getting daily revenue data:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 }; 

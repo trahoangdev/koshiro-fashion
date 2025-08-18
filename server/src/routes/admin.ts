@@ -24,7 +24,12 @@ import {
   printOrder,
   sendOrderEmail,
   getAnalyticsData,
-  generateReport
+  generateReport,
+  getOrderAnalytics,
+  getCustomerAnalytics,
+  getSalesAnalytics,
+  getProductAnalytics,
+  getDailyRevenueData
 } from '../controllers/adminController';
 import { cancelOrder, deleteOrder, updateOrderStatus } from '../controllers/orderController';
 import { exportData, importData } from '../controllers/exportImportController';
@@ -72,6 +77,11 @@ router.delete('/users/:id', deleteUser);
 
 // Analytics and Reports
 router.get('/analytics', getAnalyticsData);
+router.get('/analytics/orders', getOrderAnalytics);
+router.get('/analytics/customers', getCustomerAnalytics);
+router.get('/analytics/sales', getSalesAnalytics);
+router.get('/analytics/products', getProductAnalytics);
+router.get('/analytics/daily-revenue', getDailyRevenueData);
 router.post('/reports', generateReport);
 
 // Export/Import

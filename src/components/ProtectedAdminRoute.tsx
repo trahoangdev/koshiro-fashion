@@ -14,7 +14,7 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
     console.log('ProtectedAdminRoute - Current state:', {
       isLoading,
       isAuthenticated,
-      user: user ? { id: user._id, email: user.email, name: user.name, role: user.role } : null
+      user: user ? { id: user.id, email: user.email, name: user.name, role: user.role } : null
     });
     
     if (!isLoading) {
