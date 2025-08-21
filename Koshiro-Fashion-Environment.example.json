@@ -1,0 +1,51 @@
+{
+  "id": "example-environment-id",
+  "name": "Koshiro Fashion - Example Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "customerToken",
+      "value": "your-customer-jwt-token-here",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "adminToken",
+      "value": "your-admin-jwt-token-here",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "productId",
+      "value": "example-product-id",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "categoryId",
+      "value": "example-category-id",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "orderId",
+      "value": "example-order-id",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "example-user-id",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2024-01-01T00:00:00.000Z",
+  "_postman_exported_using": "Postman/10.0.0"
+}
