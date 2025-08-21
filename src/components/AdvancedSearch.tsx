@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, X, ArrowRight, Clock, TrendingUp } from 'lucide-react';
+import { Search, Filter, X, ArrowRight, Clock, TrendingUp, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,7 +41,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
   
   const [filters, setFilters] = useState<SearchFilters>({
     query: initialQuery,
-    category: '',
+    category: 'all',
     priceRange: [0, 1000],
     inStock: false,
     onSale: false,
@@ -54,14 +54,14 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [popularSearches] = useState([
-    'T-shirt', 'Jeans', 'Jacket', 'Sneakers', 'Dress', 'Hoodie'
+    'Kimono', 'Hakama', 'Yukata', 'Haori', 'Obi', 'Geta'
   ]);
 
   // Load categories
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await api.getCategories();
+        const response = await api.getCategories({ isActive: true });
         setCategories(response.categories || []);
       } catch (error) {
         console.error('Error loading categories:', error);
@@ -136,12 +136,31 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
     onSearch({ ...filters, query });
   };
 
+  // Handle category click
+  const handleCategoryClick = (category: Category) => {
+    setFilters(prev => ({ ...prev, category: category._id, query: '' }));
+    setShowSuggestions(false);
+    onSearch({ ...filters, category: category._id, query: '' });
+  };
+
+  // Get category name based on language
+  const getCategoryName = (category: Category) => {
+    switch (language) {
+      case 'vi':
+        return category.nameEn || category.name;
+      case 'ja':
+        return category.nameJa || category.name;
+      default:
+        return category.nameEn || category.name;
+    }
+  };
+
   // Clear filters
   const clearFilters = () => {
     setFilters({
       query: '',
-      category: '',
-      priceRange: [0, 1000],
+      category: 'all',
+      priceRange: [0, 5000000],
       inStock: false,
       onSale: false,
       featured: false,
@@ -149,7 +168,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
     });
   };
 
-  const hasActiveFilters = filters.category || filters.inStock || filters.onSale || filters.featured || 
+  const hasActiveFilters = (filters.category && filters.category !== 'all') || filters.inStock || filters.onSale || filters.featured || 
     filters.priceRange[0] > 0 || filters.priceRange[1] < 1000;
 
   return (
@@ -163,7 +182,11 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                 <Input
                   type="text"
-                  placeholder="Search for products, brands, categories..."
+                  placeholder={
+                    language === 'vi' ? 'Tìm kiếm sản phẩm, thương hiệu, danh mục...' :
+                    language === 'ja' ? '商品、ブランド、カテゴリを検索...' : 
+                    'Search for products, brands, categories...'
+                  }
                   value={filters.query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onFocus={() => setShowSuggestions(true)}
@@ -176,7 +199,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                 className="h-12 px-6"
               >
                 <Search className="h-4 w-4 mr-2" />
-                Search
+                {language === 'vi' ? 'Tìm Kiếm' : 
+                 language === 'ja' ? '検索' : 'Search'}
               </Button>
             </div>
           </CardContent>
@@ -189,7 +213,10 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               {/* Auto-complete suggestions */}
               {suggestions.length > 0 && (
                 <div className="p-4">
-                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">Products</h4>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">
+                    {language === 'vi' ? 'Sản Phẩm' : 
+                     language === 'ja' ? '商品' : 'Products'}
+                  </h4>
                   <div className="space-y-2">
                     {suggestions.map((product) => (
                       <div
@@ -223,7 +250,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-semibold text-muted-foreground flex items-center">
                         <Clock className="h-4 w-4 mr-1" />
-                        Recent
+                        {language === 'vi' ? 'Gần Đây' : 
+                         language === 'ja' ? '最近' : 'Recent'}
                       </h4>
                       <Button
                         variant="ghost"
@@ -234,7 +262,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                         }}
                         className="text-xs"
                       >
-                        Clear
+                        {language === 'vi' ? 'Xóa' : 
+                         language === 'ja' ? 'クリア' : 'Clear'}
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -260,7 +289,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                   <div className="p-4">
                     <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center">
                       <TrendingUp className="h-4 w-4 mr-1" />
-                      Popular
+                      {language === 'vi' ? 'Phổ Biến' : 
+                       language === 'ja' ? '人気' : 'Popular'}
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {popularSearches.map((search, index) => (
@@ -271,6 +301,32 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                           onClick={() => handleRecentSearchClick(search)}
                         >
                           {search}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Categories */}
+              {filters.query.length === 0 && categories.length > 0 && (
+                <>
+                  {(recentSearches.length > 0 || popularSearches.length > 0) && <Separator />}
+                  <div className="p-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center">
+                      <Tag className="h-4 w-4 mr-1" />
+                      {language === 'vi' ? 'Danh Mục' : 
+                       language === 'ja' ? 'カテゴリ' : 'Categories'}
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.slice(0, 6).map((category) => (
+                        <Badge
+                          key={category._id}
+                          variant="secondary"
+                          className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                          onClick={() => handleCategoryClick(category)}
+                        >
+                          {getCategoryName(category)}
                         </Badge>
                       ))}
                     </div>
@@ -288,12 +344,14 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg flex items-center">
               <Filter className="h-5 w-5 mr-2" />
-              Filters
+              {language === 'vi' ? 'Bộ Lọc' : 
+               language === 'ja' ? 'フィルター' : 'Filters'}
             </CardTitle>
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="h-4 w-4 mr-1" />
-                Clear All
+                {language === 'vi' ? 'Xóa Tất Cả' : 
+                 language === 'ja' ? 'すべてクリア' : 'Clear All'}
               </Button>
             )}
           </CardHeader>
@@ -301,19 +359,28 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Category Filter */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Category</Label>
+                <Label className="text-sm font-medium">
+                  {language === 'vi' ? 'Danh Mục' : 
+                   language === 'ja' ? 'カテゴリ' : 'Category'}
+                </Label>
                 <Select
                   value={filters.category}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All Categories" />
+                    <SelectValue placeholder={
+                      language === 'vi' ? 'Tất Cả Danh Mục' : 
+                      language === 'ja' ? 'すべてのカテゴリ' : 'All Categories'
+                    } />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">
+                      {language === 'vi' ? 'Tất Cả Danh Mục' : 
+                       language === 'ja' ? 'すべてのカテゴリ' : 'All Categories'}
+                    </SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category._id} value={category._id}>
-                        {category.name}
+                        {getCategoryName(category)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -322,7 +389,10 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
 
               {/* Sort By */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Sort By</Label>
+                <Label className="text-sm font-medium">
+                  {language === 'vi' ? 'Sắp Xếp' : 
+                   language === 'ja' ? 'ソート' : 'Sort By'}
+                </Label>
                 <Select
                   value={filters.sortBy}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, sortBy: value }))}
@@ -331,12 +401,30 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="relevance">Relevance</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="popular">Most Popular</SelectItem>
-                    <SelectItem value="rating">Highest Rated</SelectItem>
+                    <SelectItem value="relevance">
+                      {language === 'vi' ? 'Liên Quan' : 
+                       language === 'ja' ? '関連性' : 'Relevance'}
+                    </SelectItem>
+                    <SelectItem value="price-low">
+                      {language === 'vi' ? 'Giá: Thấp đến Cao' : 
+                       language === 'ja' ? '価格: 安い順' : 'Price: Low to High'}
+                    </SelectItem>
+                    <SelectItem value="price-high">
+                      {language === 'vi' ? 'Giá: Cao đến Thấp' : 
+                       language === 'ja' ? '価格: 高い順' : 'Price: High to Low'}
+                    </SelectItem>
+                    <SelectItem value="newest">
+                      {language === 'vi' ? 'Mới Nhất' : 
+                       language === 'ja' ? '最新' : 'Newest'}
+                    </SelectItem>
+                    <SelectItem value="popular">
+                      {language === 'vi' ? 'Phổ Biến Nhất' : 
+                       language === 'ja' ? '人気順' : 'Most Popular'}
+                    </SelectItem>
+                    <SelectItem value="rating">
+                      {language === 'vi' ? 'Đánh Giá Cao Nhất' : 
+                       language === 'ja' ? '評価順' : 'Highest Rated'}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -344,7 +432,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               {/* Price Range */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
-                  Price Range: {formatCurrency(filters.priceRange[0], language)} - {formatCurrency(filters.priceRange[1], language)}
+                  {language === 'vi' ? 'Khoảng Giá' : 
+                   language === 'ja' ? '価格帯' : 'Price Range'}: {formatCurrency(filters.priceRange[0], language)} - {formatCurrency(filters.priceRange[1], language)}
                 </Label>
                 <Slider
                   value={filters.priceRange}
@@ -358,7 +447,10 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
 
               {/* Quick Filters */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Quick Filters</Label>
+                <Label className="text-sm font-medium">
+                  {language === 'vi' ? 'Bộ Lọc Nhanh' : 
+                   language === 'ja' ? 'クイックフィルター' : 'Quick Filters'}
+                </Label>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -368,7 +460,10 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                         setFilters(prev => ({ ...prev, inStock: checked as boolean }))
                       }
                     />
-                    <Label htmlFor="inStock" className="text-sm">In Stock Only</Label>
+                    <Label htmlFor="inStock" className="text-sm">
+                      {language === 'vi' ? 'Chỉ Còn Hàng' : 
+                       language === 'ja' ? '在庫あり' : 'In Stock Only'}
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -378,7 +473,10 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                         setFilters(prev => ({ ...prev, onSale: checked as boolean }))
                       }
                     />
-                    <Label htmlFor="onSale" className="text-sm">On Sale</Label>
+                    <Label htmlFor="onSale" className="text-sm">
+                      {language === 'vi' ? 'Đang Giảm Giá' : 
+                       language === 'ja' ? 'セール中' : 'On Sale'}
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -388,7 +486,10 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                         setFilters(prev => ({ ...prev, featured: checked as boolean }))
                       }
                     />
-                    <Label htmlFor="featured" className="text-sm">Featured</Label>
+                    <Label htmlFor="featured" className="text-sm">
+                      {language === 'vi' ? 'Nổi Bật' : 
+                       language === 'ja' ? '注目商品' : 'Featured'}
+                    </Label>
                   </div>
                 </div>
               </div>
@@ -400,18 +501,24 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
       {/* Active Filters Display */}
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2">
-          {filters.category && (
+          {filters.category && filters.category !== 'all' && (
             <Badge variant="secondary" className="px-3 py-1">
-              Category: {categories.find(c => c._id === filters.category)?.name}
+              {language === 'vi' ? 'Danh Mục' : 
+               language === 'ja' ? 'カテゴリ' : 'Category'}: {
+                categories.find(c => c._id === filters.category) 
+                  ? getCategoryName(categories.find(c => c._id === filters.category)!)
+                  : 'Unknown'
+              }
               <X 
                 className="h-3 w-3 ml-1 cursor-pointer" 
-                onClick={() => setFilters(prev => ({ ...prev, category: '' }))}
+                onClick={() => setFilters(prev => ({ ...prev, category: 'all' }))}
               />
             </Badge>
           )}
           {filters.inStock && (
             <Badge variant="secondary" className="px-3 py-1">
-              In Stock Only
+              {language === 'vi' ? 'Chỉ Còn Hàng' : 
+               language === 'ja' ? '在庫あり' : 'In Stock Only'}
               <X 
                 className="h-3 w-3 ml-1 cursor-pointer" 
                 onClick={() => setFilters(prev => ({ ...prev, inStock: false }))}
@@ -420,7 +527,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
           )}
           {filters.onSale && (
             <Badge variant="secondary" className="px-3 py-1">
-              On Sale
+              {language === 'vi' ? 'Đang Giảm Giá' : 
+               language === 'ja' ? 'セール中' : 'On Sale'}
               <X 
                 className="h-3 w-3 ml-1 cursor-pointer" 
                 onClick={() => setFilters(prev => ({ ...prev, onSale: false }))}
@@ -429,7 +537,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
           )}
           {filters.featured && (
             <Badge variant="secondary" className="px-3 py-1">
-              Featured
+              {language === 'vi' ? 'Nổi Bật' : 
+               language === 'ja' ? '注目商品' : 'Featured'}
               <X 
                 className="h-3 w-3 ml-1 cursor-pointer" 
                 onClick={() => setFilters(prev => ({ ...prev, featured: false }))}

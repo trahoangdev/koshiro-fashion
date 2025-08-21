@@ -54,7 +54,7 @@ interface CategoryFormData {
 }
 
 interface CategoryFormProps {
-  initialData?: Partial<CategoryFormData>;
+  initialData?: Partial<CategoryFormData> & { _id?: string };
   categories: Category[];
   onSubmit: (data: CategoryFormData) => Promise<void>;
   onCancel: () => void;
@@ -96,8 +96,7 @@ export default function CategoryForm({
     seoUrl: '',
     canonicalUrl: '',
     schemaMarkup: '',
-    ...initialData,
-    parentId: initialData?.parentId || ''
+    ...initialData
   });
 
   const translations = {
