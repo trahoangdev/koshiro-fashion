@@ -159,6 +159,19 @@ export interface PaymentMethod {
   paypalEmail?: string;
 }
 
+export interface Address {
+  _id: string;
+  type: 'shipping' | 'billing';
+  fullName: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
 // Review types
 export interface Review {
   _id: string;
@@ -494,6 +507,82 @@ class ApiClient {
   logout(): void {
     this.token = null;
     localStorage.removeItem('token');
+  }
+
+  // Address methods
+  async getUserAddresses(): Promise<{ addresses: Address[] }> {
+    try {
+      return await this.request<{ addresses: Address[] }>('/auth/addresses');
+    } catch (error) {
+      console.error('Get addresses API error:', error);
+      throw error;
+    }
+  }
+
+  async addAddress(addressData: {
+    type: 'shipping' | 'billing';
+    fullName: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    isDefault?: boolean;
+  }): Promise<{ message: string; address: Address }> {
+    try {
+      return await this.request<{ message: string; address: Address }>('/auth/addresses', {
+        method: 'POST',
+        body: JSON.stringify(addressData),
+      });
+    } catch (error) {
+      console.error('Add address API error:', error);
+      throw error;
+    }
+  }
+
+  async updateAddress(id: string, addressData: {
+    type?: 'shipping' | 'billing';
+    fullName?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+    isDefault?: boolean;
+  }): Promise<{ message: string; address: Address }> {
+    try {
+      return await this.request<{ message: string; address: Address }>(`/auth/addresses/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(addressData),
+      });
+    } catch (error) {
+      console.error('Update address API error:', error);
+      throw error;
+    }
+  }
+
+  async deleteAddress(id: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>(`/auth/addresses/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Delete address API error:', error);
+      throw error;
+    }
+  }
+
+  async setDefaultAddress(id: string): Promise<{ message: string }> {
+    try {
+      return await this.request<{ message: string }>(`/auth/addresses/${id}/default`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error('Set default address API error:', error);
+      throw error;
+    }
   }
 
   // Product methods
@@ -1281,23 +1370,23 @@ class ApiClient {
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.read !== undefined) searchParams.append('read', params.read.toString());
 
-    return this.request<PaginationResponse<Notification> & { unreadCount: number }>(`/admin/notifications?${searchParams}`);
+    return this.request<PaginationResponse<Notification> & { unreadCount: number }>(`/notifications?${searchParams}`);
   }
 
   async markNotificationAsRead(id: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/admin/notifications/${id}/read`, {
-      method: 'PATCH',
+    return this.request<{ message: string }>(`/notifications/${id}/read`, {
+      method: 'PUT',
     });
   }
 
   async markAllNotificationsAsRead(): Promise<{ message: string }> {
-    return this.request<{ message: string }>('/admin/notifications/read-all', {
-      method: 'PATCH',
+    return this.request<{ message: string }>('/notifications/mark-all-read', {
+      method: 'PUT',
     });
   }
 
   async deleteNotification(id: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/admin/notifications/${id}`, {
+    return this.request<{ message: string }>(`/notifications/${id}`, {
       method: 'DELETE',
     });
   }
