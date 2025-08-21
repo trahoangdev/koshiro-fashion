@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import EnhancedProductGrid from "@/components/EnhancedProductGrid";
@@ -16,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { CartItem } from "@/types/cart";
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   // Data state
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -289,14 +292,37 @@ const Index = () => {
   };
 
   const handleCheckout = () => {
-    toast({
-      title: language === 'vi' ? "Bắt đầu thanh toán" : 
-             language === 'ja' ? "チェックアウト開始" : 
-             "Checkout initiated",
-      description: language === 'vi' ? "Đây là demo. Trong ứng dụng thực tế, sẽ chuyển đến trang thanh toán." :
-                   language === 'ja' ? "これはデモです。実際のアプリでは、決済処理ページにリダイレクトされます。" :
-                   "This is a demo. In a real app, this would redirect to payment processing.",
-    });
+    if (cartItems.length === 0) {
+      toast({
+        title: language === 'vi' ? "Giỏ hàng trống" : 
+               language === 'ja' ? "カートが空です" : 
+               "Empty Cart",
+        description: language === 'vi' ? "Vui lòng thêm sản phẩm vào giỏ hàng trước khi thanh toán" :
+                     language === 'ja' ? "チェックアウトする前に商品をカートに追加してください" :
+                     "Please add items to your cart before checkout",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isAuthenticated) {
+      toast({
+        title: language === 'vi' ? "Cần đăng nhập" : 
+               language === 'ja' ? "ログインが必要です" : 
+               "Login Required",
+        description: language === 'vi' ? "Vui lòng đăng nhập để tiếp tục thanh toán" :
+                     language === 'ja' ? "チェックアウトを続行するにはログインしてください" :
+                     "Please login to continue checkout",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Close cart sidebar
+    setShowCart(false);
+    
+    // Navigate to checkout page
+    navigate('/checkout');
   };
 
   const clearFilters = () => {
@@ -410,16 +436,28 @@ const Index = () => {
       <main className="py-16">
         <div className="container space-y-12">
           {/* Flash Sale Section */}
-          <section className="bg-gradient-to-r from-red-50 via-orange-50 to-yellow-50 dark:from-red-950/20 dark:via-orange-950/20 dark:to-yellow-950/20 rounded-2xl p-8 border border-red-200/50 dark:border-red-800/30">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-                🔥 {language === 'vi' ? 'Flash Sale' : language === 'ja' ? 'フラッシュセール' : 'Flash Sale'}
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                {language === 'vi' ? 'Giảm giá lên đến 50% cho các sản phẩm được tuyển chọn' :
-                 language === 'ja' ? '厳選商品が最大50%オフ' : 'Up to 50% off on selected items'}
-              </p>
+          <section className="relative overflow-hidden rounded-2xl">
+            {/* Banner Background */}
+            <div className="absolute inset-0">
+              <img 
+                src="/images/categories/banner-01-flashsale.jpg" 
+                alt="Flash Sale Banner"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/40"></div>
             </div>
+            
+            {/* Content */}
+            <div className="relative z-10 p-8 md:p-12">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                  🔥 {language === 'vi' ? 'Flash Sale' : language === 'ja' ? 'フラッシュセール' : 'Flash Sale'}
+                </h2>
+                <p className="text-lg text-white/90">
+                  {language === 'vi' ? 'Giảm giá lên đến 50% cho các sản phẩm được tuyển chọn' :
+                   language === 'ja' ? '厳選商品が最大50%オフ' : 'Up to 50% off on selected items'}
+                </p>
+              </div>
             {(() => {
               const flashSaleProducts = products.filter(product => {
                 const isOnSale = product.onSale || product.salePrice || (product.originalPrice && product.originalPrice > product.price);
@@ -443,25 +481,38 @@ const Index = () => {
                   loading={isLoading}
                 />
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-white/90">
                   {language === 'vi' ? 'Hiện tại không có sản phẩm Flash Sale' :
                    language === 'ja' ? '現在フラッシュセール商品はありません' : 'No flash sale items currently available'}
                 </div>
               );
             })()}
+            </div>
           </section>
 
           {/* New Arrivals Section */}
-          <section className="bg-gradient-to-r from-blue-50 via-cyan-50 to-emerald-50 dark:from-blue-950/20 dark:via-cyan-950/20 dark:to-emerald-950/20 rounded-2xl p-8 border border-blue-200/50 dark:border-blue-800/30">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
-                ✨ {language === 'vi' ? 'Sản Phẩm Mới' : language === 'ja' ? '新着商品' : 'New Arrivals'}
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                {language === 'vi' ? 'Khám phá những sản phẩm mới nhất trong bộ sưu tập của chúng tôi' :
-                 language === 'ja' ? '最新コレクションの新商品をご覧ください' : 'Discover the latest additions to our collection'}
-              </p>
+          <section className="relative overflow-hidden rounded-2xl">
+            {/* Banner Background */}
+            <div className="absolute inset-0">
+              <img 
+                src="/images/categories/banner-02-newarrivals.jpg" 
+                alt="New Arrivals Banner"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/40"></div>
             </div>
+            
+            {/* Content */}
+            <div className="relative z-10 p-8 md:p-12">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                  ✨ {language === 'vi' ? 'Sản Phẩm Mới' : language === 'ja' ? '新着商品' : 'New Arrivals'}
+                </h2>
+                <p className="text-lg text-white/90">
+                  {language === 'vi' ? 'Khám phá những sản phẩm mới nhất trong bộ sưu tập của chúng tôi' :
+                   language === 'ja' ? '最新コレクションの新商品をご覧ください' : 'Discover the latest additions to our collection'}
+                </p>
+              </div>
             {(() => {
               const newProducts = products.filter(product => {
                 const createdDate = new Date(product.createdAt || '');
@@ -480,12 +531,13 @@ const Index = () => {
                   loading={isLoading}
                 />
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-white/90">
                   {language === 'vi' ? 'Hiện tại không có sản phẩm mới' :
                    language === 'ja' ? '現在新着商品はありません' : 'No new arrivals currently available'}
                 </div>
               );
             })()}
+            </div>
           </section>
           <section>
             <div className="text-center mb-12">
@@ -560,13 +612,26 @@ const Index = () => {
 
       {/* Cart Sidebar */}
       {showCart && (
-        <Cart
-          cartItems={cartItems}
-          onUpdateQuantity={updateCartQuantity}
-          onRemoveItem={removeFromCart}
-          onCheckout={handleCheckout}
-          onClose={() => setShowCart(false)}
-        />
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowCart(false)}
+          />
+          
+          {/* Sidebar */}
+          <div className="absolute right-0 top-0 h-full w-full sm:max-w-md bg-background shadow-xl overflow-hidden transform transition-transform duration-300 ease-out">
+            <div className="h-full">
+              <Cart
+                cartItems={cartItems}
+                onUpdateQuantity={updateCartQuantity}
+                onRemoveItem={removeFromCart}
+                onCheckout={handleCheckout}
+                onClose={() => setShowCart(false)}
+              />
+            </div>
+          </div>
+        </div>
       )}
       
       <Footer />

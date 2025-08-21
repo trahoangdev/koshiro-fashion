@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
-import { api, Product } from "@/lib/api";
+import { api, Product, Category } from "@/lib/api";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -45,31 +45,36 @@ const SearchPage: React.FC = () => {
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<SearchFilters | null>(null);
   const [refreshWishlistTrigger, setRefreshWishlistTrigger] = useState(0);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const initialQuery = searchParams.get('q') || '';
 
-  // Popular categories/searches for display when no search is performed
-  const [popularCategories] = useState([
-    'T-Shirts', 'Jeans', 'Jackets', 'Sneakers', 'Dresses', 'Hoodies'
-  ]);
-
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
 
-  // Load trending products on mount
+  // Load trending products and categories on mount
   useEffect(() => {
-    const loadTrendingProducts = async () => {
+    const loadData = async () => {
       try {
-        const response = await api.getProducts({ 
+        // Load trending products
+        const productsResponse = await api.getProducts({ 
           isFeatured: true, 
           limit: 8 
         });
-        setTrendingProducts(response.products || []);
+        setTrendingProducts(productsResponse.products || []);
+
+        // Load categories
+        setCategoriesLoading(true);
+        const categoriesResponse = await api.getCategories({ isActive: true });
+        setCategories(categoriesResponse.categories || []);
       } catch (error) {
-        console.error('Error loading trending products:', error);
+        console.error('Error loading data:', error);
+      } finally {
+        setCategoriesLoading(false);
       }
     };
 
-    loadTrendingProducts();
+    loadData();
   }, []);
 
   // Perform search when URL params change
@@ -77,7 +82,7 @@ const SearchPage: React.FC = () => {
     if (initialQuery) {
       handleSearch({
         query: initialQuery,
-        category: '',
+        category: 'all',
         priceRange: [0, 1000],
         inStock: false,
         onSale: false,
@@ -98,7 +103,7 @@ const SearchPage: React.FC = () => {
       if (filters.query) params.set('q', filters.query);
       if (filters.category) params.set('category', filters.category);
       if (filters.priceRange[0] > 0) params.set('minPrice', filters.priceRange[0].toString());
-      if (filters.priceRange[1] < 1000) params.set('maxPrice', filters.priceRange[1].toString());
+      if (filters.priceRange[1] < 5000000) params.set('maxPrice', filters.priceRange[1].toString());
       if (filters.inStock) params.set('inStock', 'true');
       if (filters.onSale) params.set('onSale', 'true');
       if (filters.featured) params.set('featured', 'true');
@@ -109,9 +114,9 @@ const SearchPage: React.FC = () => {
       // Build API query parameters
       const queryParams: QueryParams = {};
       if (filters.query) queryParams.search = filters.query;
-      if (filters.category) queryParams.category = filters.category;
+      if (filters.category && filters.category !== 'all') queryParams.category = filters.category;
       if (filters.priceRange[0] > 0) queryParams.minPrice = filters.priceRange[0];
-      if (filters.priceRange[1] < 1000) queryParams.maxPrice = filters.priceRange[1];
+      if (filters.priceRange[1] < 5000000) queryParams.maxPrice = filters.priceRange[1];
       if (filters.inStock) queryParams.inStock = true;
       if (filters.onSale) queryParams.onSale = true;
       if (filters.featured) queryParams.isFeatured = true;
@@ -200,11 +205,23 @@ const SearchPage: React.FC = () => {
     });
   };
 
-  const handleCategoryClick = (category: string) => {
+  // Get category name based on language
+  const getCategoryName = (category: Category) => {
+    switch (language) {
+      case 'vi':
+        return category.nameEn || category.name;
+      case 'ja':
+        return category.nameJa || category.name;
+      default:
+        return category.nameEn || category.name;
+    }
+  };
+
+  const handleCategoryClick = (category: Category) => {
     handleSearch({
-      query: category,
-      category: '',
-      priceRange: [0, 1000],
+      query: '',
+      category: category._id,
+      priceRange: [0, 5000000],
       inStock: false,
       onSale: false,
       featured: false,
@@ -218,8 +235,8 @@ const SearchPage: React.FC = () => {
         cartItemsCount={0} 
         onSearch={(query) => handleSearch({
           query,
-          category: '',
-          priceRange: [0, 1000],
+          category: 'all',
+          priceRange: [0, 5000000],
           inStock: false,
           onSale: false,
           featured: false,
@@ -259,6 +276,12 @@ const SearchPage: React.FC = () => {
                 <h2 className="text-2xl font-bold">
                   {currentFilters.query ? (
                     <>Search results for "<span className="text-primary">{currentFilters.query}</span>"</>
+                  ) : currentFilters.category && currentFilters.category !== 'all' ? (
+                    <>Products in "<span className="text-primary">{
+                      categories.find(c => c._id === currentFilters.category) 
+                        ? getCategoryName(categories.find(c => c._id === currentFilters.category)!)
+                        : 'Unknown Category'
+                    }</span>"</>
                   ) : (
                     'Filtered Products'
                   )}
@@ -282,37 +305,72 @@ const SearchPage: React.FC = () => {
           /* Welcome Content - No Search Performed Yet */
           <div className="space-y-12">
             {/* Hero Section */}
-            <div className="text-center py-12">
-              <SearchIcon className="h-16 w-16 mx-auto text-muted-foreground mb-6" />
-              <h1 className="text-4xl font-bold mb-4">
-                Find Your Perfect Style
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Discover thousands of products from top brands. Search by name, category, or browse our curated collections.
-              </p>
-            </div>
+            <section className="relative overflow-hidden rounded-2xl">
+              {/* Banner Background */}
+              <div className="absolute inset-0">
+                <img 
+                  src="/images/categories/bottoms.jpg" 
+                  alt="Search Banner"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/50"></div>
+              </div>
+              
+              {/* Content */}
+              <div className="relative z-10 py-12 text-center text-white">
+                <SearchIcon className="h-16 w-16 mx-auto text-white mb-6" />
+                <h1 className="text-4xl font-bold mb-4">
+                  Find Your Perfect Style
+                </h1>
+                <p className="text-xl text-white/90 max-w-2xl mx-auto">
+                  Discover thousands of products from top brands. Search by name, category, or browse our curated collections.
+                </p>
+              </div>
+            </section>
 
             {/* Popular Categories */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <TrendingUp className="h-5 w-5 mr-2" />
-                  Popular Categories
+                  {language === 'vi' ? 'Danh Mục Phổ Biến' : 
+                   language === 'ja' ? '人気カテゴリ' : 'Popular Categories'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {popularCategories.map((category, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      className="h-auto p-4 flex flex-col items-center space-y-2"
-                      onClick={() => handleCategoryClick(category)}
-                    >
-                      <span className="font-medium">{category}</span>
-                    </Button>
-                  ))}
-                </div>
+                {categoriesLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'vi' ? 'Đang tải danh mục...' :
+                       language === 'ja' ? 'カテゴリを読み込み中...' : 'Loading categories...'}
+                    </p>
+                  </div>
+                ) : categories.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {categories.slice(0, 6).map((category) => (
+                      <Button
+                        key={category._id}
+                        variant="outline"
+                        className="h-auto p-4 flex flex-col items-center space-y-2"
+                        onClick={() => handleCategoryClick(category)}
+                      >
+                        <span className="font-medium">{getCategoryName(category)}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {category.productCount || 0} {language === 'vi' ? 'sản phẩm' : 
+                                                         language === 'ja' ? '商品' : 'products'}
+                        </Badge>
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      {language === 'vi' ? 'Không có danh mục nào' :
+                       language === 'ja' ? 'カテゴリがありません' : 'No categories available'}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -339,24 +397,65 @@ const SearchPage: React.FC = () => {
             {/* Search Tips */}
             <Card>
               <CardHeader>
-                <CardTitle>Search Tips</CardTitle>
+                <CardTitle>
+                  {language === 'vi' ? 'Mẹo Tìm Kiếm' : 
+                   language === 'ja' ? '検索のコツ' : 'Search Tips'}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold mb-2">Quick Search</h4>
+                    <h4 className="font-semibold mb-2">
+                      {language === 'vi' ? 'Tìm Kiếm Nhanh' : 
+                       language === 'ja' ? 'クイック検索' : 'Quick Search'}
+                    </h4>
                     <ul className="space-y-1 text-sm text-muted-foreground">
-                      <li>• Try searching for brands like "Nike", "Adidas"</li>
-                      <li>• Search by product type: "running shoes", "denim jacket"</li>
-                      <li>• Use colors: "red dress", "black sneakers"</li>
+                      {language === 'vi' ? (
+                        <>
+                          <li>• Thử tìm kiếm theo danh mục: "kimono", "hakama", "yukata"</li>
+                          <li>• Tìm theo loại sản phẩm: "áo haori", "đai obi"</li>
+                          <li>• Sử dụng màu sắc: "kimono đỏ", "hakama đen"</li>
+                        </>
+                      ) : language === 'ja' ? (
+                        <>
+                          <li>• カテゴリで検索：「着物」「袴」「浴衣」</li>
+                          <li>• 商品タイプで検索：「羽織」「帯」</li>
+                          <li>• 色で検索：「赤い着物」「黒い袴」</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>• Try searching by category: "kimono", "hakama", "yukata"</li>
+                          <li>• Search by product type: "haori jacket", "obi belt"</li>
+                          <li>• Use colors: "red kimono", "black hakama"</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Advanced Filters</h4>
+                    <h4 className="font-semibold mb-2">
+                      {language === 'vi' ? 'Bộ Lọc Nâng Cao' : 
+                       language === 'ja' ? '高度なフィルター' : 'Advanced Filters'}
+                    </h4>
                     <ul className="space-y-1 text-sm text-muted-foreground">
-                      <li>• Use price filters to find products in your budget</li>
-                      <li>• Filter by availability to see in-stock items only</li>
-                      <li>• Sort by price, popularity, or newest arrivals</li>
+                      {language === 'vi' ? (
+                        <>
+                          <li>• Sử dụng bộ lọc giá để tìm sản phẩm phù hợp với ngân sách</li>
+                          <li>• Lọc theo tình trạng để xem sản phẩm còn hàng</li>
+                          <li>• Sắp xếp theo giá, độ phổ biến hoặc mới nhất</li>
+                        </>
+                      ) : language === 'ja' ? (
+                        <>
+                          <li>• 価格フィルターで予算に合う商品を検索</li>
+                          <li>• 在庫状況でフィルターして在庫商品のみ表示</li>
+                          <li>• 価格、人気度、新着順で並び替え</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>• Use price filters to find products in your budget</li>
+                          <li>• Filter by availability to see in-stock items only</li>
+                          <li>• Sort by price, popularity, or newest arrivals</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                 </div>

@@ -27,7 +27,12 @@ import {
   ArrowLeft,
   Lock,
   Shield,
-  Loader2
+  Loader2,
+  DollarSign,
+  Smartphone,
+  Banknote,
+  QrCode,
+  Wallet
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -46,6 +51,7 @@ const CheckoutPage = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [formData, setFormData] = useState({
     // Shipping Information
     firstName: "",
@@ -185,6 +191,21 @@ const CheckoutPage = () => {
       subtitle: "Complete Your Purchase",
       shippingInfo: "Shipping Information",
       payment: "Payment Information",
+      paymentMethod: "Payment Method",
+      cod: "Cash on Delivery",
+      codDescription: "Pay when you receive your order",
+      online: "Online Payment",
+      onlineDescription: "Pay now with card or e-wallet",
+      creditCard: "Credit/Debit Card",
+      eWallet: "E-Wallet",
+      bankTransfer: "Bank Transfer",
+      codInstructions: "Cash on Delivery Instructions",
+      codInstructionsList: [
+        "Prepare exact amount for faster delivery",
+        "Payment accepted: cash only", 
+        "Delivery fee may apply for remote areas",
+        "Please check your order before payment"
+      ],
       orderSummary: "Order Summary",
       firstName: "First Name",
       lastName: "Last Name",
@@ -220,6 +241,21 @@ const CheckoutPage = () => {
       subtitle: "Hoàn Tất Đơn Hàng",
       shippingInfo: "Thông Tin Giao Hàng",
       payment: "Thông Tin Thanh Toán",
+      paymentMethod: "Phương Thức Thanh Toán",
+      cod: "Thanh Toán Khi Nhận Hàng",
+      codDescription: "Thanh toán khi bạn nhận được hàng",
+      online: "Thanh Toán Trực Tuyến",
+      onlineDescription: "Thanh toán ngay bằng thẻ hoặc ví điện tử",
+      creditCard: "Thẻ Tín Dụng/Ghi Nợ",
+      eWallet: "Ví Điện Tử",
+      bankTransfer: "Chuyển Khoản Ngân Hàng",
+      codInstructions: "Hướng Dẫn Thanh Toán Khi Nhận Hàng",
+      codInstructionsList: [
+        "Chuẩn bị số tiền chính xác để giao hàng nhanh hơn",
+        "Chỉ chấp nhận thanh toán bằng tiền mặt",
+        "Phí giao hàng có thể áp dụng cho vùng xa",
+        "Vui lòng kiểm tra đơn hàng trước khi thanh toán"
+      ],
       orderSummary: "Tóm Tắt Đơn Hàng",
       firstName: "Tên",
       lastName: "Họ",
@@ -255,6 +291,21 @@ const CheckoutPage = () => {
       subtitle: "購入を完了",
       shippingInfo: "配送情報",
       payment: "支払い情報",
+      paymentMethod: "支払い方法",
+      cod: "代金引換",
+      codDescription: "商品受け取り時にお支払い",
+      online: "オンライン決済",
+      onlineDescription: "カードまたは電子マネーですぐにお支払い",
+      creditCard: "クレジット/デビットカード",
+      eWallet: "電子マネー",
+      bankTransfer: "銀行振込",
+      codInstructions: "代金引換の注意事項",
+      codInstructionsList: [
+        "配達をスムーズにするため正確な金額をご準備ください",
+        "現金のみ受け付けます",
+        "遠隔地の場合は配送料が発生する場合があります",
+        "お支払い前に注文内容をご確認ください"
+      ],
       orderSummary: "注文サマリー",
       firstName: "名",
       lastName: "姓",
@@ -328,6 +379,13 @@ const CheckoutPage = () => {
         throw new Error('Please fill in all required fields');
       }
 
+      // Validate payment method specific fields
+      if (paymentMethod === 'online') {
+        if (!formData.cardNumber || !formData.cardName || !formData.expiryMonth || !formData.expiryYear || !formData.cvv) {
+          throw new Error('Please fill in all card details for online payment');
+        }
+      }
+
       // Prepare order data
       const orderData = {
         items: cartItems.map(item => ({
@@ -351,7 +409,7 @@ const CheckoutPage = () => {
           city: formData.city,
           district: formData.state
         },
-        paymentMethod: "Credit Card",
+        paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment',
         notes: formData.notes
       };
 
@@ -577,66 +635,211 @@ const CheckoutPage = () => {
                       {t.payment}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-6">
+                    {/* Payment Method Selection */}
                     <div>
-                      <label className="text-sm font-medium mb-2 block">{t.cardNumber}</label>
-                      <Input
-                        value={formData.cardNumber}
-                        onChange={(e) => handleInputChange('cardNumber', e.target.value)}
-                        placeholder="1234 5678 9012 3456"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">{t.cardName}</label>
-                      <Input
-                        value={formData.cardName}
-                        onChange={(e) => handleInputChange('cardName', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">{t.expiryMonth}</label>
-                        <Select value={formData.expiryMonth} onValueChange={(value) => handleInputChange('expiryMonth', value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="MM" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from({length: 12}, (_, i) => i + 1).map(month => (
-                              <SelectItem key={month} value={month.toString().padStart(2, '0')}>
-                                {month.toString().padStart(2, '0')}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <label className="text-sm font-medium mb-6 block">{t.paymentMethod}</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* COD Option */}
+                        <div
+                          className={`p-6 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md ${
+                            paymentMethod === 'cod'
+                              ? 'border-primary bg-primary/5 shadow-sm'
+                              : 'border-muted hover:border-primary/50'
+                          }`}
+                          onClick={() => setPaymentMethod('cod')}
+                        >
+                          <div className="flex items-start space-x-4">
+                            <div className={`p-3 rounded-full ${
+                              paymentMethod === 'cod' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                            }`}>
+                              <Banknote className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-lg mb-2">{t.cod}</h3>
+                              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{t.codDescription}</p>
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="secondary" className="text-xs px-2 py-1">
+                                  <DollarSign className="h-3 w-3 mr-1" />
+                                  Cash
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Online Payment Option */}
+                        <div
+                          className={`p-6 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md ${
+                            paymentMethod === 'online'
+                              ? 'border-primary bg-primary/5 shadow-sm'
+                              : 'border-muted hover:border-primary/50'
+                          }`}
+                          onClick={() => setPaymentMethod('online')}
+                        >
+                          <div className="flex items-start space-x-4">
+                            <div className={`p-3 rounded-full ${
+                              paymentMethod === 'online' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                            }`}>
+                              <CreditCard className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-lg mb-2">{t.online}</h3>
+                              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{t.onlineDescription}</p>
+                              <div className="flex items-center space-x-2 flex-wrap">
+                                <Badge variant="secondary" className="text-xs px-2 py-1 mb-1">
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  Card
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs px-2 py-1 mb-1">
+                                  <Smartphone className="h-3 w-3 mr-1" />
+                                  E-Wallet
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs px-2 py-1 mb-1">
+                                  <QrCode className="h-3 w-3 mr-1" />
+                                  QR
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">{t.expiryYear}</label>
-                        <Select value={formData.expiryYear} onValueChange={(value) => handleInputChange('expiryYear', value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="YYYY" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from({length: 10}, (_, i) => new Date().getFullYear() + i).map(year => (
-                              <SelectItem key={year} value={year.toString()}>
-                                {year}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">{t.cvv}</label>
-                        <Input
-                          value={formData.cvv}
-                          onChange={(e) => handleInputChange('cvv', e.target.value)}
-                          placeholder="123"
-                          maxLength={4}
-                          required
-                        />
-                      </div>
                     </div>
+
+                    {/* Online Payment Details */}
+                    {paymentMethod === 'online' && (
+                      <div className="space-y-6 p-6 bg-muted/30 rounded-xl">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <Lock className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800">Secure Payment</span>
+                        </div>
+                        
+                        {/* Card Details */}
+                        <div className="space-y-5">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">{t.cardNumber}</label>
+                            <Input
+                              value={formData.cardNumber}
+                              onChange={(e) => handleInputChange('cardNumber', e.target.value)}
+                              placeholder="1234 5678 9012 3456"
+                              required={paymentMethod === 'online'}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">{t.cardName}</label>
+                            <Input
+                              value={formData.cardName}
+                              onChange={(e) => handleInputChange('cardName', e.target.value)}
+                              placeholder="John Doe"
+                              required={paymentMethod === 'online'}
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">{t.expiryMonth}</label>
+                              <Select value={formData.expiryMonth} onValueChange={(value) => handleInputChange('expiryMonth', value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="MM" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({length: 12}, (_, i) => i + 1).map(month => (
+                                    <SelectItem key={month} value={month.toString().padStart(2, '0')}>
+                                      {month.toString().padStart(2, '0')}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">{t.expiryYear}</label>
+                              <Select value={formData.expiryYear} onValueChange={(value) => handleInputChange('expiryYear', value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="YYYY" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({length: 10}, (_, i) => new Date().getFullYear() + i).map(year => (
+                                    <SelectItem key={year} value={year.toString()}>
+                                      {year}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">{t.cvv}</label>
+                              <Input
+                                value={formData.cvv}
+                                onChange={(e) => handleInputChange('cvv', e.target.value)}
+                                placeholder="123"
+                                maxLength={4}
+                                required={paymentMethod === 'online'}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Alternative Payment Methods */}
+                        <div className="pt-6 border-t">
+                          <p className="text-sm font-medium mb-4">Or pay with:</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-16 flex-col hover:bg-primary/5 hover:border-primary/50 transition-colors"
+                            >
+                              <Wallet className="h-5 w-5 mb-2" />
+                              <span className="text-xs font-medium">Momo</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-16 flex-col hover:bg-primary/5 hover:border-primary/50 transition-colors"
+                            >
+                              <Smartphone className="h-5 w-5 mb-2" />
+                              <span className="text-xs font-medium">ZaloPay</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-16 flex-col hover:bg-primary/5 hover:border-primary/50 transition-colors"
+                            >
+                              <QrCode className="h-5 w-5 mb-2" />
+                              <span className="text-xs font-medium">VietQR</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-16 flex-col hover:bg-primary/5 hover:border-primary/50 transition-colors"
+                            >
+                              <CreditCard className="h-5 w-5 mb-2" />
+                              <span className="text-xs font-medium">Visa/MC</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* COD Information */}
+                    {paymentMethod === 'cod' && (
+                      <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+                        <div className="flex items-start space-x-4">
+                          <div className="p-2 rounded-full bg-blue-100">
+                            <Banknote className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-blue-900 mb-3 text-lg">{t.codInstructions}</h4>
+                            <ul className="text-sm text-blue-800 space-y-2">
+                              {t.codInstructionsList.map((instruction, index) => (
+                                <li key={index} className="flex items-start space-x-2">
+                                  <span className="text-blue-500 mt-1">•</span>
+                                  <span className="leading-relaxed">{instruction}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

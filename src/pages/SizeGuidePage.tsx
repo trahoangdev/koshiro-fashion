@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Ruler, Download, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Ruler, Download, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { api, Category } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface SizeDataItem {
   size: string;
@@ -20,18 +22,89 @@ interface SizeDataItem {
   inseam?: string;
 }
 
+// Size guide data mapping for different categories
+const getSizeDataForCategory = (categoryName: string): SizeDataItem[] => {
+  const categoryLower = categoryName.toLowerCase();
+  
+  if (categoryLower.includes('shirt') || categoryLower.includes('top') || categoryLower.includes('áo')) {
+    return [
+      { size: "S", chest: "86-91", waist: "71-76", length: "65-70", sleeve: "58-63" },
+      { size: "M", chest: "91-96", waist: "76-81", length: "70-75", sleeve: "63-68" },
+      { size: "L", chest: "96-101", waist: "81-86", length: "75-80", sleeve: "68-73" },
+      { size: "XL", chest: "101-106", waist: "86-91", length: "80-85", sleeve: "73-78" }
+    ];
+  }
+  
+  if (categoryLower.includes('pant') || categoryLower.includes('quần') || categoryLower.includes('bottom')) {
+    return [
+      { size: "S", waist: "71-76", hips: "91-96", inseam: "75-80", length: "95-100" },
+      { size: "M", waist: "76-81", hips: "96-101", inseam: "80-85", length: "100-105" },
+      { size: "L", waist: "81-86", hips: "101-106", inseam: "85-90", length: "105-110" },
+      { size: "XL", waist: "86-91", hips: "106-111", inseam: "90-95", length: "110-115" }
+    ];
+  }
+  
+  if (categoryLower.includes('hakama') || categoryLower.includes('袴')) {
+    return [
+      { size: "S", height: "160-170", waist: "71-81", length: "95-105" },
+      { size: "M", height: "170-180", waist: "81-91", length: "105-115" },
+      { size: "L", height: "175-185", waist: "86-96", length: "110-120" },
+      { size: "XL", height: "180-190", waist: "91-101", length: "110-115" }
+    ];
+  }
+  
+  if (categoryLower.includes('accessory') || categoryLower.includes('phụ kiện') || categoryLower.includes('アクセサリー')) {
+    return [
+      { size: "S", waist: "71-76", length: "95-100" },
+      { size: "M", waist: "76-81", length: "100-105" },
+      { size: "L", waist: "81-86", length: "105-110" },
+      { size: "XL", waist: "86-91", length: "110-115" }
+    ];
+  }
+  
+  // Default size guide for unknown categories
+  return [
+    { size: "S", chest: "86-91", waist: "71-76", length: "65-70" },
+    { size: "M", chest: "91-96", waist: "76-81", length: "70-75" },
+    { size: "L", chest: "96-101", waist: "81-86", length: "75-80" },
+    { size: "XL", chest: "101-106", waist: "86-91", length: "80-85" }
+  ];
+};
+
+// Get category type for rendering appropriate columns
+const getCategoryType = (categoryName: string): string => {
+  const categoryLower = categoryName.toLowerCase();
+  
+  if (categoryLower.includes('hakama') || categoryLower.includes('袴')) {
+    return "hakama";
+  }
+  
+  if (categoryLower.includes('shirt') || categoryLower.includes('top') || categoryLower.includes('áo')) {
+    return "tops";
+  }
+  
+  if (categoryLower.includes('pant') || categoryLower.includes('quần') || categoryLower.includes('bottom')) {
+    return "bottoms";
+  }
+  
+  if (categoryLower.includes('accessory') || categoryLower.includes('phụ kiện') || categoryLower.includes('アクセサリー')) {
+    return "accessories";
+  }
+  
+  return "default";
+};
+
 export default function SizeGuidePage() {
   const { language } = useLanguage();
-  const [activeTab, setActiveTab] = useState("tops");
+  const { toast } = useToast();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("");
 
   const translations = {
     en: {
       title: "Size Guide",
       subtitle: "Find your perfect fit with our comprehensive size guide",
-      tops: "Tops",
-      bottoms: "Bottoms",
-      hakama: "Hakama",
-      accessories: "Accessories",
       howToMeasure: "How to Measure",
       chest: "Chest",
       waist: "Waist",
@@ -39,6 +112,7 @@ export default function SizeGuidePage() {
       length: "Length",
       sleeve: "Sleeve",
       inseam: "Inseam",
+      height: "Height",
       download: "Download Size Chart",
       tips: "Sizing Tips",
       tip1: "Measure yourself while wearing light clothing",
@@ -49,15 +123,15 @@ export default function SizeGuidePage() {
       size: "Size",
       measurements: "Measurements",
       cm: "cm",
-      inches: "inches"
+      inches: "inches",
+      loading: "Loading categories...",
+      error: "Failed to load categories",
+      oneSize: "One Size",
+      accessoriesNote: "Accessories are typically one-size-fits-all or come in standard sizes."
     },
     vi: {
       title: "Hướng Dẫn Kích Thước",
       subtitle: "Tìm kích thước hoàn hảo với hướng dẫn chi tiết của chúng tôi",
-      tops: "Áo",
-      bottoms: "Quần",
-      hakama: "Hakama",
-      accessories: "Phụ Kiện",
       howToMeasure: "Cách Đo",
       chest: "Ngực",
       waist: "Eo",
@@ -65,6 +139,7 @@ export default function SizeGuidePage() {
       length: "Chiều Dài",
       sleeve: "Tay Áo",
       inseam: "Đường May Trong",
+      height: "Chiều Cao",
       download: "Tải Bảng Kích Thước",
       tips: "Mẹo Chọn Kích Thước",
       tip1: "Đo khi mặc quần áo mỏng",
@@ -75,15 +150,15 @@ export default function SizeGuidePage() {
       size: "Kích Thước",
       measurements: "Số Đo",
       cm: "cm",
-      inches: "inch"
+      inches: "inch",
+      loading: "Đang tải danh mục...",
+      error: "Không thể tải danh mục",
+      oneSize: "Một Kích Thước",
+      accessoriesNote: "Phụ kiện thường có một kích thước hoặc có kích thước tiêu chuẩn."
     },
     ja: {
       title: "サイズガイド",
       subtitle: "包括的なサイズガイドで完璧なフィットを見つけましょう",
-      tops: "トップス",
-      bottoms: "ボトムス",
-      hakama: "袴",
-      accessories: "アクセサリー",
       howToMeasure: "測定方法",
       chest: "胸囲",
       waist: "ウエスト",
@@ -91,6 +166,7 @@ export default function SizeGuidePage() {
       length: "長さ",
       sleeve: "袖丈",
       inseam: "股下",
+      height: "身長",
       download: "サイズチャートをダウンロード",
       tips: "サイズ選びのコツ",
       tip1: "薄手の服を着て測定してください",
@@ -101,37 +177,54 @@ export default function SizeGuidePage() {
       size: "サイズ",
       measurements: "測定値",
       cm: "cm",
-      inches: "インチ"
+      inches: "インチ",
+      loading: "カテゴリを読み込み中...",
+      error: "カテゴリの読み込みに失敗しました",
+      oneSize: "ワンサイズ",
+      accessoriesNote: "アクセサリーは通常ワンサイズまたは標準サイズです。"
     }
   };
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  const sizeData = {
-    tops: [
-      { size: "S", chest: "86-91", waist: "71-76", length: "65-70", sleeve: "58-63" },
-      { size: "M", chest: "91-96", waist: "76-81", length: "70-75", sleeve: "63-68" },
-      { size: "L", chest: "96-101", waist: "81-86", length: "75-80", sleeve: "68-73" },
-      { size: "XL", chest: "101-106", waist: "86-91", length: "80-85", sleeve: "73-78" }
-    ] as SizeDataItem[],
-    bottoms: [
-      { size: "S", waist: "71-76", hips: "91-96", inseam: "75-80", length: "95-100" },
-      { size: "M", waist: "76-81", hips: "96-101", inseam: "80-85", length: "100-105" },
-      { size: "L", waist: "81-86", hips: "101-106", inseam: "85-90", length: "105-110" },
-      { size: "XL", waist: "86-91", hips: "106-111", inseam: "90-95", length: "110-115" }
-    ] as SizeDataItem[],
-    hakama: [
-      { size: "S", height: "160-170", waist: "71-81", length: "95-105" },
-      { size: "M", height: "170-180", waist: "81-91", length: "105-115" },
-      { size: "L", height: "175-185", waist: "86-96", length: "110-120" },
-      { size: "XL", height: "180-190", waist: "91-101", length: "110-115" }
-    ] as SizeDataItem[],
-    accessories: [
-      { size: "S", waist: "71-76", length: "95-100" },
-      { size: "M", waist: "76-81", length: "100-105" },
-      { size: "L", waist: "81-86", length: "105-110" },
-      { size: "XL", waist: "86-91", length: "110-115" }
-    ] as SizeDataItem[]
+  // Load categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.getCategories({ isActive: true });
+        const activeCategories = response.categories.filter(cat => cat.isActive);
+        setCategories(activeCategories);
+        
+        // Set first category as active tab
+        if (activeCategories.length > 0) {
+          setActiveTab(activeCategories[0]._id);
+        }
+      } catch (error) {
+        console.error('Error loading categories:', error);
+        toast({
+          title: t.error,
+          description: "Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, [toast, t.error]);
+
+  // Get category name based on language
+  const getCategoryName = (category: Category) => {
+    switch (language) {
+      case 'vi':
+        return category.nameEn || category.name;
+      case 'ja':
+        return category.nameJa || category.name;
+      default:
+        return category.nameEn || category.name;
+    }
   };
 
   const renderSizeTable = (data: SizeDataItem[], type: string) => (
@@ -142,7 +235,7 @@ export default function SizeGuidePage() {
             <th className="p-3 text-left font-medium">{t.size}</th>
             {type === "hakama" ? (
               <>
-                <th className="p-3 text-left font-medium">Height (cm)</th>
+                <th className="p-3 text-left font-medium">{t.height} (cm)</th>
                 <th className="p-3 text-left font-medium">{t.waist} (cm)</th>
                 <th className="p-3 text-left font-medium">{t.length} (cm)</th>
               </>
@@ -153,11 +246,17 @@ export default function SizeGuidePage() {
                 <th className="p-3 text-left font-medium">{t.length} (cm)</th>
                 <th className="p-3 text-left font-medium">{t.sleeve} (cm)</th>
               </>
-            ) : (
+            ) : type === "bottoms" ? (
               <>
                 <th className="p-3 text-left font-medium">{t.waist} (cm)</th>
                 <th className="p-3 text-left font-medium">{t.hips} (cm)</th>
                 <th className="p-3 text-left font-medium">{t.inseam} (cm)</th>
+                <th className="p-3 text-left font-medium">{t.length} (cm)</th>
+              </>
+            ) : (
+              <>
+                <th className="p-3 text-left font-medium">{t.chest} (cm)</th>
+                <th className="p-3 text-left font-medium">{t.waist} (cm)</th>
                 <th className="p-3 text-left font-medium">{t.length} (cm)</th>
               </>
             )}
@@ -180,11 +279,17 @@ export default function SizeGuidePage() {
                   <td className="p-3">{item.length}</td>
                   <td className="p-3">{item.sleeve}</td>
                 </>
-              ) : (
+              ) : type === "bottoms" ? (
                 <>
                   <td className="p-3">{item.waist}</td>
                   <td className="p-3">{item.hips}</td>
                   <td className="p-3">{item.inseam}</td>
+                  <td className="p-3">{item.length}</td>
+                </>
+              ) : (
+                <>
+                  <td className="p-3">{item.chest}</td>
+                  <td className="p-3">{item.waist}</td>
                   <td className="p-3">{item.length}</td>
                 </>
               )}
@@ -195,18 +300,49 @@ export default function SizeGuidePage() {
     </div>
   );
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-zen">
+        <Header cartItemsCount={0} onSearch={() => {}} />
+        <main className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-lg">{t.loading}</p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-zen">
       <Header cartItemsCount={0} onSearch={() => {}} />
       
       <main className="py-16">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">{t.title}</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              {t.subtitle}
-            </p>
-          </div>
+          {/* Hero Section */}
+          <section className="relative overflow-hidden rounded-2xl mb-12">
+            {/* Banner Background */}
+            <div className="absolute inset-0">
+              <img 
+                src="/images/categories/obi.jpg" 
+                alt="Size Guide Banner"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/50"></div>
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 p-12 text-center text-white">
+              <h1 className="text-4xl font-bold mb-4">{t.title}</h1>
+              <p className="text-xl text-white/90 max-w-2xl mx-auto">
+                {t.subtitle}
+              </p>
+            </div>
+          </section>
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
@@ -219,35 +355,42 @@ export default function SizeGuidePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="tops">{t.tops}</TabsTrigger>
-                      <TabsTrigger value="bottoms">{t.bottoms}</TabsTrigger>
-                      <TabsTrigger value="hakama">{t.hakama}</TabsTrigger>
-                      <TabsTrigger value="accessories">{t.accessories}</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="tops" className="mt-6">
-                      {renderSizeTable(sizeData.tops, "tops")}
-                    </TabsContent>
-                    
-                    <TabsContent value="bottoms" className="mt-6">
-                      {renderSizeTable(sizeData.bottoms, "bottoms")}
-                    </TabsContent>
-                    
-                    <TabsContent value="hakama" className="mt-6">
-                      {renderSizeTable(sizeData.hakama, "hakama")}
-                    </TabsContent>
-                    
-                    <TabsContent value="accessories" className="mt-6">
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground mb-4">
-                          Accessories are typically one-size-fits-all or come in standard sizes.
-                        </p>
-                        <Badge variant="secondary">One Size</Badge>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
+                  {categories.length > 0 ? (
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                      <TabsList className="grid w-full grid-cols-4">
+                        {categories.slice(0, 4).map((category) => (
+                          <TabsTrigger key={category._id} value={category._id}>
+                            {getCategoryName(category)}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      
+                      {categories.slice(0, 4).map((category) => {
+                        const categoryName = getCategoryName(category);
+                        const categoryType = getCategoryType(categoryName);
+                        const sizeData = getSizeDataForCategory(categoryName);
+                        
+                        return (
+                          <TabsContent key={category._id} value={category._id} className="mt-6">
+                            {categoryType === "accessories" ? (
+                              <div className="text-center py-8">
+                                <p className="text-muted-foreground mb-4">
+                                  {t.accessoriesNote}
+                                </p>
+                                <Badge variant="secondary">{t.oneSize}</Badge>
+                              </div>
+                            ) : (
+                              renderSizeTable(sizeData, categoryType)
+                            )}
+                          </TabsContent>
+                        );
+                      })}
+                    </Tabs>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No categories available.</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
