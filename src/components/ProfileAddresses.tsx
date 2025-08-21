@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { api, Address as ApiAddress } from "@/lib/api";
 import { 
   MapPin, 
   Plus, 
@@ -13,54 +15,34 @@ import {
   Trash2, 
   Home,
   Building,
-  Check
+  Check,
+  Loader2
 } from "lucide-react";
 
-interface Address {
-  _id: string;
-  name: string;
-  phone: string;
-  address: string;
-  city: string;
-  district: string;
-  isDefault: boolean;
-  type: 'home' | 'work' | 'other';
+// Use API Address interface and extend with display properties
+interface Address extends ApiAddress {
+  displayType?: 'home' | 'work' | 'other';
 }
 
 const ProfileAddresses = () => {
-  const [addresses, setAddresses] = useState<Address[]>([
-    {
-      _id: "1",
-      name: "John Doe",
-      phone: "+1 234 567 890",
-      address: "123 Main Street",
-      city: "New York",
-      district: "Manhattan",
-      isDefault: true,
-      type: 'home'
-    },
-    {
-      _id: "2",
-      name: "John Doe",
-      phone: "+1 234 567 890",
-      address: "456 Business Ave",
-      city: "New York",
-      district: "Brooklyn",
-      isDefault: false,
-      type: 'work'
-    }
-  ]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    fullName: "",
     phone: "",
     address: "",
     city: "",
-    district: "",
-    type: 'home' as 'home' | 'work' | 'other'
+    state: "",
+    zipCode: "",
+    country: "Vietnam",
+    type: 'shipping' as 'shipping' | 'billing',
+    displayType: 'home' as 'home' | 'work' | 'other'
   });
   const { language } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const translations = {
@@ -78,8 +60,12 @@ const ProfileAddresses = () => {
       phone: "Phone Number",
       address: "Address",
       city: "City",
-      district: "District/State",
+      state: "State/Province",
+      zipCode: "Zip Code",
+      country: "Country",
       type: "Address Type",
+      shipping: "Shipping",
+      billing: "Billing",
       home: "Home",
       work: "Work",
       other: "Other",
@@ -104,8 +90,12 @@ const ProfileAddresses = () => {
       phone: "Số Điện Thoại",
       address: "Địa Chỉ",
       city: "Thành Phố",
-      district: "Quận/Huyện",
+      state: "Tỉnh/Thành",
+      zipCode: "Mã Bưu Điện",
+      country: "Quốc Gia",
       type: "Loại Địa Chỉ",
+      shipping: "Giao Hàng",
+      billing: "Thanh Toán",
       home: "Nhà",
       work: "Công Ty",
       other: "Khác",
@@ -130,8 +120,12 @@ const ProfileAddresses = () => {
       phone: "電話番号",
       address: "住所",
       city: "市区町村",
-      district: "都道府県",
+      state: "都道府県",
+      zipCode: "郵便番号",
+      country: "国",
       type: "住所タイプ",
+      shipping: "配送",
+      billing: "請求",
       home: "自宅",
       work: "会社",
       other: "その他",
@@ -146,8 +140,42 @@ const ProfileAddresses = () => {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
+  // Load addresses from API
+  useEffect(() => {
+    const loadAddresses = async () => {
+      if (!isAuthenticated) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await api.getUserAddresses();
+        // Map API addresses to component format
+        const mappedAddresses = response.addresses.map(addr => ({
+          ...addr,
+          displayType: addr.type === 'shipping' ? 'home' as const : 'work' as const
+        }));
+        setAddresses(mappedAddresses);
+      } catch (error) {
+        console.error('Error loading addresses:', error);
+        toast({
+          title: language === 'vi' ? 'Lỗi' : language === 'ja' ? 'エラー' : 'Error',
+          description: language === 'vi' ? 'Không thể tải địa chỉ' : 
+                      language === 'ja' ? '住所を読み込めませんでした' : 
+                      'Failed to load addresses',
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAddresses();
+  }, [isAuthenticated, toast, language]);
+
+  const getTypeIcon = (displayType?: string) => {
+    switch (displayType) {
       case 'home':
         return <Home className="h-4 w-4" />;
       case 'work':
@@ -161,12 +189,15 @@ const ProfileAddresses = () => {
     setIsAdding(true);
     setEditingId(null);
     setFormData({
-      name: "",
+      fullName: "",
       phone: "",
       address: "",
       city: "",
-      district: "",
-      type: 'home'
+      state: "",
+      zipCode: "",
+      country: "Vietnam",
+      type: 'shipping',
+      displayType: 'home'
     });
   };
 
@@ -174,93 +205,176 @@ const ProfileAddresses = () => {
     setEditingId(address._id);
     setIsAdding(false);
     setFormData({
-      name: address.name,
+      fullName: address.fullName,
       phone: address.phone,
       address: address.address,
       city: address.city,
-      district: address.district,
-      type: address.type
+      state: address.state,
+      zipCode: address.zipCode,
+      country: address.country,
+      type: address.type,
+      displayType: address.displayType || 'home'
     });
   };
 
-  const handleSave = () => {
-    if (!formData.name || !formData.phone || !formData.address || !formData.city || !formData.district) {
+  const handleSave = async () => {
+    if (!formData.fullName || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.zipCode) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin",
+        title: language === 'vi' ? 'Lỗi' : language === 'ja' ? 'エラー' : 'Error',
+        description: language === 'vi' ? 'Vui lòng điền đầy đủ thông tin' :
+                    language === 'ja' ? 'すべての情報を入力してください' :
+                    'Please fill in all required fields',
         variant: "destructive",
       });
       return;
     }
 
-    if (editingId) {
-      // Update existing address
-      setAddresses(prev => prev.map(addr => 
-        addr._id === editingId 
-          ? { ...addr, ...formData }
-          : addr
-      ));
-      toast({
-        title: "Thành công",
-        description: t.addressUpdated,
-      });
-    } else {
-      // Add new address
-      const newAddress: Address = {
-        _id: Date.now().toString(),
-        ...formData,
+    try {
+      setSaving(true);
+      const addressData = {
+        type: formData.type,
+        fullName: formData.fullName,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        country: formData.country,
         isDefault: addresses.length === 0
       };
-      setAddresses(prev => [...prev, newAddress]);
-      toast({
-        title: "Thành công",
-        description: t.addressAdded,
-      });
-    }
 
-    setIsAdding(false);
-    setEditingId(null);
-    setFormData({
-      name: "",
-      phone: "",
-      address: "",
-      city: "",
-      district: "",
-      type: 'home'
-    });
+      if (editingId) {
+        // Update existing address
+        const response = await api.updateAddress(editingId, addressData);
+        setAddresses(prev => prev.map(addr => 
+          addr._id === editingId 
+            ? { ...response.address, displayType: formData.displayType }
+            : addr
+        ));
+        toast({
+          title: language === 'vi' ? 'Thành công' : language === 'ja' ? '成功' : 'Success',
+          description: t.addressUpdated,
+        });
+      } else {
+        // Add new address
+        const response = await api.addAddress(addressData);
+        setAddresses(prev => [...prev, { 
+          ...response.address, 
+          displayType: formData.displayType 
+        }]);
+        toast({
+          title: language === 'vi' ? 'Thành công' : language === 'ja' ? '成功' : 'Success',
+          description: t.addressAdded,
+        });
+      }
+
+      setIsAdding(false);
+      setEditingId(null);
+      setFormData({
+        fullName: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "Vietnam",
+        type: 'shipping',
+        displayType: 'home'
+      });
+    } catch (error) {
+      console.error('Error saving address:', error);
+      toast({
+        title: language === 'vi' ? 'Lỗi' : language === 'ja' ? 'エラー' : 'Error',
+        description: language === 'vi' ? 'Không thể lưu địa chỉ' :
+                    language === 'ja' ? '住所を保存できませんでした' :
+                    'Failed to save address',
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setIsAdding(false);
     setEditingId(null);
     setFormData({
-      name: "",
+      fullName: "",
       phone: "",
       address: "",
       city: "",
-      district: "",
-      type: 'home'
+      state: "",
+      zipCode: "",
+      country: "Vietnam",
+      type: 'shipping',
+      displayType: 'home'
     });
   };
 
-  const handleDelete = (id: string) => {
-    setAddresses(prev => prev.filter(addr => addr._id !== id));
-    toast({
-      title: "Thành công",
-      description: t.addressDeleted,
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await api.deleteAddress(id);
+      setAddresses(prev => prev.filter(addr => addr._id !== id));
+      toast({
+        title: language === 'vi' ? 'Thành công' : language === 'ja' ? '成功' : 'Success',
+        description: t.addressDeleted,
+      });
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      toast({
+        title: language === 'vi' ? 'Lỗi' : language === 'ja' ? 'エラー' : 'Error',
+        description: language === 'vi' ? 'Không thể xóa địa chỉ' :
+                    language === 'ja' ? '住所を削除できませんでした' :
+                    'Failed to delete address',
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSetDefault = (id: string) => {
-    setAddresses(prev => prev.map(addr => ({
-      ...addr,
-      isDefault: addr._id === id
-    })));
-    toast({
-      title: "Thành công",
-      description: t.defaultSet,
-    });
+  const handleSetDefault = async (id: string) => {
+    try {
+      await api.setDefaultAddress(id);
+      setAddresses(prev => prev.map(addr => ({
+        ...addr,
+        isDefault: addr._id === id
+      })));
+      toast({
+        title: language === 'vi' ? 'Thành công' : language === 'ja' ? '成功' : 'Success',
+        description: t.defaultSet,
+      });
+    } catch (error) {
+      console.error('Error setting default address:', error);
+      toast({
+        title: language === 'vi' ? 'Lỗi' : language === 'ja' ? 'エラー' : 'Error',
+        description: language === 'vi' ? 'Không thể đặt địa chỉ mặc định' :
+                    language === 'ja' ? 'デフォルト住所を設定できませんでした' :
+                    'Failed to set default address',
+        variant: "destructive",
+      });
+    }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">{t.title}</h2>
+            <p className="text-muted-foreground">{t.subtitle}</p>
+          </div>
+          <Button disabled>
+            <Plus className="h-4 w-4 mr-2" />
+            {t.addAddress}
+          </Button>
+        </div>
+        <div className="text-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading addresses...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -269,7 +383,7 @@ const ProfileAddresses = () => {
           <h2 className="text-2xl font-bold mb-2">{t.title}</h2>
           <p className="text-muted-foreground">{t.subtitle}</p>
         </div>
-        <Button onClick={handleAdd}>
+        <Button onClick={handleAdd} disabled={saving}>
           <Plus className="h-4 w-4 mr-2" />
           {t.addAddress}
         </Button>
@@ -284,11 +398,12 @@ const ProfileAddresses = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">{t.name}</Label>
+                <Label htmlFor="fullName">{t.name}</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                  required
                 />
               </div>
               <div>
@@ -297,6 +412,7 @@ const ProfileAddresses = () => {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  required
                 />
               </div>
             </div>
@@ -307,34 +423,70 @@ const ProfileAddresses = () => {
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
+                required
               />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="city">{t.city}</Label>
                 <Input
                   id="city"
                   value={formData.city}
                   onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  required
                 />
               </div>
               <div>
-                <Label htmlFor="district">{t.district}</Label>
+                <Label htmlFor="state">{t.state}</Label>
                 <Input
-                  id="district"
-                  value={formData.district}
-                  onChange={(e) => setFormData({...formData, district: e.target.value})}
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => setFormData({...formData, state: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="zipCode">{t.zipCode}</Label>
+                <Input
+                  id="zipCode"
+                  value={formData.zipCode}
+                  onChange={(e) => setFormData({...formData, zipCode: e.target.value})}
+                  required
                 />
               </div>
             </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="country">{t.country}</Label>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={(e) => setFormData({...formData, country: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="type">{t.type}</Label>
+                <select
+                  id="type"
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value as 'shipping' | 'billing'})}
+                  className="w-full p-2 border border-input rounded-md"
+                >
+                  <option value="shipping">{t.shipping}</option>
+                  <option value="billing">{t.billing}</option>
+                </select>
+              </div>
+            </div>
+            
             <div>
-              <Label htmlFor="type">{t.type}</Label>
+              <Label htmlFor="displayType">Display Type</Label>
               <select
-                id="type"
-                value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value as 'home' | 'work' | 'other'})}
+                id="displayType"
+                value={formData.displayType}
+                onChange={(e) => setFormData({...formData, displayType: e.target.value as 'home' | 'work' | 'other'})}
                 className="w-full p-2 border border-input rounded-md"
               >
                 <option value="home">{t.home}</option>
@@ -344,11 +496,15 @@ const ProfileAddresses = () => {
             </div>
             
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={handleCancel}>
+              <Button variant="outline" onClick={handleCancel} disabled={saving}>
                 {t.cancel}
               </Button>
-              <Button onClick={handleSave}>
-                <Check className="h-4 w-4 mr-2" />
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
                 {t.save}
               </Button>
             </div>
@@ -374,13 +530,16 @@ const ProfileAddresses = () => {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-2">
-                    {getTypeIcon(address.type)}
-                    <span className="font-semibold">{address.name}</span>
+                    {getTypeIcon(address.displayType)}
+                    <span className="font-semibold">{address.fullName}</span>
                     {address.isDefault && (
                       <Badge variant="default" className="text-xs">
                         {t.default}
                       </Badge>
                     )}
+                    <Badge variant="secondary" className="text-xs">
+                      {address.type === 'shipping' ? t.shipping : t.billing}
+                    </Badge>
                   </div>
                   <div className="flex space-x-1">
                     <Button
@@ -402,9 +561,10 @@ const ProfileAddresses = () => {
                 </div>
                 
                 <div className="space-y-2 text-sm">
-                  <p>{address.phone}</p>
+                  <p className="font-medium">{address.phone}</p>
                   <p>{address.address}</p>
-                  <p>{address.city}, {address.district}</p>
+                  <p>{address.city}, {address.state} {address.zipCode}</p>
+                  <p className="text-muted-foreground">{address.country}</p>
                 </div>
                 
                 {!address.isDefault && (

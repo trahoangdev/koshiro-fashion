@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { User, MapPin, Phone, Mail, Edit2, Save, X, ShoppingBag, Heart, Settings, CreditCard, Bell } from "lucide-react";
+import { MapPin, Phone, Mail, Edit2, Save, X, ShoppingBag, Heart, Settings, CreditCard, Bell, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,7 @@ import ProfileNotifications from "@/components/ProfileNotifications";
 import ProfileSettings from "@/components/ProfileSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { api, User as UserType } from "@/lib/api";
 
 interface ProfileData {
   name: string;
@@ -40,6 +40,7 @@ export default function Profile() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [cartItemsCount, setCartItemsCount] = useState(0);
   
   const [profileData, setProfileData] = useState<ProfileData>({
     name: "",
@@ -80,11 +81,29 @@ export default function Profile() {
     }
   }, [user, isAuthenticated, isLoading, navigate]);
 
+  // Load cart items count
+  useEffect(() => {
+    const loadCartCount = async () => {
+      if (!isAuthenticated) return;
+      
+      try {
+        const cartResponse = await api.getCart();
+        const count = cartResponse.items?.reduce((total, item) => total + item.quantity, 0) || 0;
+        setCartItemsCount(count);
+      } catch (error) {
+        console.error('Error loading cart count:', error);
+        setCartItemsCount(0);
+      }
+    };
+
+    loadCartCount();
+  }, [isAuthenticated]);
+
   // Redirect if not authenticated
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-zen">
-        <Header cartItemsCount={0} onSearch={() => {}} />
+        <Header cartItemsCount={cartItemsCount} onSearch={() => {}} />
         <main className="py-16">
           <div className="container mx-auto text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -118,7 +137,18 @@ export default function Profile() {
       noOrders: "No orders yet",
       recentOrder: "Recent Order",
       orderDate: "Order Date",
-      orderTotal: "Total"
+      orderTotal: "Total",
+      totalOrders: "Total Orders",
+      completedOrders: "Completed Orders",
+      totalSpent: "Total Spent",
+      accountStatus: "Account Status",
+      memberSince: "Member Since",
+      notProvided: "Not provided",
+      notAvailable: "Not available",
+      active: "Active",
+      inactive: "Inactive",
+      blocked: "Blocked",
+      unknown: "Unknown"
     },
     vi: {
       title: "Hồ Sơ",
@@ -137,7 +167,18 @@ export default function Profile() {
       noOrders: "Chưa có đơn hàng nào",
       recentOrder: "Đơn Hàng Gần Đây",
       orderDate: "Ngày Đặt",
-      orderTotal: "Tổng Tiền"
+      orderTotal: "Tổng Tiền",
+      totalOrders: "Tổng Đơn Hàng",
+      completedOrders: "Đơn Hoàn Thành",
+      totalSpent: "Tổng Chi Tiêu",
+      accountStatus: "Trạng Thái Tài Khoản",
+      memberSince: "Thành Viên Từ",
+      notProvided: "Chưa cung cấp",
+      notAvailable: "Không có sẵn",
+      active: "Hoạt động",
+      inactive: "Ngừng hoạt động",
+      blocked: "Bị khóa",
+      unknown: "Không rõ"
     },
     ja: {
       title: "プロフィール",
@@ -156,7 +197,18 @@ export default function Profile() {
       noOrders: "注文はまだありません",
       recentOrder: "最近の注文",
       orderDate: "注文日",
-      orderTotal: "合計"
+      orderTotal: "合計",
+      totalOrders: "注文総数",
+      completedOrders: "完了した注文",
+      totalSpent: "総支出額",
+      accountStatus: "アカウント状態",
+      memberSince: "登録日",
+      notProvided: "未入力",
+      notAvailable: "利用不可",
+      active: "アクティブ",
+      inactive: "非アクティブ",
+      blocked: "ブロック済み",
+      unknown: "不明"
     }
   };
 
@@ -208,7 +260,7 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gradient-zen">
       <Header 
-        cartItemsCount={0} 
+        cartItemsCount={cartItemsCount} 
         onSearch={() => {}} 
       />
       
@@ -229,130 +281,147 @@ export default function Profile() {
                 <p className="text-muted-foreground">Manage your account and preferences</p>
               </div>
 
-              {/* Profile Info */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
+              {/* Profile Info Section - Only show when profile tab is active */}
+              {activeSection === "profile" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                                      <CardTitle className="flex items-center gap-2">
+                    <UserIcon className="h-5 w-5" />
                     {t.personalInfo}
                   </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => isEditing ? handleCancel() : setIsEditing(true)}
-                  >
-                    {isEditing ? <X className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
-                    {isEditing ? t.cancel : t.edit}
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-center mb-6">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage src="" />
-                      <AvatarFallback className="text-lg">
-                        {profileData.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">{t.name}</Label>
-                      {isEditing ? (
-                        <Input
-                          id="name"
-                          value={editData.name}
-                          onChange={(e) => setEditData({...editData, name: e.target.value})}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground mt-1">{profileData.name}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="email">{t.email}</Label>
-                      {isEditing ? (
-                        <Input
-                          id="email"
-                          type="email"
-                          value={editData.email}
-                          onChange={(e) => setEditData({...editData, email: e.target.value})}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground mt-1">{profileData.email}</p>
-                      )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => isEditing ? handleCancel() : setIsEditing(true)}
+                    >
+                      {isEditing ? <X className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
+                      {isEditing ? t.cancel : t.edit}
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-center mb-6">
+                      <Avatar className="h-24 w-24">
+                        <AvatarImage src="" />
+                        <AvatarFallback className="text-xl font-semibold">
+                          {profileData.name ? profileData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
 
-                    <div>
-                      <Label htmlFor="phone">{t.phone}</Label>
-                      {isEditing ? (
-                        <Input
-                          id="phone"
-                          value={editData.phone}
-                          onChange={(e) => setEditData({...editData, phone: e.target.value})}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground mt-1">{profileData.phone}</p>
-                      )}
+                    {/* User Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div className="text-center p-4 bg-primary/10 rounded-lg border border-primary/20">
+                        <ShoppingBag className="h-6 w-6 mx-auto mb-2 text-primary" />
+                        <div className="text-2xl font-bold text-foreground">{(user as unknown as UserType)?.totalOrders || 0}</div>
+                        <div className="text-sm text-muted-foreground">{t.totalOrders}</div>
+                      </div>
+                      <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                        <Heart className="h-6 w-6 mx-auto mb-2 text-green-500" />
+                        <div className="text-2xl font-bold text-foreground">{(user as unknown as UserType)?.orderCount || 0}</div>
+                        <div className="text-sm text-muted-foreground">{t.completedOrders}</div>
+                      </div>
+                      <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                        <CreditCard className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+                        <div className="text-2xl font-bold text-foreground">{(user as unknown as UserType)?.totalSpent ? new Intl.NumberFormat().format((user as unknown as UserType).totalSpent) : 0}₫</div>
+                        <div className="text-sm text-muted-foreground">{t.totalSpent}</div>
+                      </div>
                     </div>
 
-                    <div>
-                      <Label htmlFor="address">{t.address}</Label>
-                      {isEditing ? (
-                        <Input
-                          id="address"
-                          value={editData.address}
-                          onChange={(e) => setEditData({...editData, address: e.target.value})}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground mt-1">{profileData.address}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="city">{t.city}</Label>
-                      {isEditing ? (
-                        <Input
-                          id="city"
-                          value={editData.city}
-                          onChange={(e) => setEditData({...editData, city: e.target.value})}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground mt-1">{profileData.city}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="country">{t.country}</Label>
-                      {isEditing ? (
-                        <Input
-                          id="country"
-                          value={editData.country}
-                          onChange={(e) => setEditData({...editData, country: e.target.value})}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground mt-1">{profileData.country}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {isEditing && (
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button variant="outline" onClick={handleCancel}>
-                        {t.cancel}
-                      </Button>
-                      <Button onClick={handleSave} disabled={saving}>
-                        {saving ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-2"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="name">{t.name}</Label>
+                        {isEditing ? (
+                          <Input
+                            id="name"
+                            value={editData.name}
+                            onChange={(e) => setEditData({...editData, name: e.target.value})}
+                            className="mt-1"
+                          />
                         ) : (
-                          <Save className="h-4 w-4 mr-2" />
+                          <p className="text-sm text-muted-foreground mt-1 py-2">{profileData.name || t.notProvided}</p>
                         )}
-                        {t.save}
-                      </Button>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="email">{t.email}</Label>
+                        <div className="mt-1 py-2">
+                          <p className="text-sm text-muted-foreground">{profileData.email}</p>
+                          {!isEditing && (
+                            <Badge variant="secondary" className="mt-1">
+                              {user?.role === 'admin' ? 'Admin' : 'Customer'}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phone">{t.phone}</Label>
+                        {isEditing ? (
+                          <Input
+                            id="phone"
+                            value={editData.phone}
+                            onChange={(e) => setEditData({...editData, phone: e.target.value})}
+                            className="mt-1"
+                            placeholder="Nhập số điện thoại"
+                          />
+                        ) : (
+                          <p className="text-sm text-muted-foreground mt-1 py-2">{profileData.phone || t.notProvided}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="address">{t.address}</Label>
+                        {isEditing ? (
+                          <Input
+                            id="address"
+                            value={editData.address}
+                            onChange={(e) => setEditData({...editData, address: e.target.value})}
+                            className="mt-1"
+                            placeholder="Nhập địa chỉ"
+                          />
+                        ) : (
+                          <p className="text-sm text-muted-foreground mt-1 py-2">{profileData.address || t.notProvided}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="status">{t.accountStatus}</Label>
+                        <div className="text-sm mt-1 py-2">
+                          <Badge variant={(user as unknown as UserType)?.status === 'active' ? 'default' : (user as unknown as UserType)?.status === 'blocked' ? 'destructive' : 'secondary'}>
+                            {(user as unknown as UserType)?.status === 'active' ? t.active : 
+                             (user as unknown as UserType)?.status === 'blocked' ? t.blocked : 
+                             (user as unknown as UserType)?.status === 'inactive' ? t.inactive : t.unknown}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="joinDate">{t.memberSince}</Label>
+                        <p className="text-sm text-muted-foreground mt-1 py-2">
+                          {(user as unknown as UserType)?.createdAt ? new Date((user as unknown as UserType).createdAt).toLocaleDateString('vi-VN') : t.notAvailable}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+
+                    {isEditing && (
+                      <div className="flex justify-end gap-2 pt-6 border-t">
+                        <Button variant="outline" onClick={handleCancel}>
+                          <X className="h-4 w-4 mr-2" />
+                          {t.cancel}
+                        </Button>
+                        <Button onClick={handleSave} disabled={saving}>
+                          {saving ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          ) : (
+                            <Save className="h-4 w-4 mr-2" />
+                          )}
+                          {t.save}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Additional Sections based on activeSection */}
               <div className="space-y-6">

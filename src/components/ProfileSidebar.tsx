@@ -3,7 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { api, Order, Product } from "@/lib/api";
+import { api, Order, Product, User as UserType } from "@/lib/api";
 import { 
   User, 
   Package, 
@@ -105,7 +105,8 @@ const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: Prof
       logout: "Logout",
       memberSince: "Member since",
       ordersCount: "orders",
-      wishlistCount: "items"
+      wishlistCount: "items",
+      totalSpent: "Total Spent"
     },
     vi: {
       profile: "Hồ Sơ",
@@ -118,7 +119,8 @@ const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: Prof
       logout: "Đăng Xuất",
       memberSince: "Thành viên từ",
       ordersCount: "đơn hàng",
-      wishlistCount: "sản phẩm"
+      wishlistCount: "sản phẩm",
+      totalSpent: "Tổng Chi Tiêu"
     },
     ja: {
       profile: "プロフィール",
@@ -131,7 +133,8 @@ const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: Prof
       logout: "ログアウト",
       memberSince: "メンバー登録日",
       ordersCount: "注文",
-      wishlistCount: "商品"
+      wishlistCount: "商品",
+      totalSpent: "総支出額"
     }
   };
 
@@ -188,16 +191,21 @@ const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: Prof
       <div className="p-6 border-b">
         <div className="flex items-center space-x-4 mb-4">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <User className="h-8 w-8 text-primary" />
+            <div className="text-lg font-semibold text-primary">
+              {user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold">John Doe</h3>
-            <p className="text-sm text-muted-foreground">john.doe@example.com</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold truncate">{user?.name || 'User'}</h3>
+            <p className="text-sm text-muted-foreground truncate">{user?.email || 'email@example.com'}</p>
+            <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="text-xs mt-1">
+              {user?.role === 'admin' ? 'Admin' : 'Customer'}
+            </Badge>
           </div>
         </div>
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            {t.memberSince} January 2024
+            {t.memberSince} {(user as unknown as UserType)?.createdAt ? new Date((user as unknown as UserType).createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : language === 'ja' ? 'ja-JP' : 'en-US', { year: 'numeric', month: 'long' }) : 'N/A'}
           </p>
           <div className="flex items-center space-x-4 text-xs">
             <span className="flex items-center">
@@ -208,6 +216,9 @@ const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: Prof
               <Heart className="h-3 w-3 mr-1" />
               {isLoading ? "..." : wishlistCount} {t.wishlistCount}
             </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {t.totalSpent}: {(user as unknown as UserType)?.totalSpent ? new Intl.NumberFormat().format((user as unknown as UserType).totalSpent) : 0}₫
           </div>
         </div>
       </div>
