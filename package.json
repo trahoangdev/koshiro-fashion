@@ -8,7 +8,10 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "security:check": "node security-check.cjs",
+    "security:cleanup": "node cleanup-sensitive-files.cjs",
+    "security:scan": "npm run security:check && npm run security:cleanup"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
