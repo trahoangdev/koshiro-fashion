@@ -43,13 +43,24 @@ const NotFound = () => {
   }, [location.pathname, t.errorLog]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-zen">
-      <div className="text-center max-w-md mx-auto px-4">
-        <h1 className="text-8xl font-bold text-primary mb-4">{t.title}</h1>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      {/* Banner Background */}
+      <div className="absolute inset-0">
+        <img 
+          src="/images/categories/haori.jpg" 
+          alt="404 Banner"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black/60"></div>
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10 text-center max-w-md mx-auto px-4 text-white">
+        <h1 className="text-8xl font-bold text-white mb-4">{t.title}</h1>
         <h2 className="text-2xl font-semibold mb-4">{t.subtitle}</h2>
-        <p className="text-muted-foreground mb-8">{t.description}</p>
+        <p className="text-white/90 mb-8">{t.description}</p>
         <Link to="/">
-          <Button className="flex items-center gap-2">
+          <Button className="flex items-center gap-2 bg-white text-black hover:bg-white/90">
             <Home className="h-4 w-4" />
             {t.returnHome}
           </Button>

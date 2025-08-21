@@ -257,9 +257,19 @@ const SalePage = () => {
         <div className="container space-y-8">
           {/* Enhanced Hero Section */}
           <section className="text-center">
-            <div className="bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 text-white py-16 rounded-xl shadow-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-black/10"></div>
-              <div className="relative z-10">
+            <div className="relative overflow-hidden rounded-xl shadow-2xl">
+              {/* Banner Background */}
+              <div className="absolute inset-0">
+                <img 
+                  src="/images/categories/banner-01-flashsale.jpg" 
+                  alt="Sale Banner"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/50"></div>
+              </div>
+              
+              {/* Content */}
+              <div className="relative z-10 py-16 text-white">
                 <h1 className="text-4xl md:text-6xl font-bold mb-4 animate-fade-in">
                   <Percent className="inline-block mr-3 h-12 w-12 md:h-16 md:w-16" />
                   {t.title}

@@ -116,11 +116,11 @@ const ComparePage = () => {
   const getProductName = (product: Product) => {
     switch (language) {
       case 'vi':
-        return product.nameVi || product.name;
+        return product.nameEn || product.name;
       case 'ja':
         return product.nameJa || product.name;
       default:
-        return product.name;
+        return product.nameEn || product.name;
     }
   };
 
@@ -193,26 +193,39 @@ const ComparePage = () => {
       <main className="py-8">
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
-              <p className="text-muted-foreground">{t.subtitle}</p>
+          <section className="relative overflow-hidden rounded-2xl mb-8">
+            {/* Banner Background */}
+            <div className="absolute inset-0">
+              <img 
+                src="/images/categories/tops.jpg" 
+                alt="Compare Products Banner"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/50"></div>
             </div>
             
-            {compareList.length > 0 && (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={clearCompareList}>
-                  {t.clearList}
-                </Button>
-                <Link to="/">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t.addProducts}
-                  </Button>
-                </Link>
+            {/* Content */}
+            <div className="relative z-10 p-8 flex items-center justify-between text-white">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
+                <p className="text-white/90">{t.subtitle}</p>
               </div>
-            )}
-          </div>
+              
+              {compareList.length > 0 && (
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={clearCompareList} className="bg-white/20 text-white border-white/30 hover:bg-white/30">
+                    {t.clearList}
+                  </Button>
+                  <Link to="/">
+                    <Button className="bg-white text-black hover:bg-white/90">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t.addProducts}
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* Compare Table */}
           {compareList.length === 0 ? (
@@ -293,7 +306,9 @@ const ComparePage = () => {
                     <td className="p-4 font-medium">{t.category}</td>
                     {compareList.map((product) => (
                       <td key={product._id} className="p-4 text-center">
-                        {product.categoryId?.name || 'Unknown Category'}
+                        {typeof product.categoryId === 'string' 
+                          ? 'Unknown Category' 
+                          : product.categoryId?.name || 'Unknown Category'}
                       </td>
                     ))}
                   </tr>

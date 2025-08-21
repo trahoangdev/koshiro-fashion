@@ -308,19 +308,32 @@ const WishlistPage = () => {
       <main className="py-16">
         <div className="container space-y-12">
           {/* Header */}
-          <section className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <Heart className="h-12 w-12 text-primary mr-4" />
-              <h1 className="text-4xl md:text-6xl font-bold">
-                {t.title}
-              </h1>
+          <section className="relative overflow-hidden rounded-2xl">
+            {/* Banner Background */}
+            <div className="absolute inset-0">
+              <img 
+                src="/images/categories/accessories.jpg" 
+                alt="Wishlist Banner"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/50"></div>
             </div>
-            <p className="text-xl md:text-2xl mb-4 text-muted-foreground">
-              {t.subtitle}
-            </p>
-            <p className="text-lg max-w-2xl mx-auto text-muted-foreground">
-              {t.description}
-            </p>
+            
+            {/* Content */}
+            <div className="relative z-10 p-12 text-center text-white">
+              <div className="flex items-center justify-center mb-4">
+                <Heart className="h-12 w-12 text-white mr-4" />
+                <h1 className="text-4xl md:text-6xl font-bold">
+                  {t.title}
+                </h1>
+              </div>
+              <p className="text-xl md:text-2xl mb-4 text-white/90">
+                {t.subtitle}
+              </p>
+              <p className="text-lg max-w-2xl mx-auto text-white/80">
+                {t.description}
+              </p>
+            </div>
           </section>
 
           {/* Wishlist Content */}

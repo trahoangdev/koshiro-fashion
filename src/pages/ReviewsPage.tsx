@@ -257,10 +257,23 @@ const ReviewsPage = () => {
       <main className="py-8">
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
-            <p className="text-muted-foreground">{t.subtitle}</p>
-          </div>
+          <section className="relative overflow-hidden rounded-2xl mb-8">
+            {/* Banner Background */}
+            <div className="absolute inset-0">
+              <img 
+                src="/images/categories/yukata.jpg" 
+                alt="Reviews Banner"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/50"></div>
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 p-8 text-center text-white">
+              <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
+              <p className="text-white/90">{t.subtitle}</p>
+            </div>
+          </section>
 
           {/* Overall Rating */}
           <Card className="mb-8">

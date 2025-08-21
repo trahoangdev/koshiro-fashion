@@ -268,24 +268,37 @@ const PrivacyPolicyPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header cartItemsCount={0} onSearch={() => {}} />
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950 py-16">
-          <div className="container mx-auto px-6">
-            <div className="max-w-4xl mx-auto text-center">
-              <div className="flex items-center justify-center mb-6">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                  <Shield className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+        <section className="relative overflow-hidden">
+          {/* Banner Background */}
+          <div className="absolute inset-0">
+            <img 
+              src="/images/categories/yukata.jpg" 
+              alt="Privacy Policy Banner"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/60"></div>
+          </div>
+          
+          {/* Content */}
+          <div className="relative z-10 py-16">
+            <div className="container mx-auto px-6">
+              <div className="max-w-4xl mx-auto text-center text-white">
+                <div className="flex items-center justify-center mb-6">
+                  <div className="p-3 bg-white/20 rounded-full">
+                    <Shield className="h-8 w-8 text-white" />
+                  </div>
                 </div>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">{t.title}</h1>
-              <p className="text-xl text-muted-foreground mb-6">{t.subtitle}</p>
-              
-              <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>{t.lastUpdated}: {t.effectiveDate}</span>
+                <h1 className="text-4xl md:text-5xl font-bold mb-4">{t.title}</h1>
+                <p className="text-xl text-white/90 mb-6">{t.subtitle}</p>
+                
+                <div className="flex items-center justify-center space-x-2 text-sm text-white/80">
+                  <Clock className="h-4 w-4" />
+                  <span>{t.lastUpdated}: {t.effectiveDate}</span>
+                </div>
               </div>
             </div>
           </div>
