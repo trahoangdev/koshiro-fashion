@@ -5,14 +5,17 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { User } from '../models/User';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'koshiro-fashion-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 // Email configuration (you can use Gmail, SendGrid, etc.)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.EMAIL_PASS || 'your-app-password'
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -246,7 +249,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     // Email content
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@koshiro.com',
+      from: process.env.EMAIL_USER,
       to: email,
       subject: 'Password Reset Request - KOSHIRO Fashion',
       html: `

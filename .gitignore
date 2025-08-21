@@ -23,14 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Cursor AI editor files
-.cursor/
-
 # Documentation files (markdown)
 *.md
 !README.md
-!SECURITY.md
-!SETUP-SECURITY.md
+
 
 # Environment files
 .env
@@ -39,21 +35,17 @@ dist-ssr
 .env.test.local
 .env.production.local
 
-# Postman files (ignore real files, allow examples)
+# Postman files 
 *.postman_collection.json
 *.postman_environment.json
-!*.postman_collection.example.json
-!*.postman_environment.example.json
+
 
 # Test files with sensitive data (ignore real files, allow examples)
-test-api.js
-test-order-api.js
-test-order-creation.js
-!test-api.example.js
+*.test-api.js
+*.test-order-api.js
+*.test-order-creation.js
+*.test-api.example.js
 
-# Security check script (safe to commit)
-!security-check.cjs
-!cleanup-sensitive-files.cjs
 
 # Build outputs (may contain sensitive data)
 server/dist/

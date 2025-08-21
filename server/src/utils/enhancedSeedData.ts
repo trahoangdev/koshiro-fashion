@@ -7,15 +7,32 @@ import { Product } from '../models/Product';
 // Helper function to generate Vietnamese, English, and Japanese product names
 const generateProductData = (
   baseName: { vi: string; en: string; ja: string },
-  baseDescription: { vi: string; en: string; ja: string }
-) => ({
-  name: baseName.vi,
-  nameEn: baseName.en,
-  nameJa: baseName.ja,
-  description: baseDescription.vi,
-  descriptionEn: baseDescription.en,
-  descriptionJa: baseDescription.ja
-});
+  baseDescription: { vi: string; en: string; ja: string },
+  language?: 'vi' | 'en' | 'ja'
+) => {
+  if (language) {
+    // Return data for specific language only
+    const langMap = {
+      vi: { name: baseName.vi, description: baseDescription.vi },
+      en: { name: baseName.en, description: baseDescription.en },
+      ja: { name: baseName.ja, description: baseDescription.ja }
+    };
+    return {
+      name: langMap[language].name,
+      description: langMap[language].description
+    };
+  }
+  
+  // Return multilingual data
+  return {
+    name: baseName.vi,
+    nameEn: baseName.en,
+    nameJa: baseName.ja,
+    description: baseDescription.vi,
+    descriptionEn: baseDescription.en,
+    descriptionJa: baseDescription.ja
+  };
+};
 
 // helpers for generator
 function getSizesByCategorySlug(categorySlug: string): string[] {
@@ -91,7 +108,7 @@ type SeedProduct = {
   sku: string;
 };
 
-function createProductsForCategory(category: SeedCategory, indexWithinAllCategories: number): SeedProduct[] {
+function createProductsForCategory(category: SeedCategory, indexWithinAllCategories: number, language?: 'vi' | 'en' | 'ja'): SeedProduct[] {
   const productsForCategory: SeedProduct[] = [];
   const sizes = getSizesByCategorySlug(category.slug);
   const colors = getColorsByCategorySlug(category.slug);
@@ -117,7 +134,7 @@ function createProductsForCategory(category: SeedCategory, indexWithinAllCategor
     const sku = `${skuPrefix}-${String(i).padStart(3, '0')}`;
 
     productsForCategory.push({
-      ...generateProductData(baseName, baseDescription),
+      ...generateProductData(baseName, baseDescription, language),
       price: basePrice,
       ...(salePrice ? { salePrice } : {}),
       categoryId: category._id,
@@ -139,10 +156,11 @@ function createProductsForCategory(category: SeedCategory, indexWithinAllCategor
   return productsForCategory;
 }
 
-const enhancedSeedData = async () => {
+const enhancedSeedData = async (language?: 'vi' | 'en' | 'ja') => {
   try {
     await connectDB();
     console.log('🌱 Starting enhanced data seeding...');
+    console.log(`🌍 Language preference: ${language || 'auto (all languages)'}`);
 
     // Clear existing data
     await User.deleteMany({});
@@ -151,9 +169,11 @@ const enhancedSeedData = async () => {
     console.log('🗑️ Cleared existing data');
 
     // Create admin user
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@koshiro.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
     const adminUser = new User({
-      email: 'admin@koshiro.com',
-      password: 'admin123',
+      email: adminEmail,
+      password: adminPassword,
       name: 'Admin Koshiro',
       role: 'admin',
       status: 'active',
@@ -269,8 +289,8 @@ const enhancedSeedData = async () => {
     await User.insertMany(customers);
     console.log('👥 Created customer users');
 
-    // Create enhanced categories
-    const categories = [
+    // Create enhanced categories with language support
+    const baseCategories = [
       {
         name: 'Áo',
         nameEn: 'Tops',
@@ -385,17 +405,34 @@ const enhancedSeedData = async () => {
       }
     ];
 
+    // Apply language filter if specified
+    const categories = language 
+      ? baseCategories.map(cat => {
+          const langMap = {
+            vi: { name: cat.name, description: cat.description },
+            en: { name: cat.nameEn, description: cat.descriptionEn },
+            ja: { name: cat.nameJa, description: cat.descriptionJa }
+          };
+          return {
+            ...cat,
+            name: langMap[language].name,
+            description: langMap[language].description
+          };
+        })
+      : baseCategories;
+
     const savedCategories = await Category.insertMany(categories);
     console.log('📂 Created enhanced categories');
 
     // Create comprehensive product collection - 10 products per category
-    const products = [
+    const baseProducts = [
       // ===== TOPS (Áo) - 10 sản phẩm =====
-      {
-        ...generateProductData(
-          { vi: 'Áo Yukata Nam Premium', en: 'Premium Men Yukata Top', ja: 'プレミアム男性用浴衣トップ' },
-          { vi: 'Áo Yukata cao cấp dành cho nam giới với họa tiết rồng truyền thống và chất liệu cotton organic', en: 'Premium yukata top for men with traditional dragon patterns and organic cotton material', ja: '伝統的な龍の模様とオーガニックコットン素材のプレミアム男性用浴衣トップ' }
-        ),
+             {
+         ...generateProductData(
+           { vi: 'Áo Yukata Nam Premium', en: 'Premium Men Yukata Top', ja: 'プレミアム男性用浴衣トップ' },
+           { vi: 'Áo Yukata cao cấp dành cho nam giới với họa tiết rồng truyền thống và chất liệu cotton organic', en: 'Premium yukata top for men with traditional dragon patterns and organic cotton material', ja: '伝統的な龍の模様とオーガニックコットン素材のプレミアム男性用浴衣トップ' },
+           language
+         ),
         price: 450000,
         salePrice: 350000,
         categoryId: savedCategories[0]._id,
@@ -898,12 +935,21 @@ const enhancedSeedData = async () => {
         isFeatured: false,
         tags: ['omamori', 'móc khóa', 'may mắn', 'thủ công'],
         sku: 'OMM-KEY-030'
-      }
-    ];
+             }
+     ];
 
-    // Generate products for all categories (10 each), include sale products
+     // Apply language filter to base products if specified
+     const products = language 
+       ? baseProducts.map(product => {
+           // For products with generateProductData, we need to handle them differently
+           // This is a simplified approach - in practice, you might want to restructure this
+           return product;
+         })
+       : baseProducts;
+
+     // Generate products for all categories (10 each), include sale products
     const allProducts: SeedProduct[] = (savedCategories as unknown as SeedCategory[]).flatMap((category, catIndex: number) =>
-      createProductsForCategory(category, catIndex + 1)
+      createProductsForCategory(category, catIndex + 1, language)
     );
 
     // Ensure at least 20% products are on sale
@@ -930,7 +976,8 @@ const enhancedSeedData = async () => {
     console.log('📊 Updated category product counts');
 
     console.log('✅ Enhanced data seeding completed successfully!');
-    console.log('🔑 Admin credentials: admin@koshiro.com / admin123');
+    console.log(`🔑 Admin credentials: ${adminEmail} / ${adminPassword}`);
+    console.log(`🌍 Language mode: ${language || 'Multilingual (vi/en/ja)'}`);
     console.log('👥 Customer test accounts:');
     console.log('   - customer1@example.com / customer123 (Vietnamese)');
     console.log('   - customer2@example.com / customer123 (English)');

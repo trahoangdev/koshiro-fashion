@@ -3,12 +3,15 @@ import { Order } from '../models/Order';
 import { User } from '../models/User';
 import { Product } from '../models/Product';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://trahoangdev:7RMlso6ZQp6OcTtQ@cluster0.zgzpftw.mongodb.net/koshiro-fashion';
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  throw new Error('MONGODB_URI environment variable is required');
+}
 
 async function createSampleOrders() {
   try {
     // Connect to MongoDB
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI!);
     console.log('Connected to MongoDB');
 
     // Get a user and product for creating orders

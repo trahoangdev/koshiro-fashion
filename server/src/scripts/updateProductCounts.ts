@@ -51,8 +51,11 @@ async function updateAllProductCounts() {
 async function main() {
   try {
     // Connect to MongoDB using the same connection string as seedData
-    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://trahoangdev:7RMlso6ZQp6OcTtQ@cluster0.zgzpftw.mongodb.net/koshiro-fashion';
-    await mongoose.connect(mongoUri);
+    const mongoUri = process.env.MONGODB_URI;
+if (!mongoUri) {
+  throw new Error('MONGODB_URI environment variable is required');
+}
+    await mongoose.connect(mongoUri!);
     console.log('Connected to MongoDB');
     
     // Update product counts

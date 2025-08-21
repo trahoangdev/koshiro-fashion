@@ -8,12 +8,15 @@ import { Order } from '../models/Order';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://trahoangdev:7RMlso6ZQp6OcTtQ@cluster0.zgzpftw.mongodb.net/koshiro-fashion';
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  throw new Error('MONGODB_URI environment variable is required');
+}
 
 const seedData = async () => {
   try {
     // Connect to MongoDB
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI!);
     console.log('✅ Connected to MongoDB');
 
     // Clear existing data
@@ -24,9 +27,11 @@ const seedData = async () => {
     console.log('✅ Cleared existing data');
 
     // Create admin user
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@koshiro.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
     const adminUser = new User({
-      email: 'admin@koshiro.com',
+      email: adminEmail,
       password: hashedPassword,
       name: 'Admin User',
       role: 'admin',
