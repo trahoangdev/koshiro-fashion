@@ -28,8 +28,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <header className="lg:hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30">
         <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-foreground font-bold text-xs sm:text-sm">K</span>
+            <div className="flex items-center space-x-2 flex-shrink-0">
+              <img 
+                src="/koshino_logo_dark.png" 
+                alt="KOSHIRO" 
+                className="h-6 w-6 sm:h-7 sm:w-7 dark:hidden"
+              />
+              <img 
+                src="/koshino_logo.png" 
+                alt="KOSHIRO" 
+                className="h-6 w-6 sm:h-7 sm:w-7 hidden dark:block"
+              />
             </div>
             <div className="min-w-0">
               <h1 className="font-bold text-base sm:text-lg truncate">KOSHIRO</h1>

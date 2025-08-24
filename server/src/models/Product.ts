@@ -111,14 +111,12 @@ productSchema.index({ isFeatured: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ tags: 1 });
 
-// Text search index
-productSchema.index({
-  name: 'text',
-  nameEn: 'text',
-  nameJa: 'text',
-  description: 'text',
-  descriptionEn: 'text',
-  descriptionJa: 'text'
-});
+// Search indexes for better performance
+productSchema.index({ name: 1 });
+productSchema.index({ nameEn: 1 });
+productSchema.index({ nameJa: 1 });
+productSchema.index({ description: 1 });
+productSchema.index({ descriptionEn: 1 });
+productSchema.index({ descriptionJa: 1 });
 
 export const Product = mongoose.model<IProduct>('Product', productSchema); 

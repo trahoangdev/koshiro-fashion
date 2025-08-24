@@ -1,3 +1,10 @@
+export interface ProductVideo {
+  url: string;
+  thumbnail?: string;
+  title?: string;
+  duration?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -9,6 +16,7 @@ export interface Product {
   price: number;
   originalPrice?: number;
   images: string[];
+  videos?: ProductVideo[];
   categoryId: string;
   category?: {
     id: string;
@@ -35,6 +43,7 @@ export interface CreateProductRequest {
   price: number;
   originalPrice?: number;
   images: string[];
+  videos?: ProductVideo[];
   categoryId: string;
   sizes: string[];
   colors: string[];

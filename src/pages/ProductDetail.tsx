@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { api, Product } from '@/lib/api';
+import { api, Product, ProductVideo } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import ProductMediaGallery, { MediaItem } from '@/components/ProductMediaGallery';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,9 +30,7 @@ import {
   Minus, 
   Plus, 
   Share2, 
-  ChevronLeft,
   ChevronRight,
-  ZoomIn,
   MessageCircle,
   ThumbsUp,
   Clock,
@@ -44,6 +43,8 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 
+
+
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -55,11 +56,10 @@ const ProductDetail: React.FC = () => {
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [refreshWishlistTrigger, setRefreshWishlistTrigger] = useState(0);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isInWishlist, setIsInWishlist] = useState(false);
-  const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [reviews] = useState([
     {
@@ -215,6 +215,34 @@ const ProductDetail: React.FC = () => {
         setLoading(true);
         const response = await api.getProduct(id);
         setProduct(response.product);
+        
+        // Create media items from images and videos
+        const media: MediaItem[] = [];
+        
+        // Add images
+        response.product.images.forEach((image, index) => {
+          media.push({
+            id: `image-${index}`,
+            type: 'image',
+            url: image,
+            alt: `${response.product.name} ${index + 1}`
+          });
+        });
+        
+        // Add videos (if product has videos property)
+        if (response.product.videos && Array.isArray(response.product.videos)) {
+          response.product.videos.forEach((video, index) => {
+            media.push({
+              id: `video-${index}`,
+              type: 'video',
+              url: video.url,
+              thumbnail: video.thumbnail || response.product.images[0],
+              alt: `${response.product.name} video ${index + 1}`
+            });
+          });
+        }
+        
+        setMediaItems(media);
         
         // Set default selections
         if (response.product.sizes.length > 0) {
@@ -579,109 +607,16 @@ const ProductDetail: React.FC = () => {
 
       <div className="container mx-auto px-4 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Enhanced Product Images Gallery */}
-          <div className="space-y-6">
-            {/* Main Image with Zoom */}
-            <div className="relative group">
-              <div className="aspect-square bg-white rounded-2xl shadow-xl overflow-hidden border">
-                <Dialog open={isImageZoomed} onOpenChange={setIsImageZoomed}>
-                  <DialogTrigger asChild>
-                    <img
-                      src={product.images[selectedImage] || '/placeholder.svg'}
-                      alt={getProductName()}
-                      className="w-full h-full object-cover cursor-zoom-in transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-                    <img
-                      src={product.images[selectedImage] || '/placeholder.svg'}
-                      alt={getProductName()}
-                      className="w-full h-full object-contain"
-                    />
-                  </DialogContent>
-                </Dialog>
-                
-                {/* Zoom Icon */}
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button size="icon" variant="secondary" className="h-10 w-10 rounded-full shadow-lg">
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Navigation Arrows */}
-                {product.images.length > 1 && (
-                  <>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : product.images.length - 1)}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => setSelectedImage(selectedImage < product.images.length - 1 ? selectedImage + 1 : 0)}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-
-                {/* Sale Badge */}
-                {(product.onSale || product.salePrice) && (
-                  <div className="absolute top-4 left-4 z-10">
-                    <Badge variant="destructive" className="px-3 py-1 text-sm font-bold">
-                      {product.salePrice && product.salePrice < product.price ? (
-                        <>
-                          -{Math.round(((product.price - product.salePrice) / product.price) * 100)}%
-                          <span className="ml-1">
-                            {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'SALE'}
-                          </span>
-                        </>
-                      ) : product.originalPrice && product.originalPrice > product.price ? (
-                        <>
-                          -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                          <span className="ml-1">
-                            {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'SALE'}
-                          </span>
-                        </>
-                      ) : (
-                        <span>
-                          {language === 'vi' ? 'KHUYẾN MÃI' : language === 'ja' ? 'セール' : 'SALE'}
-                        </span>
-                      )}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Thumbnail Gallery */}
-            {product.images.length > 1 && (
-              <ScrollArea className="w-full">
-                <div className="flex space-x-3 pb-2">
-                  {product.images.map((image, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`w-20 h-20 bg-white rounded-lg overflow-hidden border-2 transition-all duration-200 hover:border-primary/50 ${
-                        selectedImage === index ? 'border-primary ring-2 ring-primary/20' : 'border-border'
-                      }`}
-                    >
-                      <img
-                        src={image}
-                        alt={`${getProductName()} ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
-          </div>
+          {/* Product Media Gallery */}
+          <ProductMediaGallery
+            mediaItems={mediaItems}
+            productName={getProductName()}
+            onSale={product.onSale}
+            salePrice={product.salePrice}
+            originalPrice={product.originalPrice}
+            price={product.price}
+            language={language}
+          />
 
           {/* Enhanced Product Info */}
           <div className="space-y-8">

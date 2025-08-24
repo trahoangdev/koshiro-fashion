@@ -208,7 +208,17 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
       <div className="container flex h-20 items-center justify-between px-10">
         {/* Logo - Golden ratio proportions */}
         <div className="flex items-center min-w-[130px]">
-          <Link to="/">
+          <Link to="/" className="flex items-center space-x-2">
+            <img 
+              src="/koshino_logo_dark.png" 
+              alt="KOSHIRO" 
+              className="h-8 w-auto dark:hidden"
+            />
+            <img 
+              src="/koshino_logo.png" 
+              alt="KOSHIRO" 
+              className="h-8 w-auto hidden dark:block"
+            />
             <h1 className="text-3xl font-bold tracking-tight cursor-pointer hover:text-primary transition-colors duration-500 transform hover:scale-105">
               KOSHIRO
             </h1>

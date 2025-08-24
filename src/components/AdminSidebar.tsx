@@ -279,8 +279,17 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">K</span>
+              <div className="flex items-center space-x-2">
+                <img 
+                  src="/koshino_logo_dark.png" 
+                  alt="KOSHIRO" 
+                  className="h-6 w-auto dark:hidden"
+                />
+                <img 
+                  src="/koshino_logo.png" 
+                  alt="KOSHIRO" 
+                  className="h-6 w-auto hidden dark:block"
+                />
               </div>
               <div>
                 <h1 className="font-bold text-lg">KOSHIRO</h1>

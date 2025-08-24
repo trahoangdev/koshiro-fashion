@@ -83,7 +83,7 @@ const SearchPage: React.FC = () => {
       handleSearch({
         query: initialQuery,
         category: 'all',
-        priceRange: [0, 1000],
+        priceRange: [0, 1000000], // Tăng max price để phù hợp với giá VND
         inStock: false,
         onSale: false,
         featured: false,
@@ -103,7 +103,7 @@ const SearchPage: React.FC = () => {
       if (filters.query) params.set('q', filters.query);
       if (filters.category) params.set('category', filters.category);
       if (filters.priceRange[0] > 0) params.set('minPrice', filters.priceRange[0].toString());
-      if (filters.priceRange[1] < 5000000) params.set('maxPrice', filters.priceRange[1].toString());
+      if (filters.priceRange[1] < 1000000) params.set('maxPrice', filters.priceRange[1].toString());
       if (filters.inStock) params.set('inStock', 'true');
       if (filters.onSale) params.set('onSale', 'true');
       if (filters.featured) params.set('featured', 'true');
@@ -113,10 +113,12 @@ const SearchPage: React.FC = () => {
 
       // Build API query parameters
       const queryParams: QueryParams = {};
-      if (filters.query) queryParams.search = filters.query;
+      if (filters.query && filters.query.trim()) {
+        queryParams.search = filters.query.trim();
+      }
       if (filters.category && filters.category !== 'all') queryParams.category = filters.category;
       if (filters.priceRange[0] > 0) queryParams.minPrice = filters.priceRange[0];
-      if (filters.priceRange[1] < 5000000) queryParams.maxPrice = filters.priceRange[1];
+      if (filters.priceRange[1] < 1000000) queryParams.maxPrice = filters.priceRange[1];
       if (filters.inStock) queryParams.inStock = true;
       if (filters.onSale) queryParams.onSale = true;
       if (filters.featured) queryParams.isFeatured = true;
@@ -144,6 +146,7 @@ const SearchPage: React.FC = () => {
       }
 
       const response = await api.getProducts(queryParams);
+      
       setProducts(response.products || []);
 
       // Show results toast
@@ -218,15 +221,15 @@ const SearchPage: React.FC = () => {
   };
 
   const handleCategoryClick = (category: Category) => {
-    handleSearch({
-      query: '',
-      category: category._id,
-      priceRange: [0, 5000000],
-      inStock: false,
-      onSale: false,
-      featured: false,
-      sortBy: 'relevance'
-    });
+          handleSearch({
+        query: '',
+        category: category._id,
+        priceRange: [0, 1000000], // Tăng max price để phù hợp với giá VND
+        inStock: false,
+        onSale: false,
+        featured: false,
+        sortBy: 'relevance'
+      });
   };
 
   return (
@@ -236,7 +239,7 @@ const SearchPage: React.FC = () => {
         onSearch={(query) => handleSearch({
           query,
           category: 'all',
-          priceRange: [0, 5000000],
+          priceRange: [0, 1000000], // Tăng max price để phù hợp với giá VND
           inStock: false,
           onSale: false,
           featured: false,

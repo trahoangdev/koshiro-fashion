@@ -43,9 +43,19 @@ export const getProducts = async (req: Request, res: Response) => {
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice as string);
     }
 
-    // Build search query
-    if (search) {
-      filter.$text = { $search: search as string };
+    // Build search query - improved search logic
+    if (search && search.toString().trim()) {
+      const searchTerm = search.toString().trim();
+      const searchRegex = new RegExp(searchTerm, 'i');
+      filter.$or = [
+        { name: searchRegex },
+        { nameEn: searchRegex },
+        { nameJa: searchRegex },
+        { description: searchRegex },
+        { descriptionEn: searchRegex },
+        { descriptionJa: searchRegex },
+        { tags: { $in: [searchRegex] } }
+      ];
     }
 
     // Build sort object

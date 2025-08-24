@@ -646,43 +646,6 @@ const CategoryPage: React.FC = () => {
 
           {/* Main Content Area */}
           <div className="lg:col-span-3">
-            {/* Controls Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-              <div className="flex items-center space-x-4">
-                <Select value={sortBy} onValueChange={handleSortChange}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder={t.sortBy} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">{t.newest}</SelectItem>
-                    <SelectItem value="oldest">{t.oldest}</SelectItem>
-                    <SelectItem value="priceLowToHigh">{t.priceLowToHigh}</SelectItem>
-                    <SelectItem value="priceHighToLow">{t.priceHighToLow}</SelectItem>
-                    <SelectItem value="nameAZ">{t.nameAZ}</SelectItem>
-                    <SelectItem value="nameZA">{t.nameZA}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">{t.viewMode}:</span>
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
             {/* Products Display */}
             {filteredAndSortedProducts.length > 0 ? (
               <EnhancedProductGrid

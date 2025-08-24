@@ -8,50 +8,86 @@
   }
 }
 
-@keyframes fadeOut {
+@keyframes slideInRight {
   from {
-    opacity: 1;
+    transform: translateX(100%);
   }
   to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
     opacity: 0;
   }
-}
-
-@keyframes slideInFromRight {
-  from {
-    transform: translateX(100%);
-  }
   to {
-    transform: translateX(0);
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
-@keyframes slideOutToRight {
-  from {
-    transform: translateX(0);
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
   }
-  to {
-    transform: translateX(100%);
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
-/* Mobile Menu Z-Index Management */
-.mobile-menu-open {
-  /* Prevent any background interaction when menu is open */
-  pointer-events: auto;
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.mobile-menu-open > * {
-  /* Reduce z-index of all other elements when menu is open */
-  position: relative;
-  z-index: 1;
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
 }
 
-/* Smooth scrollbar for mobile menu */
+/* Mobile Menu Specific Styles */
+.mobile-menu-backdrop {
+  animation: fadeIn 300ms ease-out;
+}
+
+.mobile-menu-panel {
+  animation: slideInRight 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-menu-panel.closing {
+  animation: slideOutRight 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .mobile-menu-scroll {
-  /* Firefox */
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--primary) / 0.3) transparent;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 
 .mobile-menu-scroll::-webkit-scrollbar {
@@ -63,19 +99,162 @@
 }
 
 .mobile-menu-scroll::-webkit-scrollbar-thumb {
-  background: rgb(var(--primary) / 0.3);
+  background-color: hsl(var(--border));
   border-radius: 2px;
 }
 
 .mobile-menu-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--primary) / 0.5);
+  background-color: hsl(var(--muted-foreground));
 }
 
-/* Ensure mobile menu is always on top */
-.mobile-menu-backdrop {
-  z-index: 9998 !important;
+/* Enhanced Button Hover Effects */
+.menu-button-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.mobile-menu-panel {
-  z-index: 9999 !important;
+.menu-button-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Card Hover Effects */
+.menu-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading Shimmer Effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Micro-interactions */
+.micro-scale {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.micro-scale:hover {
+  transform: scale(1.05);
+}
+
+.micro-scale:active {
+  transform: scale(0.95);
+}
+
+/* Ripple Effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Glow Effect */
+.glow {
+  transition: all 0.3s ease;
+}
+
+.glow:hover {
+  box-shadow: 0 0 20px rgba(var(--primary), 0.3);
+}
+
+/* Stagger Animation for List Items */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: staggerIn 0.5s ease forwards;
+}
+
+@keyframes staggerIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apply stagger delay to multiple items */
+.stagger-item:nth-child(1) { animation-delay: 0.1s; }
+.stagger-item:nth-child(2) { animation-delay: 0.2s; }
+.stagger-item:nth-child(3) { animation-delay: 0.3s; }
+.stagger-item:nth-child(4) { animation-delay: 0.4s; }
+.stagger-item:nth-child(5) { animation-delay: 0.5s; }
+.stagger-item:nth-child(6) { animation-delay: 0.6s; }
+
+/* Mobile Menu Open Body Styles */
+body.mobile-menu-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* Enhanced Focus States */
+.enhanced-focus:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(var(--primary), 0.1);
+}
+
+/* Smooth Transitions for Theme Changes */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom Scrollbar for Webkit Browsers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
 }

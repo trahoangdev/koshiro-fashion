@@ -37,6 +37,13 @@ export interface AuthResponse {
 }
 
 // Product types
+export interface ProductVideo {
+  url: string;
+  thumbnail?: string;
+  title?: string;
+  duration?: number;
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -56,6 +63,7 @@ export interface Product {
     slug: string;
   };
   images: string[];
+  videos?: ProductVideo[];
   sizes: string[];
   colors: string[];
   stock: number;
