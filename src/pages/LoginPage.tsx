@@ -99,7 +99,7 @@ export default function LoginPage() {
   const validateForm = () => {
     if (!formData.email) {
       toast({
-        title: "Error",
+        title: t('error'),
         description: t.emailRequired,
         variant: "destructive"
       });
@@ -107,7 +107,7 @@ export default function LoginPage() {
     }
     if (!formData.password) {
       toast({
-        title: "Error",
+        title: t('error'),
         description: t.passwordRequired,
         variant: "destructive"
       });
@@ -116,7 +116,7 @@ export default function LoginPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       toast({
-        title: "Error",
+        title: t('error'),
         description: t.invalidEmail,
         variant: "destructive"
       });

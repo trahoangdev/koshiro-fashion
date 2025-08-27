@@ -16,6 +16,7 @@ import {
   Calendar
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { formatCurrency } from "@/lib/currency";
 
 interface ProfileSidebarProps {
   activeSection: string;
@@ -218,7 +219,7 @@ const ProfileSidebar = ({ activeSection, onSectionChange, refreshTrigger }: Prof
             </span>
           </div>
           <div className="text-xs text-muted-foreground">
-            {t.totalSpent}: {(user as unknown as UserType)?.totalSpent ? new Intl.NumberFormat().format((user as unknown as UserType).totalSpent) : 0}₫
+            {t.totalSpent}: {formatCurrency(((user as unknown as UserType)?.totalSpent || 0), language)}
           </div>
         </div>
       </div>

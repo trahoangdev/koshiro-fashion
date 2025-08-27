@@ -465,365 +465,365 @@ const EnhancedMobileMenu: React.FC<EnhancedMobileMenuProps> = ({
           <div className="flex-1 overflow-y-auto overflow-x-hidden mobile-menu-scroll">
             <div className="p-6 space-y-4 pb-8">
               {/* Main Navigation with enhanced animations */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                  {tr.mainMenu}
-                </h4>
-                
-                <Link to="/" onClick={handleLinkClick}>
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+                {tr.mainMenu}
+              </h4>
+              
+              <Link to="/" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
                     <div className="p-2 bg-green-500/10 rounded-lg mr-4 group-hover:bg-green-500/20 transition-all duration-300 group-hover:scale-110">
-                      <Home className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    {tr.home}
-                  </Button>
-                </Link>
+                    <Home className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  {tr.home}
+                </Button>
+              </Link>
 
                 {/* Enhanced Categories with improved animations */}
-                <div>
-                  <Button
-                    variant="ghost"
+              <div>
+                <Button
+                  variant="ghost"
                     className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]"
-                    onClick={() => setActiveSection(activeSection === 'categories' ? null : 'categories')}
-                  >
-                    <div className="flex items-center">
+                  onClick={() => setActiveSection(activeSection === 'categories' ? null : 'categories')}
+                >
+                  <div className="flex items-center">
                       <div className="p-2 bg-blue-500/10 rounded-lg mr-4 group-hover:bg-blue-500/20 transition-all duration-300 group-hover:scale-110">
-                        <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      {tr.categories}
+                      <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <ChevronDown 
-                      className={cn(
+                    {tr.categories}
+                  </div>
+                  <ChevronDown 
+                    className={cn(
                         "h-5 w-5 transition-all duration-300 group-hover:scale-110",
-                        activeSection === 'categories' && "rotate-180"
-                      )} 
-                    />
-                  </Button>
-                  
-                  {/* Enhanced Categories Submenu */}
-                  <div className={cn(
+                      activeSection === 'categories' && "rotate-180"
+                    )} 
+                  />
+                </Button>
+                
+                {/* Enhanced Categories Submenu */}
+                <div className={cn(
                     "overflow-hidden transition-all duration-500 ease-out",
-                    activeSection === 'categories' ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"
-                  )}>
+                  activeSection === 'categories' ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"
+                )}>
                     <div className="ml-4 space-y-1 p-2 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm">
-                      {isLoading ? (
-                        <div className="flex items-center justify-center py-4">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                        </div>
-                      ) : (
-                        <>
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      </div>
+                    ) : (
+                      <>
                           {categories.map((category, index) => (
-                            <Link key={category._id} to={`/category/${category.slug}`} onClick={handleLinkClick}>
+                          <Link key={category._id} to={`/category/${category.slug}`} onClick={handleLinkClick}>
                               <Button 
                                 variant="ghost" 
                                 className="w-full justify-start text-sm h-11 rounded-lg hover:bg-muted transition-all duration-300 hover:scale-[1.02]"
                                 style={{ animationDelay: `${index * 50}ms` }}
                               >
                                 <div className="w-2 h-2 bg-primary/50 rounded-full mr-3 animate-pulse"></div>
-                                {category.name}
-                              </Button>
-                            </Link>
-                          ))}
-                          <Link to="/categories" onClick={handleLinkClick}>
-                            <Button variant="ghost" className="w-full justify-start text-sm h-11 rounded-lg hover:bg-muted font-medium text-primary transition-all duration-300 hover:scale-[1.02]">
-                              <ChevronRight className="h-4 w-4 mr-3" />
-                              {tr.viewAll}
+                              {category.name}
                             </Button>
                           </Link>
-                        </>
-                      )}
-                    </div>
+                        ))}
+                        <Link to="/categories" onClick={handleLinkClick}>
+                            <Button variant="ghost" className="w-full justify-start text-sm h-11 rounded-lg hover:bg-muted font-medium text-primary transition-all duration-300 hover:scale-[1.02]">
+                            <ChevronRight className="h-4 w-4 mr-3" />
+                            {tr.viewAll}
+                          </Button>
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                <Link to="/sale" onClick={handleLinkClick}>
+              <Link to="/sale" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
-                    <div className="flex items-center">
+                  <div className="flex items-center">
                       <div className="p-2 bg-red-500/10 rounded-lg mr-4 group-hover:bg-red-500/20 transition-all duration-300 group-hover:scale-110">
-                        <Percent className="h-5 w-5 text-red-600 dark:text-red-400" />
-                      </div>
-                      {tr.sale}
+                      <Percent className="h-5 w-5 text-red-600 dark:text-red-400" />
                     </div>
+                    {tr.sale}
+                  </div>
                     <Badge variant="destructive" className="animate-pulse font-semibold group-hover:scale-110 transition-transform duration-300">
-                      {language === 'vi' ? 'NÓNG' : language === 'ja' ? 'ホット' : 'HOT'}
-                    </Badge>
-                  </Button>
-                </Link>
+                    {language === 'vi' ? 'NÓNG' : language === 'ja' ? 'ホット' : 'HOT'}
+                  </Badge>
+                </Button>
+              </Link>
 
-                <Link to="/about" onClick={handleLinkClick}>
+              <Link to="/about" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
                     <div className="p-2 bg-purple-500/10 rounded-lg mr-4 group-hover:bg-purple-500/20 transition-all duration-300 group-hover:scale-110">
-                      <Info className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    {tr.about}
-                  </Button>
-                </Link>
+                    <Info className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  {tr.about}
+                </Button>
+              </Link>
 
-                <Link to="/contact" onClick={handleLinkClick}>
+              <Link to="/contact" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
                     <div className="p-2 bg-orange-500/10 rounded-lg mr-4 group-hover:bg-orange-500/20 transition-all duration-300 group-hover:scale-110">
-                      <Phone className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    {tr.contact}
-                  </Button>
-                </Link>
-              </div>
+                    <Phone className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  {tr.contact}
+                </Button>
+              </Link>
+            </div>
 
-              <Separator className="my-6" />
+            <Separator className="my-6" />
 
               {/* Enhanced Quick Actions Section */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                  {tr.quickActions}
-                </h4>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <Link to="/reviews" onClick={handleLinkClick}>
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+                {tr.quickActions}
+              </h4>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <Link to="/reviews" onClick={handleLinkClick}>
                     <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-yellow-200 dark:border-yellow-800 hover:scale-105 hover:bg-gradient-to-br hover:from-yellow-100 hover:to-yellow-200 dark:hover:from-yellow-900 dark:hover:to-yellow-800">
                       <div className="p-2 bg-yellow-500/10 rounded-full group-hover:bg-yellow-500/20 transition-all duration-300 group-hover:scale-110">
-                        <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                      </div>
-                      <span className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">{tr.reviews}</span>
+                      <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     </div>
-                  </Link>
-                  
-                  <Link to="/order-tracking" onClick={handleLinkClick}>
+                    <span className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">{tr.reviews}</span>
+                  </div>
+                </Link>
+                
+                <Link to="/order-tracking" onClick={handleLinkClick}>
                     <div className="group flex flex-col items-center space-y-2 p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-xl hover:shadow-lg transition-all duration-300 border border-green-200 dark:border-green-800 hover:scale-105 hover:bg-gradient-to-br hover:from-green-100 hover:to-green-200 dark:hover:from-green-900 dark:hover:to-green-800">
                       <div className="p-2 bg-green-500/10 rounded-full group-hover:bg-green-500/20 transition-all duration-300 group-hover:scale-110">
-                        <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      </div>
-                      <span className="text-sm font-semibold text-green-900 dark:text-green-100">{tr.trackOrder}</span>
+                      <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
-                  </Link>
-                </div>
+                    <span className="text-sm font-semibold text-green-900 dark:text-green-100">{tr.trackOrder}</span>
+                  </div>
+                </Link>
               </div>
+            </div>
 
-              <Separator className="my-6" />
+            <Separator className="my-6" />
 
-              {/* Enhanced User Menu (if authenticated) */}
-              {isAuthenticated && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                    {tr.account}
-                  </h4>
-                  
-                  <Link to="/profile" onClick={handleLinkClick}>
-                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
-                      <div className="p-2 bg-blue-500/10 rounded-lg mr-4 group-hover:bg-blue-500/20 transition-all duration-300 group-hover:scale-110">
-                        <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      {tr.profile}
-                    </Button>
-                  </Link>
-
-                  <Link to="/profile/orders" onClick={handleLinkClick}>
-                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
-                      <div className="p-2 bg-green-500/10 rounded-lg mr-4 group-hover:bg-green-500/20 transition-all duration-300 group-hover:scale-110">
-                        <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      </div>
-                      {tr.orders}
-                    </Button>
-                  </Link>
-
-                  <Link to="/profile/addresses" onClick={handleLinkClick}>
-                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
-                      <div className="p-2 bg-purple-500/10 rounded-lg mr-4 group-hover:bg-purple-500/20 transition-all duration-300 group-hover:scale-110">
-                        <MapPin className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      {tr.addresses}
-                    </Button>
-                  </Link>
-
-                  <Link to="/profile/payment" onClick={handleLinkClick}>
-                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
-                      <div className="p-2 bg-yellow-500/10 rounded-lg mr-4 group-hover:bg-yellow-500/20 transition-all duration-300 group-hover:scale-110">
-                        <CreditCard className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                      </div>
-                      {tr.payment}
-                    </Button>
-                  </Link>
-
-                  <Link to="/compare" onClick={handleLinkClick}>
-                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
-                      <div className="p-2 bg-indigo-500/10 rounded-lg mr-4 group-hover:bg-indigo-500/20 transition-all duration-300 group-hover:scale-110">
-                        <GitCompare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      {tr.compare}
-                    </Button>
-                  </Link>
-
-                  <Separator className="my-4" />
-
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start h-14 text-base font-medium rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-300 group hover:scale-[1.02]"
-                    onClick={handleLogout}
-                  >
-                    <div className="p-2 bg-red-500/10 rounded-lg mr-4 group-hover:bg-red-500/20 transition-all duration-300 group-hover:scale-110">
-                      <LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />
-                    </div>
-                    {tr.signOut}
-                  </Button>
-                </div>
-              )}
-
-              <Separator className="my-6" />
-
-              {/* Enhanced Help & Support Section */}
+            {/* Enhanced User Menu (if authenticated) */}
+            {isAuthenticated && (
               <div className="space-y-2">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                  {tr.helpSupport}
+                  {tr.account}
                 </h4>
                 
-                <Link to="/size-guide" onClick={handleLinkClick}>
+                <Link to="/profile" onClick={handleLinkClick}>
+                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
+                      <div className="p-2 bg-blue-500/10 rounded-lg mr-4 group-hover:bg-blue-500/20 transition-all duration-300 group-hover:scale-110">
+                      <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    {tr.profile}
+                  </Button>
+                </Link>
+
+                <Link to="/profile/orders" onClick={handleLinkClick}>
+                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
+                      <div className="p-2 bg-green-500/10 rounded-lg mr-4 group-hover:bg-green-500/20 transition-all duration-300 group-hover:scale-110">
+                      <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    {tr.orders}
+                  </Button>
+                </Link>
+
+                <Link to="/profile/addresses" onClick={handleLinkClick}>
+                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
+                      <div className="p-2 bg-purple-500/10 rounded-lg mr-4 group-hover:bg-purple-500/20 transition-all duration-300 group-hover:scale-110">
+                      <MapPin className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    {tr.addresses}
+                  </Button>
+                </Link>
+
+                <Link to="/profile/payment" onClick={handleLinkClick}>
+                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
+                      <div className="p-2 bg-yellow-500/10 rounded-lg mr-4 group-hover:bg-yellow-500/20 transition-all duration-300 group-hover:scale-110">
+                      <CreditCard className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    {tr.payment}
+                  </Button>
+                </Link>
+
+                <Link to="/compare" onClick={handleLinkClick}>
+                    <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
+                      <div className="p-2 bg-indigo-500/10 rounded-lg mr-4 group-hover:bg-indigo-500/20 transition-all duration-300 group-hover:scale-110">
+                      <GitCompare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    {tr.compare}
+                  </Button>
+                </Link>
+
+                <Separator className="my-4" />
+
+                <Button 
+                  variant="ghost" 
+                    className="w-full justify-start h-14 text-base font-medium rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-300 group hover:scale-[1.02]"
+                  onClick={handleLogout}
+                >
+                    <div className="p-2 bg-red-500/10 rounded-lg mr-4 group-hover:bg-red-500/20 transition-all duration-300 group-hover:scale-110">
+                    <LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  {tr.signOut}
+                </Button>
+              </div>
+            )}
+
+            <Separator className="my-6" />
+
+              {/* Enhanced Help & Support Section */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+                {tr.helpSupport}
+              </h4>
+              
+              <Link to="/size-guide" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
                     <div className="p-2 bg-cyan-500/10 rounded-lg mr-4 group-hover:bg-cyan-500/20 transition-all duration-300 group-hover:scale-110">
-                      <Settings className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                    </div>
-                    {tr.sizeGuide}
-                  </Button>
-                </Link>
+                    <Settings className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                  {tr.sizeGuide}
+                </Button>
+              </Link>
 
-                <Link to="/faq" onClick={handleLinkClick}>
+              <Link to="/faq" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
                     <div className="p-2 bg-teal-500/10 rounded-lg mr-4 group-hover:bg-teal-500/20 transition-all duration-300 group-hover:scale-110">
-                      <Info className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-                    </div>
-                    {tr.faq}
-                  </Button>
-                </Link>
+                    <Info className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  {tr.faq}
+                </Button>
+              </Link>
 
-                <Link to="/shipping-info" onClick={handleLinkClick}>
+              <Link to="/shipping-info" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
                     <div className="p-2 bg-slate-500/10 rounded-lg mr-4 group-hover:bg-slate-500/20 transition-all duration-300 group-hover:scale-110">
                       <Truck className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                    </div>
-                    {tr.shippingInfo}
-                  </Button>
-                </Link>
+                  </div>
+                  {tr.shippingInfo}
+                </Button>
+              </Link>
 
-                <Link to="/return-policy" onClick={handleLinkClick}>
+              <Link to="/return-policy" onClick={handleLinkClick}>
                   <Button variant="ghost" className="w-full justify-start h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]">
                     <div className="p-2 bg-amber-500/10 rounded-lg mr-4 group-hover:bg-amber-500/20 transition-all duration-300 group-hover:scale-110">
                       <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  {tr.returnPolicy}
+                </Button>
+              </Link>
+            </div>
+
+            <Separator className="my-6" />
+
+            {/* Enhanced Language Selector */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+                {tr.settings}
+              </h4>
+              
+              <div>
+                <Button
+                  variant="ghost"
+                    className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]"
+                  onClick={() => setActiveSection(activeSection === 'language' ? null : 'language')}
+                >
+                  <div className="flex items-center">
+                      <div className="p-2 bg-emerald-500/10 rounded-lg mr-4 group-hover:bg-emerald-500/20 transition-all duration-300 group-hover:scale-110">
+                      <Globe className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    {tr.returnPolicy}
+                    {tr.language}
+                  </div>
+                  <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 px-3 py-1 bg-muted/50 rounded-full backdrop-blur-sm">
+                      <span className="text-lg">
+                        {languages.find(l => l.code === language)?.flag}
+                      </span>
+                      <span className="text-sm font-medium">
+                        {languages.find(l => l.code === language)?.code?.toUpperCase()}
+                      </span>
+                    </div>
+                    <ChevronDown 
+                      className={cn(
+                          "h-5 w-5 transition-all duration-300 group-hover:scale-110",
+                        activeSection === 'language' && "rotate-180"
+                      )} 
+                    />
+                  </div>
+                </Button>
+
+                {/* Enhanced Language Options */}
+                <div className={cn(
+                    "overflow-hidden transition-all duration-500 ease-out",
+                  activeSection === 'language' ? "max-h-48 opacity-100 mt-2" : "max-h-0 opacity-0"
+                )}>
+                    <div className="ml-4 space-y-1 p-2 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm">
+                      {languages.map((lang, index) => (
+                      <Button
+                        key={lang.code}
+                        variant={language === lang.code ? "secondary" : "ghost"}
+                          className="w-full justify-start text-sm h-12 rounded-lg transition-all duration-300 hover:scale-[1.02]"
+                        onClick={() => {
+                          setLanguage(lang.code as 'vi' | 'en' | 'ja');
+                          setActiveSection(null);
+                        }}
+                          style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <span className="text-lg mr-3">{lang.flag}</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">{lang.name}</span>
+                          <span className="text-xs text-muted-foreground">{lang.code.toUpperCase()}</span>
+                        </div>
+                        {language === lang.code && (
+                            <div className="ml-auto w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-6" />
+
+              {/* Enhanced Promotional Section */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+                {tr.specialOffers}
+              </h4>
+              
+                {/* Enhanced Promo Card */}
+                <div className="mx-3 p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-xl border border-primary/20 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-primary/10 rounded-full">
+                      <Gift className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-sm">{tr.firstOrderDiscount}</h5>
+                    <p className="text-xs text-muted-foreground">{tr.firstOrderDescription}</p>
+                  </div>
+                </div>
+                <Link to="/sale" onClick={handleLinkClick}>
+                    <Button size="sm" className="w-full text-xs font-semibold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 hover:scale-105">
+                    {tr.shopNow}
                   </Button>
                 </Link>
               </div>
 
-              <Separator className="my-6" />
-
-              {/* Enhanced Language Selector */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                  {tr.settings}
-                </h4>
-                
-                <div>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-between h-14 text-base font-medium rounded-xl hover:bg-primary/10 transition-all duration-300 group hover:scale-[1.02]"
-                    onClick={() => setActiveSection(activeSection === 'language' ? null : 'language')}
-                  >
-                    <div className="flex items-center">
-                      <div className="p-2 bg-emerald-500/10 rounded-lg mr-4 group-hover:bg-emerald-500/20 transition-all duration-300 group-hover:scale-110">
-                        <Globe className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      {tr.language}
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2 px-3 py-1 bg-muted/50 rounded-full backdrop-blur-sm">
-                        <span className="text-lg">
-                          {languages.find(l => l.code === language)?.flag}
-                        </span>
-                        <span className="text-sm font-medium">
-                          {languages.find(l => l.code === language)?.code?.toUpperCase()}
-                        </span>
-                      </div>
-                      <ChevronDown 
-                        className={cn(
-                          "h-5 w-5 transition-all duration-300 group-hover:scale-110",
-                          activeSection === 'language' && "rotate-180"
-                        )} 
-                      />
-                    </div>
-                  </Button>
-
-                  {/* Enhanced Language Options */}
-                  <div className={cn(
-                    "overflow-hidden transition-all duration-500 ease-out",
-                    activeSection === 'language' ? "max-h-48 opacity-100 mt-2" : "max-h-0 opacity-0"
-                  )}>
-                    <div className="ml-4 space-y-1 p-2 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm">
-                      {languages.map((lang, index) => (
-                        <Button
-                          key={lang.code}
-                          variant={language === lang.code ? "secondary" : "ghost"}
-                          className="w-full justify-start text-sm h-12 rounded-lg transition-all duration-300 hover:scale-[1.02]"
-                          onClick={() => {
-                            setLanguage(lang.code as 'vi' | 'en' | 'ja');
-                            setActiveSection(null);
-                          }}
-                          style={{ animationDelay: `${index * 100}ms` }}
-                        >
-                          <span className="text-lg mr-3">{lang.flag}</span>
-                          <div className="flex flex-col items-start">
-                            <span className="font-medium">{lang.name}</span>
-                            <span className="text-xs text-muted-foreground">{lang.code.toUpperCase()}</span>
-                          </div>
-                          {language === lang.code && (
-                            <div className="ml-auto w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                          )}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <Separator className="my-6" />
-
-              {/* Enhanced Promotional Section */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-                  {tr.specialOffers}
-                </h4>
-                
-                {/* Enhanced Promo Card */}
-                <div className="mx-3 p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-xl border border-primary/20 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 bg-primary/10 rounded-full">
-                      <Gift className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h5 className="font-bold text-sm">{tr.firstOrderDiscount}</h5>
-                      <p className="text-xs text-muted-foreground">{tr.firstOrderDescription}</p>
-                    </div>
-                  </div>
-                  <Link to="/sale" onClick={handleLinkClick}>
-                    <Button size="sm" className="w-full text-xs font-semibold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 hover:scale-105">
-                      {tr.shopNow}
-                    </Button>
-                  </Link>
-                </div>
-
                 {/* Enhanced Newsletter Signup */}
                 <div className="mx-3 p-4 bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30 rounded-xl border border-border/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 bg-secondary/50 rounded-full">
-                      <Bell className="h-5 w-5 text-secondary-foreground" />
-                    </div>
-                    <div>
-                      <h5 className="font-bold text-sm">{tr.stayUpdated}</h5>
-                      <p className="text-xs text-muted-foreground">{tr.newsletterDescription}</p>
-                    </div>
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-secondary/50 rounded-full">
+                    <Bell className="h-5 w-5 text-secondary-foreground" />
                   </div>
-                  <Button variant="outline" size="sm" className="w-full text-xs font-semibold hover:bg-primary/5 hover:border-primary transition-all duration-300 hover:scale-105">
-                    {tr.subscribeNewsletter}
-                  </Button>
+                  <div>
+                    <h5 className="font-bold text-sm">{tr.stayUpdated}</h5>
+                    <p className="text-xs text-muted-foreground">{tr.newsletterDescription}</p>
+                  </div>
                 </div>
+                  <Button variant="outline" size="sm" className="w-full text-xs font-semibold hover:bg-primary/5 hover:border-primary transition-all duration-300 hover:scale-105">
+                  {tr.subscribeNewsletter}
+                </Button>
               </div>
+            </div>
             </div>
           </div>
 

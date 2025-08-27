@@ -435,8 +435,8 @@ const CheckoutPage = () => {
       }
       
       toast({
-        title: "Đặt hàng thành công!",
-        description: "Đơn hàng của bạn đã được xác nhận và sẽ được giao sớm.",
+        title: language === 'vi' ? 'Đặt hàng thành công!' : language === 'ja' ? 'ご注文が完了しました！' : 'Order placed successfully!',
+        description: language === 'vi' ? 'Đơn hàng của bạn đã được xác nhận và sẽ được giao sớm.' : language === 'ja' ? 'ご注文が確認され、まもなく発送されます。' : 'Your order has been confirmed and will be delivered soon.',
       });
     } catch (error) {
       console.error('Error creating order:', error);
@@ -449,21 +449,21 @@ const CheckoutPage = () => {
       setIsProcessing(false);
       
       // Better error message handling
-      let errorMessage = "Có lỗi xảy ra khi đặt hàng";
+      let errorMessage = language === 'vi' ? 'Có lỗi xảy ra khi đặt hàng' : language === 'ja' ? '注文処理中にエラーが発生しました' : 'An error occurred while placing the order';
       if (error instanceof Error) {
         if (error.message.includes('Product not found in cart')) {
-          errorMessage = "Giỏ hàng đã thay đổi. Vui lòng kiểm tra lại giỏ hàng và thử lại.";
+          errorMessage = language === 'vi' ? 'Giỏ hàng đã thay đổi. Vui lòng kiểm tra lại giỏ hàng và thử lại.' : language === 'ja' ? 'カートが変更されました。内容を確認してもう一度お試しください。' : 'Your cart has changed. Please review your cart and try again.';
         } else if (error.message.includes('Insufficient stock')) {
-          errorMessage = "Sản phẩm không đủ số lượng trong kho. Vui lòng giảm số lượng.";
+          errorMessage = language === 'vi' ? 'Sản phẩm không đủ số lượng trong kho. Vui lòng giảm số lượng.' : language === 'ja' ? '在庫が不足しています。数量を減らしてください。' : 'Insufficient stock. Please reduce the quantity.';
         } else if (error.message.includes('Product') && error.message.includes('not found')) {
-          errorMessage = "Một số sản phẩm không còn tồn tại. Vui lòng kiểm tra lại giỏ hàng.";
+          errorMessage = language === 'vi' ? 'Một số sản phẩm không còn tồn tại. Vui lòng kiểm tra lại giỏ hàng.' : language === 'ja' ? '一部の商品が存在しません。カートをご確認ください。' : 'Some products no longer exist. Please review your cart.';
         } else {
           errorMessage = error.message;
         }
       }
       
       toast({
-        title: "Lỗi đặt hàng",
+        title: language === 'vi' ? 'Lỗi đặt hàng' : language === 'ja' ? '注文エラー' : 'Order Error',
         description: errorMessage,
         variant: "destructive",
       });

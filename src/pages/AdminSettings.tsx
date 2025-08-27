@@ -111,6 +111,7 @@ interface SystemSettings {
 
 export default function AdminSettings() {
   const { toast } = useToast();
+  const { t: tFn } = useLanguage();
   const navigate = useNavigate();
   const { language } = useLanguage();
   const [settings, setSettings] = useState<SystemSettings>({
@@ -190,8 +191,8 @@ export default function AdminSettings() {
     } catch (error) {
       console.error('Error loading settings:', error);
       toast({
-        title: "Error loading settings",
-        description: "Could not load system settings",
+        title: tFn('error'),
+        description: tFn('errorLoading'),
         variant: "destructive",
       });
       setIsLoading(false);
@@ -208,14 +209,14 @@ export default function AdminSettings() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
-        title: "Settings saved successfully",
-        description: "Your changes have been applied",
+        title: tFn('success'),
+        description: tFn('saveSuccess'),
       });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
-        title: "Error saving settings",
-        description: "Could not save your changes",
+        title: tFn('error'),
+        description: tFn('errorSaving'),
         variant: "destructive",
       });
     } finally {
@@ -224,11 +225,11 @@ export default function AdminSettings() {
   };
 
   const handleResetSettings = () => {
-    if (confirm("Are you sure you want to reset all settings to default?")) {
+    if (confirm(tl.reset)) {
       loadSettings();
       toast({
-        title: "Settings reset",
-        description: "All settings have been reset to default values",
+        title: tFn('success'),
+        description: tFn('updateSuccess'),
       });
     }
   };
@@ -398,7 +399,7 @@ export default function AdminSettings() {
     }
   };
 
-  const t = translations[language as keyof typeof translations] || translations.en;
+  const tl = translations[language as keyof typeof translations] || translations.en;
 
   if (isLoading) {
     return (
@@ -406,7 +407,7 @@ export default function AdminSettings() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">{t.loading}</p>
+            <p className="text-muted-foreground">{tl.loading}</p>
           </div>
         </div>
       </AdminLayout>
@@ -419,13 +420,13 @@ export default function AdminSettings() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t.title}</h1>
-            <p className="text-muted-foreground">{t.subtitle}</p>
+            <h1 className="text-3xl font-bold tracking-tight">{tl.title}</h1>
+            <p className="text-muted-foreground">{tl.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleResetSettings}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              {t.reset}
+              {tl.reset}
             </Button>
             <Button onClick={handleSaveSettings} disabled={isSaving}>
               {isSaving ? (
@@ -433,7 +434,7 @@ export default function AdminSettings() {
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              {t.save}
+              {tl.save}
             </Button>
           </div>
         </div>
@@ -442,7 +443,7 @@ export default function AdminSettings() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t.systemStatus}</CardTitle>
+              <CardTitle className="text-sm font-medium">{tl.systemStatus}</CardTitle>
               <Activity className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
@@ -453,7 +454,7 @@ export default function AdminSettings() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t.databaseStatus}</CardTitle>
+              <CardTitle className="text-sm font-medium">{tl.databaseStatus}</CardTitle>
               <Database className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
@@ -464,7 +465,7 @@ export default function AdminSettings() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t.serverStatus}</CardTitle>
+              <CardTitle className="text-sm font-medium">{tl.serverStatus}</CardTitle>
               <Server className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
@@ -475,7 +476,7 @@ export default function AdminSettings() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t.uptime}</CardTitle>
+              <CardTitle className="text-sm font-medium">{tl.uptime}</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -490,27 +491,27 @@ export default function AdminSettings() {
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              {t.general}
+              {tl.general}
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
-              {t.notifications}
+              {tl.notifications}
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              {t.security}
+              {tl.security}
             </TabsTrigger>
             <TabsTrigger value="payment" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
-              {t.payment}
+              {tl.payment}
             </TabsTrigger>
             <TabsTrigger value="shipping" className="flex items-center gap-2">
               <Truck className="h-4 w-4" />
-              {t.shipping}
+              {tl.shipping}
             </TabsTrigger>
             <TabsTrigger value="appearance" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
-              {t.appearance}
+              {tl.appearance}
             </TabsTrigger>
           </TabsList>
 
@@ -525,7 +526,7 @@ export default function AdminSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="siteName">{t.siteName}</Label>
+                    <Label htmlFor="siteName">{tl.siteName}</Label>
                     <Input
                       id="siteName"
                       value={settings.general.siteName}
@@ -536,7 +537,7 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="siteDescription">{t.siteDescription}</Label>
+                    <Label htmlFor="siteDescription">{tl.siteDescription}</Label>
                     <Textarea
                       id="siteDescription"
                       value={settings.general.siteDescription}
@@ -547,7 +548,7 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="contactEmail">{t.contactEmail}</Label>
+                    <Label htmlFor="contactEmail">{tl.contactEmail}</Label>
                     <Input
                       id="contactEmail"
                       type="email"
@@ -559,7 +560,7 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="contactPhone">{t.contactPhone}</Label>
+                    <Label htmlFor="contactPhone">{tl.contactPhone}</Label>
                     <Input
                       id="contactPhone"
                       value={settings.general.contactPhone}
@@ -581,7 +582,7 @@ export default function AdminSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="address">{t.address}</Label>
+                    <Label htmlFor="address">{tl.address}</Label>
                     <Textarea
                       id="address"
                       value={settings.general.address}
@@ -592,7 +593,7 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="timezone">{t.timezone}</Label>
+                    <Label htmlFor="timezone">{tl.timezone}</Label>
                     <Select
                       value={settings.general.timezone}
                       onValueChange={(value) => setSettings(prev => ({
@@ -611,7 +612,7 @@ export default function AdminSettings() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="currency">{t.currency}</Label>
+                    <Label htmlFor="currency">{tl.currency}</Label>
                     <Select
                       value={settings.general.currency}
                       onValueChange={(value) => setSettings(prev => ({
@@ -630,7 +631,7 @@ export default function AdminSettings() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="language">{t.language}</Label>
+                    <Label htmlFor="language">{tl.language}</Label>
                     <Select
                       value={settings.general.language}
                       onValueChange={(value) => setSettings(prev => ({
@@ -665,7 +666,7 @@ export default function AdminSettings() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.emailNotifications}</Label>
+                      <Label>{tl.emailNotifications}</Label>
                       <p className="text-sm text-muted-foreground">
                         Receive notifications via email
                       </p>
@@ -681,7 +682,7 @@ export default function AdminSettings() {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.orderNotifications}</Label>
+                      <Label>{tl.orderNotifications}</Label>
                       <p className="text-sm text-muted-foreground">
                         Get notified about new orders
                       </p>
@@ -697,7 +698,7 @@ export default function AdminSettings() {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.stockNotifications}</Label>
+                      <Label>{tl.stockNotifications}</Label>
                       <p className="text-sm text-muted-foreground">
                         Get notified about low stock items
                       </p>
@@ -713,7 +714,7 @@ export default function AdminSettings() {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.customerNotifications}</Label>
+                      <Label>{tl.customerNotifications}</Label>
                       <p className="text-sm text-muted-foreground">
                         Get notified about customer activities
                       </p>
@@ -729,7 +730,7 @@ export default function AdminSettings() {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.adminNotifications}</Label>
+                      <Label>{tl.adminNotifications}</Label>
                       <p className="text-sm text-muted-foreground">
                         Get notified about system events
                       </p>
@@ -758,7 +759,7 @@ export default function AdminSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="sessionTimeout">{t.sessionTimeout}</Label>
+                    <Label htmlFor="sessionTimeout">{tl.sessionTimeout}</Label>
                     <Input
                       id="sessionTimeout"
                       type="number"
@@ -770,7 +771,7 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="passwordMinLength">{t.passwordMinLength}</Label>
+                    <Label htmlFor="passwordMinLength">{tl.passwordMinLength}</Label>
                     <Input
                       id="passwordMinLength"
                       type="number"
@@ -782,7 +783,7 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="maxLoginAttempts">{t.maxLoginAttempts}</Label>
+                    <Label htmlFor="maxLoginAttempts">{tl.maxLoginAttempts}</Label>
                     <Input
                       id="maxLoginAttempts"
                       type="number"
@@ -806,7 +807,7 @@ export default function AdminSettings() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.requireTwoFactor}</Label>
+                      <Label>{tl.requireTwoFactor}</Label>
                       <p className="text-sm text-muted-foreground">
                         Require 2FA for admin accounts
                       </p>
@@ -822,7 +823,7 @@ export default function AdminSettings() {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.enableCaptcha}</Label>
+                      <Label>{tl.enableCaptcha}</Label>
                       <p className="text-sm text-muted-foreground">
                         Enable CAPTCHA on login forms
                       </p>
@@ -884,7 +885,7 @@ export default function AdminSettings() {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.cashOnDelivery}</Label>
+                      <Label>{tl.cashOnDelivery}</Label>
                       <p className="text-sm text-muted-foreground">
                         Allow cash payment on delivery
                       </p>
@@ -900,7 +901,7 @@ export default function AdminSettings() {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.bankTransfer}</Label>
+                      <Label>{tl.bankTransfer}</Label>
                       <p className="text-sm text-muted-foreground">
                         Allow bank transfer payments
                       </p>
@@ -929,7 +930,7 @@ export default function AdminSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="freeShippingThreshold">{t.freeShippingThreshold}</Label>
+                    <Label htmlFor="freeShippingThreshold">{tl.freeShippingThreshold}</Label>
                     <Input
                       id="freeShippingThreshold"
                       type="number"
@@ -941,7 +942,7 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="defaultShippingCost">{t.defaultShippingCost}</Label>
+                    <Label htmlFor="defaultShippingCost">{tl.defaultShippingCost}</Label>
                     <Input
                       id="defaultShippingCost"
                       type="number"
@@ -954,7 +955,7 @@ export default function AdminSettings() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>{t.enableTracking}</Label>
+                      <Label>{tl.enableTracking}</Label>
                       <p className="text-sm text-muted-foreground">
                         Enable order tracking for customers
                       </p>
@@ -974,7 +975,7 @@ export default function AdminSettings() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    {t.shippingZones}
+                    {tl.shippingZones}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1051,7 +1052,7 @@ export default function AdminSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="theme">{t.theme}</Label>
+                    <Label htmlFor="theme">{tl.theme}</Label>
                     <Select
                       value={settings.appearance.theme}
                       onValueChange={(value) => setSettings(prev => ({
@@ -1070,7 +1071,7 @@ export default function AdminSettings() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="primaryColor">{t.primaryColor}</Label>
+                    <Label htmlFor="primaryColor">{tl.primaryColor}</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         id="primaryColor"
@@ -1098,7 +1099,7 @@ export default function AdminSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="logoUrl">{t.logoUrl}</Label>
+                    <Label htmlFor="logoUrl">{tl.logoUrl}</Label>
                     <Input
                       id="logoUrl"
                       value={settings.appearance.logoUrl}
@@ -1109,7 +1110,7 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="faviconUrl">{t.faviconUrl}</Label>
+                    <Label htmlFor="faviconUrl">{tl.faviconUrl}</Label>
                     <Input
                       id="faviconUrl"
                       value={settings.appearance.faviconUrl}

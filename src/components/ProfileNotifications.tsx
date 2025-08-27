@@ -54,7 +54,7 @@ const ProfileNotifications = () => {
       promotions: false
     }
   });
-  const { language } = useLanguage();
+  const { language, t: tCommon } = useLanguage();
   const { toast } = useToast();
 
   const translations = {
@@ -129,7 +129,7 @@ const ProfileNotifications = () => {
     }
   };
 
-  const t = translations[language as keyof typeof translations] || translations.en;
+  const tl = translations[language as keyof typeof translations] || translations.en;
 
   const handleToggle = (category: keyof NotificationSettings, setting: string) => {
     setSettings(prev => ({
@@ -144,8 +144,8 @@ const ProfileNotifications = () => {
   const handleSave = () => {
     // In a real app, this would save to the backend
     toast({
-      title: "Thành công",
-      description: t.settingsSaved,
+      title: tCommon('success'),
+      description: tl.settingsSaved,
     });
   };
 
@@ -230,15 +230,15 @@ const ProfileNotifications = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold mb-2">{t.title}</h2>
-          <p className="text-muted-foreground">{t.subtitle}</p>
+          <h2 className="text-2xl font-bold mb-2">{tl.title}</h2>
+          <p className="text-muted-foreground">{tl.subtitle}</p>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" size="sm" onClick={handleEnableAll}>
-            {t.enableAll}
+            {tl.enableAll}
           </Button>
           <Button variant="outline" size="sm" onClick={handleDisableAll}>
-            {t.disableAll}
+            {tl.disableAll}
           </Button>
         </div>
       </div>
@@ -248,38 +248,38 @@ const ProfileNotifications = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Mail className="h-5 w-5 mr-2" />
-            {t.email}
+            {tl.email}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <NotificationItem
             icon={<ShoppingBag className="h-4 w-4" />}
-            title={t.orderUpdates}
-            description={t.orderUpdatesDesc}
+            title={tl.orderUpdates}
+            description={tl.orderUpdatesDesc}
             checked={settings.email.orderUpdates}
             onToggle={() => handleToggle('email', 'orderUpdates')}
           />
           
           <NotificationItem
             icon={<Tag className="h-4 w-4" />}
-            title={t.promotions}
-            description={t.promotionsDesc}
+            title={tl.promotions}
+            description={tl.promotionsDesc}
             checked={settings.email.promotions}
             onToggle={() => handleToggle('email', 'promotions')}
           />
           
           <NotificationItem
             icon={<Bell className="h-4 w-4" />}
-            title={t.newsletters}
-            description={t.newslettersDesc}
+            title={tl.newsletters}
+            description={tl.newslettersDesc}
             checked={settings.email.newsletters}
             onToggle={() => handleToggle('email', 'newsletters')}
           />
           
           <NotificationItem
             icon={<Star className="h-4 w-4" />}
-            title={t.productRecommendations}
-            description={t.productRecommendationsDesc}
+            title={tl.productRecommendations}
+            description={tl.productRecommendationsDesc}
             checked={settings.email.productRecommendations}
             onToggle={() => handleToggle('email', 'productRecommendations')}
           />
@@ -291,38 +291,38 @@ const ProfileNotifications = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Bell className="h-5 w-5 mr-2" />
-            {t.push}
+            {tl.push}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <NotificationItem
             icon={<ShoppingBag className="h-4 w-4" />}
-            title={t.orderUpdates}
-            description={t.orderUpdatesDesc}
+            title={tl.orderUpdates}
+            description={tl.orderUpdatesDesc}
             checked={settings.push.orderUpdates}
             onToggle={() => handleToggle('push', 'orderUpdates')}
           />
           
           <NotificationItem
             icon={<Tag className="h-4 w-4" />}
-            title={t.promotions}
-            description={t.promotionsDesc}
+            title={tl.promotions}
+            description={tl.promotionsDesc}
             checked={settings.push.promotions}
             onToggle={() => handleToggle('push', 'promotions')}
           />
           
           <NotificationItem
             icon={<ShoppingBag className="h-4 w-4" />}
-            title={t.backInStock}
-            description={t.backInStockDesc}
+            title={tl.backInStock}
+            description={tl.backInStockDesc}
             checked={settings.push.backInStock}
             onToggle={() => handleToggle('push', 'backInStock')}
           />
           
           <NotificationItem
             icon={<Tag className="h-4 w-4" />}
-            title={t.priceDrops}
-            description={t.priceDropsDesc}
+            title={tl.priceDrops}
+            description={tl.priceDropsDesc}
             checked={settings.push.priceDrops}
             onToggle={() => handleToggle('push', 'priceDrops')}
           />
@@ -334,22 +334,22 @@ const ProfileNotifications = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Smartphone className="h-5 w-5 mr-2" />
-            {t.sms}
+            {tl.sms}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <NotificationItem
             icon={<ShoppingBag className="h-4 w-4" />}
-            title={t.orderUpdates}
-            description={t.orderUpdatesDesc}
+            title={tl.orderUpdates}
+            description={tl.orderUpdatesDesc}
             checked={settings.sms.orderUpdates}
             onToggle={() => handleToggle('sms', 'orderUpdates')}
           />
           
           <NotificationItem
             icon={<Tag className="h-4 w-4" />}
-            title={t.promotions}
-            description={t.promotionsDesc}
+            title={tl.promotions}
+            description={tl.promotionsDesc}
             checked={settings.sms.promotions}
             onToggle={() => handleToggle('sms', 'promotions')}
           />
@@ -360,7 +360,7 @@ const ProfileNotifications = () => {
       <div className="flex justify-end">
         <Button onClick={handleSave}>
           <Save className="h-4 w-4 mr-2" />
-          {t.save}
+          {tl.save}
         </Button>
       </div>
     </div>

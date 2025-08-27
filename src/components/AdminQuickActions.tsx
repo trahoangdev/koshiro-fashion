@@ -60,7 +60,7 @@ interface AdminQuickActionsProps {
 export default function AdminQuickActions({ stats, onRefresh }: AdminQuickActionsProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t: tCommon } = useLanguage();
 
   const translations = {
     en: {
@@ -122,12 +122,12 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     }
   };
 
-  const t = translations[language as keyof typeof translations] || translations.en;
+  const tl = translations[language as keyof typeof translations] || translations.en;
 
   const quickActions: QuickAction[] = [
     {
       id: 'add-product',
-      title: t.addProduct,
+      title: tl.addProduct,
       description: 'Create a new product',
       icon: <Plus className="h-4 w-4" />,
       action: () => navigate('/admin/products'),
@@ -135,7 +135,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     },
     {
       id: 'add-category',
-      title: t.addCategory,
+      title: tl.addCategory,
       description: 'Create a new category',
       icon: <Package className="h-4 w-4" />,
       action: () => navigate('/admin/categories'),
@@ -143,7 +143,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     },
     {
       id: 'view-orders',
-      title: t.viewOrders,
+      title: tl.viewOrders,
       description: 'View and manage orders',
       icon: <ShoppingCart className="h-4 w-4" />,
       action: () => navigate('/admin/orders'),
@@ -152,7 +152,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     },
     {
       id: 'manage-products',
-      title: t.manageProducts,
+      title: tl.manageProducts,
       description: 'Manage all products',
       icon: <Package className="h-4 w-4" />,
       action: () => navigate('/admin/products'),
@@ -161,7 +161,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     },
     {
       id: 'manage-users',
-      title: t.manageUsers,
+      title: tl.manageUsers,
       description: 'Manage user accounts',
       icon: <Users className="h-4 w-4" />,
       action: () => navigate('/admin/users'),
@@ -170,7 +170,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     },
     {
       id: 'view-analytics',
-      title: t.viewAnalytics,
+      title: tl.viewAnalytics,
       description: 'View detailed analytics',
       icon: <BarChart3 className="h-4 w-4" />,
       action: () => navigate('/admin/analytics'),
@@ -178,7 +178,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     },
     {
       id: 'generate-report',
-      title: t.generateReport,
+      title: tl.generateReport,
       description: 'Generate business reports',
       icon: <FileText className="h-4 w-4" />,
       action: () => navigate('/admin/reports'),
@@ -186,7 +186,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     },
     {
       id: 'system-settings',
-      title: t.systemSettings,
+      title: tl.systemSettings,
       description: 'Configure system settings',
       icon: <Settings className="h-4 w-4" />,
       action: () => navigate('/admin/settings'),
@@ -198,13 +198,13 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
     try {
       action.action();
       toast({
-        title: 'Action executed',
-        description: `${action.title} action completed successfully`,
+        title: tCommon('success'),
+        description: tCommon('updateSuccess'),
       });
     } catch (error) {
       toast({
-        title: 'Action failed',
-        description: 'Failed to execute action',
+        title: tCommon('error'),
+        description: tCommon('errorUpdating'),
         variant: 'destructive',
       });
     }
@@ -212,15 +212,15 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
 
   const handleExportData = () => {
     toast({
-      title: 'Export started',
-      description: 'Data export has been initiated',
+      title: tCommon('success'),
+      description: tCommon('processingRequest'),
     });
   };
 
   const handleImportData = () => {
     toast({
-      title: 'Import started',
-      description: 'Data import has been initiated',
+      title: tCommon('success'),
+      description: tCommon('processingRequest'),
     });
   };
 
@@ -234,7 +234,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t.pendingOrders}
+                    {tl.pendingOrders}
                   </p>
                   <p className="text-2xl font-bold">{stats.pendingOrders}</p>
                 </div>
@@ -248,7 +248,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t.lowStock}
+                    {tl.lowStock}
                   </p>
                   <p className="text-2xl font-bold">{stats.lowStockProducts}</p>
                 </div>
@@ -262,7 +262,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t.newCustomers}
+                    {tl.newCustomers}
                   </p>
                   <p className="text-2xl font-bold">{stats.newCustomers}</p>
                 </div>
@@ -276,7 +276,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t.totalRevenue}
+                    {tl.totalRevenue}
                   </p>
                   <p className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
                 </div>
@@ -293,14 +293,14 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5" />
-              {t.title}
+              {tl.title}
             </CardTitle>
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4 mr-2" />
-                    {t.exportData}
+                    {tl.exportData}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -323,13 +323,13 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
               
               <Button variant="outline" size="sm" onClick={handleImportData}>
                 <Upload className="h-4 w-4 mr-2" />
-                {t.importData}
+                {tl.importData}
               </Button>
               
               {onRefresh && (
                 <Button variant="outline" size="sm" onClick={onRefresh}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  {t.refreshData}
+                  {tl.refreshData}
                 </Button>
               )}
             </div>

@@ -20,6 +20,7 @@ import ProfileSettings from "@/components/ProfileSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, User as UserType } from "@/lib/api";
+import { formatCurrency } from "@/lib/currency";
 
 interface ProfileData {
   name: string;
@@ -322,7 +323,7 @@ export default function Profile() {
                       </div>
                       <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                         <CreditCard className="h-6 w-6 mx-auto mb-2 text-blue-500" />
-                        <div className="text-2xl font-bold text-foreground">{(user as unknown as UserType)?.totalSpent ? new Intl.NumberFormat().format((user as unknown as UserType).totalSpent) : 0}₫</div>
+                        <div className="text-2xl font-bold text-foreground">{formatCurrency(((user as unknown as UserType)?.totalSpent || 0), language)}</div>
                         <div className="text-sm text-muted-foreground">{t.totalSpent}</div>
                       </div>
                     </div>

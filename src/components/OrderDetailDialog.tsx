@@ -293,12 +293,12 @@ export default function OrderDetailDialog({
         setIsDeleting(true);
         await onDelete(order._id);
         toast({
-          title: t.orderDeleted || 'Order deleted successfully',
+          title: 'Order deleted successfully',
         });
         onClose();
       } catch (error) {
         toast({
-          title: t.deleteFailed || 'Failed to delete order',
+          title: 'Failed to delete order',
           description: error instanceof Error ? error.message : 'Unknown error',
           variant: 'destructive',
         });
@@ -349,13 +349,10 @@ export default function OrderDetailDialog({
                 <Mail className="h-4 w-4 mr-2" />
                 {t.sendEmail}
               </Button>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                {t.downloadInvoice}
-              </Button>
-              <Button variant="outline" size="sm" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
+                             <Button variant="outline" size="sm">
+                 <Download className="h-4 w-4 mr-2" />
+                 {t.downloadInvoice}
+               </Button>
             </div>
           </div>
         </DialogHeader>
@@ -390,17 +387,12 @@ export default function OrderDetailDialog({
                     <SelectValue placeholder={t.updateStatus} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">{t.pending}</SelectItem>
-                    <SelectItem value="processing">{t.processing}</SelectItem>
-                    <SelectItem value="shipped">{t.shipped}</SelectItem>
-                    <SelectItem value="delivered">{t.delivered}</SelectItem>
-                    <SelectItem value="completed">{t.completed}</SelectItem>
                     <SelectItem value="cancelled">{t.cancelled}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button 
                   onClick={handleUpdateStatus} 
-                  disabled={isUpdating || newStatus === order.status}
+                  disabled={isUpdating || newStatus === order.status || order.status === 'cancelled'}
                   size="sm"
                 >
                   {isUpdating ? 'Updating...' : t.updateStatus}
@@ -418,16 +410,16 @@ export default function OrderDetailDialog({
                   {t.customerInfo}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="font-medium">{order.userId?.name}</p>
-                  <p className="text-sm text-muted-foreground">{order.userId?.email}</p>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4" />
-                  <span>{order.shippingAddress?.phone || 'N/A'}</span>
-                </div>
-              </CardContent>
+                           <CardContent className="space-y-3">
+               <div>
+                 <p className="font-medium">{order.userId?.name}</p>
+                 <p className="text-sm text-muted-foreground">{order.userId?.email}</p>
+               </div>
+               <div className="flex items-center gap-2 text-sm">
+                 <Phone className="h-4 w-4" />
+                 <span>{order.userId?.phone || 'N/A'}</span>
+               </div>
+             </CardContent>
             </Card>
 
             {/* Shipping Address */}
@@ -438,14 +430,13 @@ export default function OrderDetailDialog({
                   {t.shippingAddress}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="font-medium">{order.shippingAddress?.fullName}</p>
-                <p className="text-sm">{order.shippingAddress?.address}</p>
-                <p className="text-sm">
-                  {order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}
-                </p>
-                <p className="text-sm">{order.shippingAddress?.country}</p>
-              </CardContent>
+                           <CardContent className="space-y-2">
+               <p className="font-medium">{order.shippingAddress?.name}</p>
+               <p className="text-sm">{order.shippingAddress?.address}</p>
+               <p className="text-sm">
+                 {order.shippingAddress?.city}, {order.shippingAddress?.district}
+               </p>
+             </CardContent>
             </Card>
           </div>
 
@@ -459,10 +450,10 @@ export default function OrderDetailDialog({
                 {order.items.map((item, index) => (
                   <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
                     <div className="w-16 h-16 bg-muted rounded overflow-hidden">
-                      {item.product?.images && item.product.images.length > 0 ? (
+                      {item.productId?.images && item.productId.images.length > 0 ? (
                         <img
-                          src={item.product.images[0]}
-                          alt={item.product.name}
+                          src={item.productId.images[0]}
+                          alt={item.productId.name}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -472,14 +463,14 @@ export default function OrderDetailDialog({
                       )}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium">{item.product?.name}</h4>
+                      <h4 className="font-medium">{item.productId?.name || item.name}</h4>
                       <p className="text-sm text-muted-foreground">
                         {item.size} • {item.color}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">
-                        {t.quantity}: {item.quantity}
+                        {language === 'vi' ? 'Số lượng' : language === 'ja' ? '数量' : 'Quantity'}: {item.quantity}
                       </p>
                       <p className="font-medium">
                         {formatCurrencyForDisplay(item.price)}
@@ -505,15 +496,15 @@ export default function OrderDetailDialog({
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span>{t.subtotal}</span>
-                  <span>{formatCurrencyForDisplay(order.subtotal)}</span>
+                  <span>{formatCurrencyForDisplay(order.totalAmount)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>{t.shipping}</span>
-                  <span>{formatCurrencyForDisplay(order.shippingCost)}</span>
+                  <span>{formatCurrencyForDisplay(0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>{t.tax}</span>
-                  <span>{formatCurrencyForDisplay(order.taxAmount)}</span>
+                  <span>{formatCurrencyForDisplay(0)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
@@ -533,9 +524,9 @@ export default function OrderDetailDialog({
                   {t.paymentMethod}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p>{order.paymentMethod?.name || 'N/A'}</p>
-              </CardContent>
+                             <CardContent>
+                 <p>{order.paymentMethod || 'N/A'}</p>
+               </CardContent>
             </Card>
 
             <Card>
@@ -545,9 +536,9 @@ export default function OrderDetailDialog({
                   {t.trackingNumber}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p>{order.trackingNumber || 'N/A'}</p>
-              </CardContent>
+                             <CardContent>
+                 <p>N/A</p>
+               </CardContent>
             </Card>
           </div>
 

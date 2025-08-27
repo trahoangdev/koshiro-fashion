@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Product } from "@/lib/api";
-import { ShoppingBag, Heart, Star, GitCompare } from "lucide-react";
+import { ShoppingBag, Heart, Star, GitCompare, Link as LinkIcon } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
@@ -116,6 +116,32 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                 {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
               </Badge>
             )}
+            
+            {/* Action Icons - Same design as Flash Sale */}
+            <div className="absolute top-2 right-2 flex flex-col gap-2">
+              {onAddToWishlist && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 bg-white/90 hover:bg-white rounded-full shadow-md"
+                  onClick={handleAddToWishlist}
+                  title={language === 'vi' ? 'Thêm vào yêu thích' : language === 'ja' ? 'お気に入りに追加' : 'Add to Wishlist'}
+                >
+                  <Heart className="h-4 w-4 text-gray-700" />
+                </Button>
+              )}
+              {onAddToCompare && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 bg-white/90 hover:bg-white rounded-full shadow-md"
+                  onClick={handleAddToCompare}
+                  title={language === 'vi' ? 'Thêm vào so sánh' : language === 'ja' ? '比較リストに追加' : 'Add to Compare'}
+                >
+                  <LinkIcon className="h-4 w-4 text-gray-700" />
+                </Button>
+              )}
+            </div>
           </div>
           
           <CardContent className="flex-1 p-4">
@@ -126,25 +152,143 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                   {getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
                 </p>
                 
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-1">
+                {/* Rating - Same design as Flash Sale */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center">
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                    <span className="text-sm text-muted-foreground ml-2">(4.5)</span>
-                  </div>
-                  
-                  <div className="flex gap-1">
-                    {product.colors?.slice(0, 3).map((color) => (
-                      <div
-                        key={color}
-                        className="w-4 h-4 rounded-full border border-border"
-                        style={{ 
-                          backgroundColor: color === 'natural' ? '#f5f5dc' : 
-                                         color === 'walnut' ? '#8b4513' : color 
-                        }}
+                      <Star
+                        key={star}
+                        className={`h-3 w-3 ${
+                          star <= 4 // Mock rating of 4 stars
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-gray-300'
+                        }`}
                       />
                     ))}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    (4.0)
+                  </span>
+                  </div>
+                  
+                {/* Colors - Always show colors section */}
+                <div className="mb-3">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {language === 'vi' ? 'Màu sắc' : language === 'ja' ? '色' : 'Colors'}:
+                  </p>
+                  <div className="flex gap-1">
+                    {/* Show actual colors if available */}
+                    {product.colors && product.colors.length > 0 ? (
+                      <>
+                        {product.colors.slice(0, 4).map((color, index) => (
+                      <div
+                            key={index}
+                            className="w-4 h-4 rounded-full border border-gray-300"
+                        style={{ 
+                              backgroundColor: 
+                                // Vietnamese colors
+                                color === 'Đỏ' ? '#ef4444' :
+                                color === 'Xanh dương' ? '#3b82f6' :
+                                color === 'Xanh nhạt' ? '#93c5fd' :
+                                color === 'Xanh lá' ? '#22c55e' :
+                                color === 'Vàng' ? '#eab308' :
+                                color === 'Hồng' ? '#ec4899' :
+                                color === 'Tím' ? '#a855f7' :
+                                color === 'Cam' ? '#f97316' :
+                                color === 'Nâu' ? '#a16207' :
+                                color === 'Đen' ? '#000000' :
+                                color === 'Trắng' ? '#ffffff' :
+                                color === 'Xám' ? '#6b7280' :
+                                color === 'Xám đậm' ? '#374151' :
+                                color === 'Xám nhạt' ? '#d1d5db' :
+                                
+                                // English colors
+                                color === 'Red' ? '#ef4444' :
+                                color === 'Blue' ? '#3b82f6' :
+                                color === 'Light Blue' ? '#93c5fd' :
+                                color === 'Green' ? '#22c55e' :
+                                color === 'Yellow' ? '#eab308' :
+                                color === 'Pink' ? '#ec4899' :
+                                color === 'Purple' ? '#a855f7' :
+                                color === 'Orange' ? '#f97316' :
+                                color === 'Brown' ? '#a16207' :
+                                color === 'Black' ? '#000000' :
+                                color === 'White' ? '#ffffff' :
+                                color === 'Gray' ? '#6b7280' :
+                                color === 'Dark Gray' ? '#374151' :
+                                color === 'Light Gray' ? '#d1d5db' :
+                                
+                                // Japanese colors
+                                color === '赤' ? '#ef4444' :
+                                color === '青' ? '#3b82f6' :
+                                color === '薄い青' ? '#93c5fd' :
+                                color === '緑' ? '#22c55e' :
+                                color === '黄色' ? '#eab308' :
+                                color === 'ピンク' ? '#ec4899' :
+                                color === '紫' ? '#a855f7' :
+                                color === 'オレンジ' ? '#f97316' :
+                                color === '茶色' ? '#a16207' :
+                                color === '黒' ? '#000000' :
+                                color === '白' ? '#ffffff' :
+                                color === 'グレー' ? '#6b7280' :
+                                color === '濃いグレー' ? '#374151' :
+                                color === '薄いグレー' ? '#d1d5db' :
+                                
+                                // Special colors
+                                color === 'Đa sắc' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
+                                color === 'Multicolor' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
+                                color === 'マルチカラー' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
+                                color === 'Bạc' ? '#c0c0c0' :
+                                color === 'Silver' ? '#c0c0c0' :
+                                color === 'シルバー' ? '#c0c0c0' :
+                                color === 'Vàng kim' ? '#fbbf24' :
+                                color === 'Gold' ? '#fbbf24' :
+                                color === 'ゴールド' ? '#fbbf24' :
+                                color === 'Đồng' ? '#cd7f32' :
+                                color === 'Bronze' ? '#cd7f32' :
+                                color === 'ブロンズ' ? '#cd7f32' :
+                                
+                                // Material colors
+                                color === 'natural' ? '#f5f5dc' :
+                                color === 'walnut' ? '#8b4513' :
+                                color === 'beige' ? '#f5f5dc' :
+                                color === 'cream' ? '#fefce8' :
+                                color === 'ivory' ? '#fffff0' :
+                                color === 'navy' ? '#1e3a8a' :
+                                color === 'maroon' ? '#7f1d1d' :
+                                color === 'olive' ? '#3f6212' :
+                                color === 'teal' ? '#0f766e' :
+                                color === 'coral' ? '#f97316' :
+                                color === 'lavender' ? '#e0e7ff' :
+                                color === 'mint' ? '#ecfdf5' :
+                                color === 'peach' ? '#fed7aa' :
+                                color === 'rose' ? '#fce7f3' :
+                                color === 'sage' ? '#f0fdf4' :
+                                color === 'slate' ? '#f8fafc' :
+                                
+                                // Default fallback
+                                '#6b7280'
+                            }}
+                            title={color}
+                      />
+                    ))}
+                        {product.colors.length > 4 && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            +{product.colors.length - 4}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      /* Show default colors when no colors are specified */
+                      <>
+                        <div className="w-4 h-4 rounded-full border border-gray-300 bg-gray-300" title="Default" />
+                        <div className="w-4 h-4 rounded-full border border-gray-300 bg-blue-300" title="Default" />
+                        <div className="w-4 h-4 rounded-full border border-gray-300 bg-green-300" title="Default" />
+                        <span className="text-xs text-muted-foreground ml-1">
+                          {language === 'vi' ? 'Mặc định' : language === 'ja' ? 'デフォルト' : 'Default'}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 
@@ -162,7 +306,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
               
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="flex items-center space-x-2">
-                  <span className="text-xl font-bold text-primary">
+                  <span className="text-xl font-bold text-red-600">
                     {formatCurrency(displayPrice, language)}
                   </span>
                   {originalDisplayPrice && originalDisplayPrice > displayPrice && (
@@ -171,23 +315,6 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                     </span>
                   )}
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAddToWishlist}
-                  >
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAddToCompare}
-                  >
-                    <GitCompare className="h-4 w-4" />
-                  </Button>
                   
                   <Button
                     variant={product.stock <= 0 ? "secondary" : "default"}
@@ -196,15 +323,8 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                     onClick={handleAddToCart}
                   >
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    {product.stock <= 0 ? 
-                      (language === 'vi' ? 'Hết hàng' : 
-                       language === 'ja' ? '在庫切れ' : 
-                       'Out of stock') : 
-                      (language === 'vi' ? 'Thêm vào giỏ' : 
-                       language === 'ja' ? 'カートに追加' : 
-                       'Add to cart')}
+                  {language === 'vi' ? 'Thêm vào giỏ' : language === 'ja' ? 'カートに追加' : 'Add to Cart'}
                   </Button>
-                </div>
               </div>
             </div>
           </CardContent>
@@ -242,26 +362,30 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           </Badge>
         )}
         
-        {/* Action Buttons - Positioned to avoid conflicts with badges */}
-        <div className="absolute top-12 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex flex-col space-y-1">
+        {/* Action Icons - Same design as Flash Sale */}
+        <div className="absolute top-2 right-2 flex flex-col gap-2">
+          {onAddToWishlist && (
             <Button
               variant="ghost"
               size="sm"
-              className="bg-background/80 backdrop-blur-sm"
+              className="h-8 w-8 p-0 bg-white/90 hover:bg-white rounded-full shadow-md"
               onClick={handleAddToWishlist}
+              title={language === 'vi' ? 'Thêm vào yêu thích' : language === 'ja' ? 'お気に入りに追加' : 'Add to Wishlist'}
             >
-              <Heart className="h-4 w-4" />
+              <Heart className="h-4 w-4 text-gray-700" />
             </Button>
+          )}
+          {onAddToCompare && (
             <Button
               variant="ghost"
               size="sm"
-              className="bg-background/80 backdrop-blur-sm"
+              className="h-8 w-8 p-0 bg-white/90 hover:bg-white rounded-full shadow-md"
               onClick={handleAddToCompare}
+              title={language === 'vi' ? 'Thêm vào so sánh' : language === 'ja' ? '比較リストに追加' : 'Add to Compare'}
             >
-              <GitCompare className="h-4 w-4" />
+              <LinkIcon className="h-4 w-4 text-gray-700" />
             </Button>
-          </div>
+          )}
         </div>
       </div>
       
@@ -277,36 +401,150 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
             {getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
           </p>
           
-          {/* Rating and Colors - Compact design */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1">
+          {/* Rating - Same design as Flash Sale */}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center">
               {[1, 2, 3, 4, 5].map((star) => (
-                <Star key={star} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-              ))}
-              <span className="text-xs text-muted-foreground ml-1">(4.5)</span>
-            </div>
-            
-            <div className="flex gap-1">
-              {product.colors?.slice(0, 3).map((color) => (
-                <div
-                  key={color}
-                  className="w-3 h-3 rounded-full border border-border"
-                  style={{ 
-                    backgroundColor: color === 'natural' ? '#f5f5dc' : 
-                                   color === 'walnut' ? '#8b4513' : color 
-                  }}
+                <Star
+                  key={star}
+                  className={`h-3 w-3 ${
+                    star <= 4 // Mock rating of 4 stars
+                      ? 'text-yellow-400 fill-current'
+                      : 'text-gray-300'
+                  }`}
                 />
               ))}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              (4.0)
+            </span>
+            </div>
+            
+          {/* Colors - Always show colors section */}
+          <div className="mb-3">
+            <p className="text-xs text-muted-foreground mb-1">
+              {language === 'vi' ? 'Màu sắc' : language === 'ja' ? '色' : 'Colors'}:
+            </p>
+            <div className="flex gap-1">
+              {/* Show actual colors if available */}
+              {product.colors && product.colors.length > 0 ? (
+                <>
+                  {product.colors.slice(0, 4).map((color, index) => (
+                <div
+                      key={index}
+                      className="w-4 h-4 rounded-full border border-gray-300"
+                  style={{ 
+                        backgroundColor: 
+                          // Vietnamese colors
+                          color === 'Đỏ' ? '#ef4444' :
+                          color === 'Xanh dương' ? '#3b82f6' :
+                          color === 'Xanh nhạt' ? '#93c5fd' :
+                          color === 'Xanh lá' ? '#22c55e' :
+                          color === 'Vàng' ? '#eab308' :
+                          color === 'Hồng' ? '#ec4899' :
+                          color === 'Tím' ? '#a855f7' :
+                          color === 'Cam' ? '#f97316' :
+                          color === 'Nâu' ? '#a16207' :
+                          color === 'Đen' ? '#000000' :
+                          color === 'Trắng' ? '#ffffff' :
+                          color === 'Xám' ? '#6b7280' :
+                          color === 'Xám đậm' ? '#374151' :
+                          color === 'Xám nhạt' ? '#d1d5db' :
+                          
+                          // English colors
+                          color === 'Red' ? '#ef4444' :
+                          color === 'Blue' ? '#3b82f6' :
+                          color === 'Light Blue' ? '#93c5fd' :
+                          color === 'Green' ? '#22c55e' :
+                          color === 'Yellow' ? '#eab308' :
+                          color === 'Pink' ? '#ec4899' :
+                          color === 'Purple' ? '#a855f7' :
+                          color === 'Orange' ? '#f97316' :
+                          color === 'Brown' ? '#a16207' :
+                          color === 'Black' ? '#000000' :
+                          color === 'White' ? '#ffffff' :
+                          color === 'Gray' ? '#6b7280' :
+                          color === 'Dark Gray' ? '#374151' :
+                          color === 'Light Gray' ? '#d1d5db' :
+                          
+                          // Japanese colors
+                          color === '赤' ? '#ef4444' :
+                          color === '青' ? '#3b82f6' :
+                          color === '薄い青' ? '#93c5fd' :
+                          color === '緑' ? '#22c55e' :
+                          color === '黄色' ? '#eab308' :
+                          color === 'ピンク' ? '#ec4899' :
+                          color === '紫' ? '#a855f7' :
+                          color === 'オレンジ' ? '#f97316' :
+                          color === '茶色' ? '#a16207' :
+                          color === '黒' ? '#000000' :
+                          color === '白' ? '#ffffff' :
+                          color === 'グレー' ? '#6b7280' :
+                          color === '濃いグレー' ? '#374151' :
+                          color === '薄いグレー' ? '#d1d5db' :
+                          
+                          // Special colors
+                          color === 'Đa sắc' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
+                          color === 'Multicolor' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
+                          color === 'マルチカラー' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
+                          color === 'Bạc' ? '#c0c0c0' :
+                          color === 'Silver' ? '#c0c0c0' :
+                          color === 'シルバー' ? '#c0c0c0' :
+                          color === 'Vàng kim' ? '#fbbf24' :
+                          color === 'Gold' ? '#fbbf24' :
+                          color === 'ゴールド' ? '#fbbf24' :
+                          color === 'Đồng' ? '#cd7f32' :
+                          color === 'Bronze' ? '#cd7f32' :
+                          color === 'ブロンズ' ? '#cd7f32' :
+                          
+                          // Material colors
+                          color === 'natural' ? '#f5f5dc' :
+                          color === 'walnut' ? '#8b4513' :
+                          color === 'beige' ? '#f5f5dc' :
+                          color === 'cream' ? '#fefce8' :
+                          color === 'ivory' ? '#fffff0' :
+                          color === 'navy' ? '#1e3a8a' :
+                          color === 'maroon' ? '#7f1d1d' :
+                          color === 'olive' ? '#3f6212' :
+                          color === 'teal' ? '#0f766e' :
+                          color === 'coral' ? '#f97316' :
+                          color === 'lavender' ? '#e0e7ff' :
+                          color === 'mint' ? '#ecfdf5' :
+                          color === 'peach' ? '#fed7aa' :
+                          color === 'rose' ? '#fce7f3' :
+                          color === 'sage' ? '#f0fdf4' :
+                          color === 'slate' ? '#f8fafc' :
+                          
+                          // Default fallback
+                          '#6b7280'
+                      }}
+                      title={color}
+                />
+              ))}
+                  {product.colors.length > 4 && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      +{product.colors.length - 4}
+                    </span>
+                  )}
+                </>
+              ) : (
+                /* Show default colors when no colors are specified */
+                <>
+                  <div className="w-4 h-4 rounded-full border border-gray-300 bg-gray-300" title="Default" />
+                  <div className="w-4 h-4 rounded-full border border-gray-300 bg-blue-300" title="Default" />
+                  <div className="w-4 h-4 rounded-full border border-gray-300 bg-green-300" title="Default" />
+                  <span className="text-xs text-muted-foreground ml-1">
+                    {language === 'vi' ? 'Mặc định' : language === 'ja' ? 'デフォルト' : 'Default'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
         
-        {/* Price and Actions - Fixed bottom section */}
-        <div className="space-y-3 mt-auto pt-3 border-t">
-          {/* Price Section - Better layout */}
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg font-bold text-primary">
+        {/* Price - Same design as Flash Sale */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-lg font-bold text-red-600">
                 {formatCurrency(displayPrice, language)}
               </span>
               {originalDisplayPrice && originalDisplayPrice > displayPrice && (
@@ -314,37 +552,18 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                   {formatCurrency(originalDisplayPrice, language)}
                 </span>
               )}
-            </div>
-            {/* Stock Status */}
-            <p className="text-xs text-muted-foreground">
-              {product.stock > 0 ? 
-                (language === 'vi' ? `${product.stock} còn lại` : 
-                 language === 'ja' ? `残り${product.stock}個` : 
-                 `${product.stock} left`) : 
-                (language === 'vi' ? 'Hết hàng' : 
-                 language === 'ja' ? '在庫切れ' : 
-                 'Out of stock')}
-            </p>
           </div>
           
-          {/* Action Button - Responsive */}
+        {/* Add to Cart Button - Same design as Flash Sale */}
           <Button
-            variant={product.stock <= 0 ? "secondary" : "default"}
+          onClick={handleAddToCart}
+          disabled={product.stock <= 0}
+          className="w-full"
             size="sm"
-            disabled={product.stock <= 0}
-            onClick={handleAddToCart}
-            className="w-full text-xs"
-          >
-            <ShoppingBag className="mr-1 h-3 w-3" />
-            {product.stock <= 0 ? 
-              (language === 'vi' ? 'Hết hàng' : 
-               language === 'ja' ? '在庫切れ' : 
-               'Out of stock') : 
-              (language === 'vi' ? 'Thêm vào giỏ' : 
-               language === 'ja' ? 'カートに追加' : 
-               'Add to cart')}
+        >
+          <ShoppingBag className="h-4 w-4 mr-2" />
+          {language === 'vi' ? 'Thêm vào giỏ' : language === 'ja' ? 'カートに追加' : 'Add to Cart'}
           </Button>
-        </div>
       </CardContent>
     </Card>
   );

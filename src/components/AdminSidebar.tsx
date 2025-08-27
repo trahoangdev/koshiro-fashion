@@ -37,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNotifications } from "@/contexts/NotificationsContext";
 import { api } from "@/lib/api";
 
 interface AdminSidebarProps {
@@ -62,110 +63,7 @@ interface MenuGroup {
   items: MenuItem[];
 }
 
-const menuGroups: MenuGroup[] = [
-  {
-    title: "Tổng Quan",
-    titleEn: "Overview",
-    titleJa: "概要",
-    items: [
-      {
-        id: "dashboard",
-        label: "Bảng điều khiển",
-        labelEn: "Dashboard",
-        labelJa: "ダッシュボード",
-        icon: LayoutDashboard,
-        path: "/admin"
-      },
-      {
-        id: "analytics",
-        label: "Phân tích",
-        labelEn: "Analytics",
-        labelJa: "分析",
-        icon: BarChart3,
-        path: "/admin/analytics",
-        isNew: true
-      }
-    ]
-  },
-  {
-    title: "Quản Lý",
-    titleEn: "Management",
-    titleJa: "管理",
-    items: [
-      {
-        id: "products",
-        label: "Sản phẩm",
-        labelEn: "Products",
-        labelJa: "商品",
-        icon: Package,
-        path: "/admin/products"
-      },
-      {
-        id: "categories",
-        label: "Danh mục",
-        labelEn: "Categories",
-        labelJa: "カテゴリ",
-        icon: Tag,
-        path: "/admin/categories"
-      },
-      {
-        id: "orders",
-        label: "Đơn hàng",
-        labelEn: "Orders",
-        labelJa: "注文",
-        icon: ShoppingCart,
-        path: "/admin/orders"
-      },
-      {
-        id: "users",
-        label: "Người dùng",
-        labelEn: "Users",
-        labelJa: "ユーザー",
-        icon: Users,
-        path: "/admin/users"
-      },
-      {
-        id: "reviews",
-        label: "Đánh giá",
-        labelEn: "Reviews",
-        labelJa: "レビュー",
-        icon: MessageSquare,
-        path: "/admin/reviews"
-      }
-    ]
-  },
-  {
-    title: "Hệ Thống",
-    titleEn: "System",
-    titleJa: "システム",
-    items: [
-      {
-        id: "settings",
-        label: "Cài đặt",
-        labelEn: "Settings",
-        labelJa: "設定",
-        icon: Settings,
-        path: "/admin/settings"
-      },
-      {
-        id: "reports",
-        label: "Báo cáo",
-        labelEn: "Reports",
-        labelJa: "レポート",
-        icon: FileText,
-        path: "/admin/reports"
-      },
-      {
-        id: "activity",
-        label: "Hoạt động",
-        labelEn: "Activity",
-        labelJa: "アクティビティ",
-        icon: Activity,
-        path: "/admin/activity"
-      }
-    ]
-  }
-];
+// Menu groups will be generated dynamically inside the component
 
 function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
   const navigate = useNavigate();
@@ -173,9 +71,130 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
   const { toast } = useToast();
   const { logout, user } = useAuth();
   const { language, setLanguage } = useLanguage();
-  const [notifications, setNotifications] = useState(0);
+  const { unreadCount } = useNotifications();
   const [ordersCount, setOrdersCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Define menu groups with access to component state
+  const menuGroups: MenuGroup[] = [
+    {
+      title: "Tổng Quan",
+      titleEn: "Overview",
+      titleJa: "概要",
+      items: [
+        {
+          id: "dashboard",
+          label: "Bảng điều khiển",
+          labelEn: "Dashboard",
+          labelJa: "ダッシュボード",
+          icon: LayoutDashboard,
+          path: "/admin"
+        }
+      ]
+    },
+    {
+      title: "Quản Lý",
+      titleEn: "Management",
+      titleJa: "管理",
+      items: [
+        {
+          id: "products",
+          label: "Sản phẩm",
+          labelEn: "Products",
+          labelJa: "商品",
+          icon: Package,
+          path: "/admin/products"
+        },
+        {
+          id: "categories",
+          label: "Danh mục",
+          labelEn: "Categories",
+          labelJa: "カテゴリ",
+          icon: Tag,
+          path: "/admin/categories"
+        },
+        {
+          id: "orders",
+          label: "Đơn hàng",
+          labelEn: "Orders",
+          labelJa: "注文",
+          icon: ShoppingCart,
+          path: "/admin/orders"
+        },
+        {
+          id: "users",
+          label: "Người dùng",
+          labelEn: "Users",
+          labelJa: "ユーザー",
+          icon: Users,
+          path: "/admin/users"
+        },
+        {
+          id: "reviews",
+          label: "Đánh giá",
+          labelEn: "Reviews",
+          labelJa: "レビュー",
+          icon: MessageSquare,
+          path: "/admin/reviews"
+        }
+      ]
+    },
+    {
+      title: "Báo Cáo & Phân Tích",
+      titleEn: "Reports & Analytics",
+      titleJa: "レポートと分析",
+      items: [
+        {
+          id: "reports",
+          label: "Báo cáo",
+          labelEn: "Reports",
+          labelJa: "レポート",
+          icon: FileText,
+          path: "/admin/reports"
+        },
+        {
+          id: "analytics",
+          label: "Phân tích",
+          labelEn: "Analytics",
+          labelJa: "分析",
+          icon: BarChart3,
+          path: "/admin/analytics"
+        }
+      ]
+    },
+    {
+      title: "Hệ Thống",
+      titleEn: "System",
+      titleJa: "システム",
+      items: [
+        {
+          id: "notifications",
+          label: "Thông báo",
+          labelEn: "Notifications",
+          labelJa: "通知",
+          icon: Bell,
+          path: "/admin/notifications",
+          badge: unreadCount > 0 ? unreadCount.toString() : undefined
+        },
+        {
+          id: "settings",
+          label: "Cài đặt",
+          labelEn: "Settings",
+          labelJa: "設定",
+          icon: Settings,
+          path: "/admin/settings"
+        },
+        {
+          id: "activity",
+          label: "Hoạt động",
+          labelEn: "Activity",
+          labelJa: "アクティビティ",
+          icon: Activity,
+          path: "/admin/activity"
+        }
+      ]
+    }
+  ];
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
@@ -227,37 +246,22 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
     }
   };
 
-  // Load real data for counts
+  // Load orders count
   useEffect(() => {
-    const loadCounts = async () => {
+    const loadOrdersCount = async () => {
       try {
         setIsLoading(true);
-        
-        // Load notifications count
-        try {
-          const notificationsResponse = await api.getNotifications({ limit: 1 });
-          setNotifications(notificationsResponse.unreadCount || 0);
-        } catch (error) {
-          console.error('Failed to load notifications count:', error);
-          setNotifications(0);
-        }
-
-        // Load orders count (total orders)
-        try {
-          const ordersResponse = await api.getAdminOrders({ limit: 1 });
-          setOrdersCount(ordersResponse.pagination?.total || 0);
-        } catch (error) {
-          console.error('Failed to load orders count:', error);
-          setOrdersCount(0);
-        }
+        const ordersResponse = await api.getAdminOrders({ limit: 1 });
+        setOrdersCount(ordersResponse.pagination?.total || 0);
       } catch (error) {
-        console.error('Error loading counts:', error);
+        console.error('Failed to load orders count:', error);
+        setOrdersCount(0);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadCounts();
+    loadOrdersCount();
   }, []);
 
   return (
@@ -374,9 +378,9 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="relative">
                     <Bell className="h-4 w-4" />
-                    {notifications > 0 && (
+                    {unreadCount > 0 && (
                       <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs">
-                        {notifications}
+                        {unreadCount}
                       </Badge>
                     )}
                   </Button>
@@ -384,7 +388,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                 <DropdownMenuContent align="end" className="w-80">
                   <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {notifications > 0 ? (
+                  {unreadCount > 0 ? (
                     <div className="max-h-64 overflow-y-auto">
                       <DropdownMenuItem>
                         <div className="flex items-start space-x-3">

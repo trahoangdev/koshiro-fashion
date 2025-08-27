@@ -98,7 +98,7 @@ const CHART_COLORS = [
   "#EC4899", "#6366F1", "#14B8A6", "#F43F5E"
 ];
 
-export default function AdminAnalytics() {
+export default function AdminAnalyticsPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { language } = useLanguage();
@@ -145,50 +145,125 @@ export default function AdminAnalytics() {
           api.getDailyRevenueData(30)
         ]);
 
-        // Transform data for analytics
+        // Transform data for analytics with better data structure
         const analyticsData: AnalyticsData = {
           revenue: {
             total: statsResponse.totalRevenue || 0,
             trend: statsResponse.revenueTrend || 0,
-            monthly: revenueResponse || [],
-            daily: dailyRevenueResponse || [],
-            byCategory: productStatsResponse.map(item => ({
-              category: item.category,
-              revenue: item.revenue,
+            monthly: revenueResponse || [
+              // Fallback data if API returns empty
+              { month: 'Jan', revenue: 0, orders: 0 },
+              { month: 'Feb', revenue: 0, orders: 0 },
+              { month: 'Mar', revenue: 0, orders: 0 },
+              { month: 'Apr', revenue: 0, orders: 0 },
+              { month: 'May', revenue: 0, orders: 0 },
+              { month: 'Jun', revenue: 0, orders: 0 }
+            ],
+            daily: dailyRevenueResponse || [
+              // Fallback daily data
+              { date: '2024-01-01', revenue: 0, orders: 0 },
+              { date: '2024-01-02', revenue: 0, orders: 0 },
+              { date: '2024-01-03', revenue: 0, orders: 0 }
+            ],
+            byCategory: productStatsResponse?.length > 0 ? productStatsResponse.map(item => ({
+              category: item.category || 'Unknown',
+              revenue: item.revenue || 0,
               percentage: 0 // Will be calculated below
-            }))
+            })) : [
+              // Fallback category data
+              { category: 'Kimono', revenue: 0, percentage: 0 },
+              { category: 'Yukata', revenue: 0, percentage: 0 },
+              { category: 'Accessories', revenue: 0, percentage: 0 }
+            ]
           },
           orders: {
             total: statsResponse.totalOrders || 0,
             trend: statsResponse.ordersTrend || 0,
-            byStatus: orderAnalyticsResponse?.byStatus || [],
-            byMonth: orderAnalyticsResponse?.byMonth || [],
-            byHour: orderAnalyticsResponse?.byHour || []
+            byStatus: orderAnalyticsResponse?.byStatus || [
+              // Fallback order status data
+              { status: 'pending', count: 0, percentage: 0 },
+              { status: 'processing', count: 0, percentage: 0 },
+              { status: 'shipped', count: 0, percentage: 0 },
+              { status: 'delivered', count: 0, percentage: 0 },
+              { status: 'cancelled', count: 0, percentage: 0 }
+            ],
+            byMonth: orderAnalyticsResponse?.byMonth || [
+              // Fallback monthly order data
+              { month: 'Jan', orders: 0, revenue: 0 },
+              { month: 'Feb', orders: 0, revenue: 0 },
+              { month: 'Mar', orders: 0, revenue: 0 },
+              { month: 'Apr', orders: 0, revenue: 0 },
+              { month: 'May', orders: 0, revenue: 0 },
+              { month: 'Jun', orders: 0, revenue: 0 }
+            ],
+            byHour: orderAnalyticsResponse?.byHour || [
+              // Fallback hourly data
+              { hour: '00:00', orders: 0 },
+              { hour: '06:00', orders: 0 },
+              { hour: '12:00', orders: 0 },
+              { hour: '18:00', orders: 0 },
+              { hour: '23:00', orders: 0 }
+            ]
           },
           products: {
             total: statsResponse.totalProducts || 0,
-            active: statsResponse.totalProducts || 0, // Assuming all products are active
+            active: statsResponse.totalProducts || 0,
             lowStock: productAnalyticsResponse?.lowStock?.length || 0,
-            byCategory: productStatsResponse.map(item => ({
-              category: item.category,
-              count: item.count,
-              revenue: item.revenue
-            })),
-            topSelling: productAnalyticsResponse?.topSelling || [],
-            performance: productAnalyticsResponse?.performance || []
+            byCategory: productStatsResponse?.length > 0 ? productStatsResponse.map(item => ({
+              category: item.category || 'Unknown',
+              count: item.count || 0,
+              revenue: item.revenue || 0
+            })) : [
+              // Fallback product category data
+              { category: 'Kimono', count: 0, revenue: 0 },
+              { category: 'Yukata', count: 0, revenue: 0 },
+              { category: 'Accessories', count: 0, revenue: 0 }
+            ],
+            topSelling: productAnalyticsResponse?.topSelling || [
+              // Fallback top selling data
+              { name: 'Traditional Kimono', sales: 0, revenue: 0, stock: 0 },
+              { name: 'Summer Yukata', sales: 0, revenue: 0, stock: 0 },
+              { name: 'Obi Belt', sales: 0, revenue: 0, stock: 0 }
+            ],
+            performance: productAnalyticsResponse?.performance || [
+              // Fallback performance data
+              { name: 'Traditional Kimono', views: 0, sales: 0, rating: 0 },
+              { name: 'Summer Yukata', views: 0, sales: 0, rating: 0 },
+              { name: 'Obi Belt', views: 0, sales: 0, rating: 0 }
+            ]
           },
           customers: {
             total: statsResponse.totalUsers || 0,
-            active: statsResponse.totalUsers || 0, // Assuming all users are active
-            newThisMonth: 0, // Will be calculated from customer activity
-            topSpenders: customerAnalyticsResponse?.topSpenders || [],
-            byLocation: customerAnalyticsResponse?.byLocation || [],
-            activity: customerAnalyticsResponse?.activity || []
+            active: statsResponse.totalUsers || 0,
+            newThisMonth: 0,
+            topSpenders: customerAnalyticsResponse?.topSpenders || [
+              // Fallback top spenders data
+              { name: 'Customer 1', email: 'customer1@example.com', totalSpent: 0, orders: 0 },
+              { name: 'Customer 2', email: 'customer2@example.com', totalSpent: 0, orders: 0 },
+              { name: 'Customer 3', email: 'customer3@example.com', totalSpent: 0, orders: 0 }
+            ],
+            byLocation: customerAnalyticsResponse?.byLocation || [
+              // Fallback location data
+              { location: 'Tokyo', customers: 0, revenue: 0 },
+              { location: 'Osaka', customers: 0, revenue: 0 },
+              { location: 'Kyoto', customers: 0, revenue: 0 }
+            ],
+            activity: customerAnalyticsResponse?.activity || [
+              // Fallback activity data
+              { date: '2024-01-01', newCustomers: 0, activeCustomers: 0 },
+              { date: '2024-01-02', newCustomers: 0, activeCustomers: 0 },
+              { date: '2024-01-03', newCustomers: 0, activeCustomers: 0 }
+            ]
           },
           sales: {
             total: statsResponse.totalRevenue || 0,
             average: salesAnalyticsResponse?.averageOrderValue || 0,
-            byPaymentMethod: salesAnalyticsResponse?.byPaymentMethod || [],
+            byPaymentMethod: salesAnalyticsResponse?.byPaymentMethod || [
+              // Fallback payment method data
+              { method: 'Credit Card', count: 0, amount: 0 },
+              { method: 'PayPal', count: 0, amount: 0 },
+              { method: 'Bank Transfer', count: 0, amount: 0 }
+            ],
             conversionRate: salesAnalyticsResponse?.conversionRate || 0,
             cartAbandonment: salesAnalyticsResponse?.cartAbandonment || 0
           }
@@ -203,10 +278,41 @@ export default function AdminAnalytics() {
           }));
         }
 
+        // Calculate percentages for order status
+        const totalOrders = analyticsData.orders.total;
+        if (totalOrders > 0) {
+          analyticsData.orders.byStatus = analyticsData.orders.byStatus.map(item => ({
+            ...item,
+            percentage: Math.round((item.count / totalOrders) * 100)
+          }));
+        }
+
         // Calculate new customers this month from activity data
         if (analyticsData.customers.activity.length > 0) {
           const last30Days = analyticsData.customers.activity.slice(-30);
           analyticsData.customers.newThisMonth = last30Days.reduce((sum, day) => sum + day.newCustomers, 0);
+        }
+
+        // Ensure we have at least some data for charts
+        if (analyticsData.revenue.monthly.length === 0) {
+          analyticsData.revenue.monthly = [
+            { month: 'Jan', revenue: 0, orders: 0 },
+            { month: 'Feb', revenue: 0, orders: 0 },
+            { month: 'Mar', revenue: 0, orders: 0 },
+            { month: 'Apr', revenue: 0, orders: 0 },
+            { month: 'May', revenue: 0, orders: 0 },
+            { month: 'Jun', revenue: 0, orders: 0 }
+          ];
+        }
+
+        if (analyticsData.orders.byStatus.length === 0) {
+          analyticsData.orders.byStatus = [
+            { status: 'pending', count: 0, percentage: 0 },
+            { status: 'processing', count: 0, percentage: 0 },
+            { status: 'shipped', count: 0, percentage: 0 },
+            { status: 'delivered', count: 0, percentage: 0 },
+            { status: 'cancelled', count: 0, percentage: 0 }
+          ];
         }
 
         setData(analyticsData);
@@ -269,6 +375,33 @@ export default function AdminAnalytics() {
       );
     }
     return null;
+  };
+
+  const formatChartValue = (value: number, type: 'currency' | 'number' | 'percentage' = 'number') => {
+    switch (type) {
+      case 'currency':
+        return formatCurrency(value, language);
+      case 'percentage':
+        return `${value}%`;
+      case 'number':
+      default:
+        return value.toLocaleString();
+    }
+  };
+
+  const getChartColors = (dataLength: number) => {
+    const colors = [
+      "#3B82F6", "#EF4444", "#10B981", "#F59E0B", 
+      "#8B5CF6", "#06B6D4", "#F97316", "#84CC16",
+      "#EC4899", "#6366F1", "#14B8A6", "#F43F5E"
+    ];
+    
+    // Ensure we have enough colors for the data
+    while (colors.length < dataLength) {
+      colors.push(...colors);
+    }
+    
+    return colors.slice(0, dataLength);
   };
 
   const translations = {
@@ -528,9 +661,20 @@ export default function AdminAnalytics() {
                   <ResponsiveContainer width="100%" height={300}>
                     <AreaChart data={data.revenue.monthly}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
+                      <XAxis 
+                        dataKey="month" 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickFormatter={(value) => formatCurrency(value, language)}
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />}
+                        formatter={(value: any) => [formatCurrency(value, language), 'Revenue']}
+                      />
                       <Area 
                         type="monotone" 
                         dataKey="revenue" 
@@ -538,6 +682,7 @@ export default function AdminAnalytics() {
                         fill="#3B82F6" 
                         fillOpacity={0.3}
                         name="Revenue"
+                        strokeWidth={2}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -566,10 +711,18 @@ export default function AdminAnalytics() {
                         dataKey="count"
                       >
                         {data.orders.byStatus.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={getChartColors(data.orders.byStatus.length)[index]} 
+                          />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip 
+                        formatter={(value: any, name: any) => [
+                          value.toLocaleString(), 
+                          name === 'count' ? 'Orders' : name
+                        ]}
+                      />
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -587,10 +740,26 @@ export default function AdminAnalytics() {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={data.products.byCategory}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="category" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="count" fill="#10B981" name="Products" />
+                      <XAxis 
+                        dataKey="category" 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickFormatter={(value) => value.toLocaleString()}
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />}
+                        formatter={(value: any) => [value.toLocaleString(), 'Products']}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        fill="#10B981" 
+                        name="Products"
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -635,10 +804,26 @@ export default function AdminAnalytics() {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={data.revenue.byCategory}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="category" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="revenue" fill="#8B5CF6" name="Revenue" />
+                      <XAxis 
+                        dataKey="category" 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickFormatter={(value) => formatCurrency(value, language)}
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />}
+                        formatter={(value: any) => [formatCurrency(value, language), 'Revenue']}
+                      />
+                      <Bar 
+                        dataKey="revenue" 
+                        fill="#8B5CF6" 
+                        name="Revenue"
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -653,10 +838,27 @@ export default function AdminAnalytics() {
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={data.orders.byHour}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="hour" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Line type="monotone" dataKey="orders" stroke="#F59E0B" strokeWidth={2} />
+                      <XAxis 
+                        dataKey="hour" 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickFormatter={(value) => value.toLocaleString()}
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />}
+                        formatter={(value: any) => [value.toLocaleString(), 'Orders']}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="orders" 
+                        stroke="#F59E0B" 
+                        strokeWidth={2}
+                        dot={{ fill: '#F59E0B', strokeWidth: 2, r: 4 }}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -671,11 +873,37 @@ export default function AdminAnalytics() {
                   <ResponsiveContainer width="100%" height={300}>
                     <ComposedChart data={data.customers.activity}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="newCustomers" fill="#EF4444" name="New Customers" />
-                      <Line type="monotone" dataKey="activeCustomers" stroke="#10B981" strokeWidth={2} name="Active Customers" />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickFormatter={(value) => value.toLocaleString()}
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />}
+                        formatter={(value: any, name: any) => [
+                          value.toLocaleString(), 
+                          name === 'newCustomers' ? 'New Customers' : 'Active Customers'
+                        ]}
+                      />
+                      <Bar 
+                        dataKey="newCustomers" 
+                        fill="#EF4444" 
+                        name="New Customers"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="activeCustomers" 
+                        stroke="#10B981" 
+                        strokeWidth={2}
+                        dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                        name="Active Customers"
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -694,50 +922,79 @@ export default function AdminAnalytics() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ method, percentage }) => `${method} ${percentage}%`}
+                        label={({ method, amount }) => `${method} ${formatCurrency(amount, language)}`}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="amount"
                       >
                         {data.sales.byPaymentMethod.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={getChartColors(data.sales.byPaymentMethod.length)[index]} 
+                          />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip 
+                        formatter={(value: any, name: any) => [
+                          formatCurrency(value, language), 
+                          name === 'amount' ? 'Amount' : name
+                        ]}
+                      />
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
 
-              {/* Product Performance Radar Chart */}
+              {/* Product Performance Section */}
               <Card className="md:col-span-2">
                 <CardHeader>
-                  <CardTitle>{t.productPerformance}</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <Target className="h-5 w-5 mr-2" />
+                    Performance
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RadarChart data={data.products.performance}>
-                      <PolarGrid />
-                      <PolarAngleAxis dataKey="name" />
-                      <PolarRadiusAxis />
-                      <Radar
-                        name="Views"
-                        dataKey="views"
-                        stroke="#3B82F6"
-                        fill="#3B82F6"
-                        fillOpacity={0.3}
-                      />
-                      <Radar
-                        name="Sales"
-                        dataKey="sales"
-                        stroke="#10B981"
-                        fill="#10B981"
-                        fillOpacity={0.3}
-                      />
-                      <Tooltip />
-                      <Legend />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                  {/* Performance Metrics Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {formatCurrency(data.sales.average, language)}
+                      </div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                        Average Order Value
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {data.sales.conversionRate}%
+                      </div>
+                      <div className="text-sm text-green-600 dark:text-green-400 font-medium">
+                        Conversion Rate
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Revenue Breakdown */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm font-medium text-muted-foreground">Monthly Revenue</span>
+                      <span className="text-sm font-semibold">
+                        {formatCurrency(data.revenue.monthly.reduce((sum, item) => sum + item.revenue, 0), language)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm font-medium text-muted-foreground">Weekly Revenue</span>
+                      <span className="text-sm font-semibold">
+                        {formatCurrency(data.revenue.daily.slice(-7).reduce((sum, item) => sum + item.revenue, 0), language)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm font-medium text-muted-foreground">Daily Revenue</span>
+                      <span className="text-sm font-semibold">
+                        {formatCurrency(data.revenue.daily[data.revenue.daily.length - 1]?.revenue || 0, language)}
+                      </span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 

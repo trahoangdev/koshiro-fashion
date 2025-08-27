@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import FlashSale from "@/components/FlashSale";
 import EnhancedProductGrid from "@/components/EnhancedProductGrid";
 import FilterBar from "@/components/FilterBar";
 import Cart from "@/components/Cart";
@@ -435,60 +436,11 @@ const Index = () => {
       
       <main className="py-16">
         <div className="container space-y-12">
-          {/* Flash Sale Section */}
-          <section className="relative overflow-hidden rounded-2xl">
-            {/* Banner Background */}
-            <div className="absolute inset-0">
-              <img 
-                src="/images/categories/banner-01-flashsale.jpg" 
-                alt="Flash Sale Banner"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40"></div>
-            </div>
-            
-            {/* Content */}
-            <div className="relative z-10 p-8 md:p-12">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-                  🔥 {language === 'vi' ? 'Flash Sale' : language === 'ja' ? 'フラッシュセール' : 'Flash Sale'}
-                </h2>
-                <p className="text-lg text-white/90">
-                  {language === 'vi' ? 'Giảm giá lên đến 50% cho các sản phẩm được tuyển chọn' :
-                   language === 'ja' ? '厳選商品が最大50%オフ' : 'Up to 50% off on selected items'}
-                </p>
-              </div>
-            {(() => {
-              const flashSaleProducts = products.filter(product => {
-                const isOnSale = product.onSale || product.salePrice || (product.originalPrice && product.originalPrice > product.price);
-                if (!isOnSale) return false;
-                
-                let discountPercent = 0;
-                if (product.salePrice && product.salePrice < product.price) {
-                  discountPercent = ((product.price - product.salePrice) / product.price) * 100;
-                } else if (product.originalPrice && product.originalPrice > product.price) {
-                  discountPercent = ((product.originalPrice - product.price) / product.originalPrice) * 100;
-                }
-                return discountPercent >= 50;
-              }).slice(0, 4);
-              
-              return flashSaleProducts.length > 0 ? (
-                <EnhancedProductGrid
-                  products={flashSaleProducts}
-                  onAddToCart={addToCart}
-                  onAddToWishlist={addToWishlist}
-                  onAddToCompare={addToCompare}
-                  loading={isLoading}
-                />
-              ) : (
-                <div className="text-center py-8 text-white/90">
-                  {language === 'vi' ? 'Hiện tại không có sản phẩm Flash Sale' :
-                   language === 'ja' ? '現在フラッシュセール商品はありません' : 'No flash sale items currently available'}
-                </div>
-              );
-            })()}
-            </div>
-          </section>
+                     {/* Flash Sale Component */}
+           <FlashSale 
+             onAddToWishlist={addToWishlist}
+             onAddToCompare={addToCompare}
+           />
 
           {/* New Arrivals Section */}
           <section className="relative overflow-hidden rounded-2xl">

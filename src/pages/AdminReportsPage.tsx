@@ -34,6 +34,24 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ComposedChart
+} from "recharts";
 
 interface ReportData {
   sales: {
@@ -47,30 +65,39 @@ interface ReportData {
     new: number;
     active: number;
     topSpenders: Array<{ name: string; email: string; totalSpent: number; orders: number }>;
+    growth: Array<{ month: string; newCustomers: number; totalCustomers: number }>;
   };
   inventory: {
     total: number;
     lowStock: number;
     outOfStock: number;
     byCategory: Array<{ category: string; count: number; value: number }>;
+    status: Array<{ status: string; count: number; percentage: number }>;
   };
   performance: {
     conversionRate: number;
     averageOrderValue: number;
     customerRetention: number;
     topCategories: Array<{ category: string; revenue: number; percentage: number }>;
+    metrics: Array<{ metric: string; value: number; target: number }>;
   };
 }
 
-export default function AdminReports() {
+const CHART_COLORS = [
+  "#3B82F6", "#EF4444", "#10B981", "#F59E0B", 
+  "#8B5CF6", "#06B6D4", "#F97316", "#84CC16",
+  "#EC4899", "#6366F1", "#14B8A6", "#F43F5E"
+];
+
+export default function AdminReportsPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { language } = useLanguage();
   const [data, setData] = useState<ReportData>({
     sales: { total: 0, trend: 0, monthly: [], topProducts: [] },
-    customers: { total: 0, new: 0, active: 0, topSpenders: [] },
-    inventory: { total: 0, lowStock: 0, outOfStock: 0, byCategory: [] },
-    performance: { conversionRate: 0, averageOrderValue: 0, customerRetention: 0, topCategories: [] }
+    customers: { total: 0, new: 0, active: 0, topSpenders: [], growth: [] },
+    inventory: { total: 0, lowStock: 0, outOfStock: 0, byCategory: [], status: [] },
+    performance: { conversionRate: 0, averageOrderValue: 0, customerRetention: 0, topCategories: [], metrics: [] }
   });
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("30d");
@@ -92,22 +119,27 @@ export default function AdminReports() {
       setIsLoading(true);
       
       // Load data from API
-      const [statsResponse, revenueResponse, productStatsResponse] = await Promise.all([
+      const [statsResponse, revenueResponse, productStatsResponse, orderAnalyticsResponse, customerAnalyticsResponse] = await Promise.all([
         api.getAdminStats(),
         api.getRevenueData(),
-        api.getProductStats()
+        api.getProductStats(),
+        api.getOrderAnalytics(),
+        api.getCustomerAnalytics()
       ]);
 
       // Transform data for reports
       const reportData: ReportData = {
         sales: {
-          total: statsResponse.totalRevenue,
-          trend: statsResponse.revenueTrend,
-          monthly: revenueResponse.map(item => ({
-            month: item.month,
-            revenue: item.revenue,
-            orders: item.orders
-          })),
+          total: statsResponse.totalRevenue || 0,
+          trend: statsResponse.revenueTrend || 0,
+          monthly: revenueResponse || [
+            { month: 'Jan', revenue: 0, orders: 0 },
+            { month: 'Feb', revenue: 0, orders: 0 },
+            { month: 'Mar', revenue: 0, orders: 0 },
+            { month: 'Apr', revenue: 0, orders: 0 },
+            { month: 'May', revenue: 0, orders: 0 },
+            { month: 'Jun', revenue: 0, orders: 0 }
+          ],
           topProducts: [
             { name: "Kimono Traditional", revenue: 2500000, quantity: 15 },
             { name: "Yukata Summer", revenue: 1800000, quantity: 12 },
@@ -117,26 +149,48 @@ export default function AdminReports() {
           ]
         },
         customers: {
-          total: statsResponse.totalUsers,
-          new: Math.floor(statsResponse.totalUsers * 0.15),
-          active: Math.floor(statsResponse.totalUsers * 0.7),
+          total: statsResponse.totalUsers || 0,
+          new: Math.floor((statsResponse.totalUsers || 0) * 0.15),
+          active: Math.floor((statsResponse.totalUsers || 0) * 0.7),
           topSpenders: [
             { name: "Nguyễn Văn A", email: "nguyenvana@email.com", totalSpent: 5000000, orders: 5 },
             { name: "Trần Thị B", email: "tranthib@email.com", totalSpent: 3500000, orders: 3 },
             { name: "Lê Văn C", email: "levanc@email.com", totalSpent: 2800000, orders: 4 },
             { name: "Phạm Thị D", email: "phamthid@email.com", totalSpent: 2200000, orders: 2 },
             { name: "Hoàng Văn E", email: "hoangvane@email.com", totalSpent: 1800000, orders: 3 }
+          ],
+          growth: customerAnalyticsResponse?.activity ? customerAnalyticsResponse.activity.map(item => ({
+            month: item.date,
+            newCustomers: item.newCustomers,
+            totalCustomers: item.activeCustomers
+          })) : [
+            { month: 'Jan', newCustomers: 15, totalCustomers: 100 },
+            { month: 'Feb', newCustomers: 20, totalCustomers: 120 },
+            { month: 'Mar', newCustomers: 18, totalCustomers: 138 },
+            { month: 'Apr', newCustomers: 25, totalCustomers: 163 },
+            { month: 'May', newCustomers: 22, totalCustomers: 185 },
+            { month: 'Jun', newCustomers: 30, totalCustomers: 215 }
           ]
         },
         inventory: {
-          total: statsResponse.totalProducts,
+          total: statsResponse.totalProducts || 0,
           lowStock: 5,
           outOfStock: 2,
-          byCategory: productStatsResponse.map(item => ({
-            category: item.category,
-            count: item.count,
-            value: item.revenue
-          }))
+          byCategory: productStatsResponse?.length > 0 ? productStatsResponse.map(item => ({
+            category: item.category || 'Unknown',
+            count: item.count || 0,
+            value: item.revenue || 0
+          })) : [
+            { category: 'Kimono', count: 25, value: 5000000 },
+            { category: 'Yukata', count: 20, value: 3000000 },
+            { category: 'Accessories', count: 35, value: 2000000 },
+            { category: 'Footwear', count: 15, value: 1500000 }
+          ],
+          status: [
+            { status: 'In Stock', count: (statsResponse.totalProducts || 0) - 7, percentage: 85 },
+            { status: 'Low Stock', count: 5, percentage: 10 },
+            { status: 'Out of Stock', count: 2, percentage: 5 }
+          ]
         },
         performance: {
           conversionRate: 3.2,
@@ -150,6 +204,12 @@ export default function AdminReports() {
             { category: "Accessories", revenue: 2000000, percentage: 20 },
             { category: "Footwear", revenue: 1500000, percentage: 15 },
             { category: "Others", revenue: 500000, percentage: 5 }
+          ],
+          metrics: [
+            { metric: 'Conversion Rate', value: 3.2, target: 5.0 },
+            { metric: 'Average Order Value', value: 850000, target: 1000000 },
+            { metric: 'Customer Retention', value: 78.5, target: 80.0 },
+            { metric: 'Revenue Growth', value: 12.5, target: 15.0 }
           ]
         }
       };
@@ -184,6 +244,34 @@ export default function AdminReports() {
     if (trend > 0) return "text-green-600";
     if (trend < 0) return "text-red-600";
     return "text-gray-600";
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background border border-border p-3 rounded-lg shadow-lg">
+          <p className="font-medium">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {entry.name}: {entry.value.toLocaleString()}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const formatChartValue = (value: number, type: 'currency' | 'number' | 'percentage' = 'number') => {
+    switch (type) {
+      case 'currency':
+        return formatCurrency(value, language);
+      case 'percentage':
+        return `${value}%`;
+      case 'number':
+      default:
+        return value.toLocaleString();
+    }
   };
 
   const translations = {
@@ -399,12 +487,34 @@ export default function AdminReports() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Monthly revenue chart will be implemented</p>
-                    </div>
-                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={data.sales.monthly}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="month" 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickFormatter={(value) => formatCurrency(value, language)}
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />}
+                        formatter={(value: any) => [formatCurrency(value, language), 'Revenue']}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="revenue" 
+                        stroke="#3B82F6" 
+                        fill="#3B82F6" 
+                        fillOpacity={0.3}
+                        name="Revenue"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
@@ -489,12 +599,42 @@ export default function AdminReports() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                    <div className="text-center">
-                      <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Customer growth chart will be implemented</p>
-                    </div>
-                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={data.customers.growth}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="month" 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickFormatter={(value) => value.toLocaleString()}
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />}
+                        formatter={(value: any, name: any) => [
+                          value.toLocaleString(), 
+                          name === 'newCustomers' ? 'New Customers' : 'Total Customers'
+                        ]}
+                      />
+                      <Bar 
+                        dataKey="newCustomers" 
+                        fill="#EF4444" 
+                        name="New Customers"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="totalCustomers" 
+                        stroke="#10B981" 
+                        strokeWidth={2}
+                        dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                        name="Total Customers"
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
@@ -582,12 +722,33 @@ export default function AdminReports() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                    <div className="text-center">
-                      <PieChart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Inventory status chart will be implemented</p>
-                    </div>
-                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RechartsPieChart>
+                      <Pie
+                        data={data.inventory.status}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ status, percentage }) => `${status} ${percentage}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="count"
+                      >
+                        {data.inventory.status.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={CHART_COLORS[index % CHART_COLORS.length]} 
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: any, name: any) => [
+                          value.toLocaleString(), 
+                          name === 'count' ? 'Products' : name
+                        ]}
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
@@ -672,12 +833,47 @@ export default function AdminReports() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Performance metrics chart will be implemented</p>
-                    </div>
-                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={data.performance.metrics}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="metric" 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        axisLine={false}
+                        tickFormatter={(value) => 
+                          value > 1000 ? formatCurrency(value, language) : `${value}%`
+                        }
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />}
+                        formatter={(value: any, name: any) => [
+                          name === 'value' ? 
+                            (value > 1000 ? formatCurrency(value, language) : `${value}%`) : 
+                            value, 
+                          name === 'value' ? 'Current' : 'Target'
+                        ]}
+                      />
+                      <Bar 
+                        dataKey="value" 
+                        fill="#3B82F6" 
+                        name="Current Value"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="target" 
+                        fill="#10B981" 
+                        name="Target Value"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
@@ -711,4 +907,4 @@ export default function AdminReports() {
       </div>
     </AdminLayout>
   );
-} 
+}

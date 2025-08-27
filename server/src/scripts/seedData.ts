@@ -106,6 +106,22 @@ const seedData = async () => {
         isActive: true
       },
       {
+        name: 'Haori',
+        nameEn: 'Haori',
+        nameJa: '羽織',
+        description: 'Áo khoác Haori truyền thống Nhật Bản',
+        slug: 'haori',
+        isActive: true
+      },
+      {
+        name: 'Obi & Đai',
+        nameEn: 'Obi & Belts',
+        nameJa: '帯とベルト',
+        description: 'Obi và đai thắt lưng truyền thống Nhật Bản',
+        slug: 'obi-dai',
+        isActive: true
+      },
+      {
         name: 'Phụ kiện',
         nameEn: 'Accessories',
         nameJa: 'アクセサリー',
@@ -167,7 +183,7 @@ const seedData = async () => {
         descriptionJa: '伝統的な和紙の扇子',
         price: 150000,
         originalPrice: 200000,
-        categoryId: createdCategories[5]._id, // Phụ kiện
+        categoryId: createdCategories[7]._id, // Phụ kiện
         images: ['/images/fan-1.jpg'],
         sizes: ['One Size'],
         colors: ['Đỏ', 'Xanh', 'Vàng'],

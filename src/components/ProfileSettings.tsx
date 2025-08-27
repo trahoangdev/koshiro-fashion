@@ -42,7 +42,7 @@ const ProfileSettings = () => {
     newPassword: "",
     confirmPassword: ""
   });
-  const { language } = useLanguage();
+  const { language, t: tCommon } = useLanguage();
   const { toast } = useToast();
 
   const translations = {
@@ -129,7 +129,7 @@ const ProfileSettings = () => {
     }
   };
 
-  const t = translations[language as keyof typeof translations] || translations.en;
+  const tl = translations[language as keyof typeof translations] || translations.en;
 
   const handleSettingChange = (key: keyof AccountSettings, value: string | boolean) => {
     setSettings(prev => ({
@@ -140,16 +140,16 @@ const ProfileSettings = () => {
 
   const handleSaveSettings = () => {
     toast({
-      title: "Thành công",
-      description: t.settingsSaved,
+      title: tCommon('success'),
+      description: tl.settingsSaved,
     });
   };
 
   const handlePasswordChange = () => {
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin",
+        title: tCommon('error'),
+        description: tCommon('required'),
         variant: "destructive",
       });
       return;
@@ -157,8 +157,8 @@ const ProfileSettings = () => {
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
-        title: "Lỗi",
-        description: "Mật khẩu xác nhận không khớp",
+        title: tCommon('error'),
+        description: tCommon('passwordMismatch'),
         variant: "destructive",
       });
       return;
@@ -166,16 +166,16 @@ const ProfileSettings = () => {
 
     if (passwordData.newPassword.length < 6) {
       toast({
-        title: "Lỗi",
-        description: "Mật khẩu phải có ít nhất 6 ký tự",
+        title: tCommon('error'),
+        description: tCommon('passwordTooShort'),
         variant: "destructive",
       });
       return;
     }
 
     toast({
-      title: "Thành công",
-      description: t.passwordChanged,
+      title: tCommon('success'),
+      description: tl.passwordChanged,
     });
 
     setPasswordData({
@@ -186,10 +186,10 @@ const ProfileSettings = () => {
   };
 
   const handleDeleteAccount = () => {
-    if (confirm(t.deleteAccountWarning)) {
+    if (confirm(tl.deleteAccountWarning)) {
       toast({
-        title: "Tài khoản đã được xóa",
-        description: "Tài khoản của bạn đã được xóa vĩnh viễn",
+        title: tCommon('success'),
+        description: tCommon('deleteSuccess'),
         variant: "destructive",
       });
     }
@@ -198,8 +198,8 @@ const ProfileSettings = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">{t.title}</h2>
-        <p className="text-muted-foreground">{t.subtitle}</p>
+        <h2 className="text-2xl font-bold mb-2">{tl.title}</h2>
+        <p className="text-muted-foreground">{tl.subtitle}</p>
       </div>
 
       {/* Preferences */}
@@ -207,13 +207,13 @@ const ProfileSettings = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Settings className="h-5 w-5 mr-2" />
-            {t.preferences}
+            {tl.preferences}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="language">{t.language}</Label>
+              <Label htmlFor="language">{tl.language}</Label>
               <select
                 id="language"
                 value={settings.language}
@@ -227,7 +227,7 @@ const ProfileSettings = () => {
             </div>
             
             <div>
-              <Label htmlFor="currency">{t.currency}</Label>
+              <Label htmlFor="currency">{tl.currency}</Label>
               <select
                 id="currency"
                 value={settings.currency}
@@ -241,7 +241,7 @@ const ProfileSettings = () => {
             </div>
             
             <div>
-              <Label htmlFor="timezone">{t.timezone}</Label>
+              <Label htmlFor="timezone">{tl.timezone}</Label>
               <select
                 id="timezone"
                 value={settings.timezone}
@@ -262,15 +262,15 @@ const ProfileSettings = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Lock className="h-5 w-5 mr-2" />
-            {t.security}
+            {tl.security}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Two-Factor Authentication */}
           <div className="flex items-center justify-between p-4 rounded-lg border">
             <div>
-              <h3 className="font-medium">{t.twoFactorAuth}</h3>
-              <p className="text-sm text-muted-foreground">{t.twoFactorAuthDesc}</p>
+              <h3 className="font-medium">{tl.twoFactorAuth}</h3>
+              <p className="text-sm text-muted-foreground">{tl.twoFactorAuthDesc}</p>
             </div>
             <Switch
               checked={settings.twoFactorAuth}
@@ -282,11 +282,11 @@ const ProfileSettings = () => {
 
           {/* Change Password */}
           <div className="space-y-4">
-            <h3 className="font-medium">{t.changePassword}</h3>
+            <h3 className="font-medium">{tl.changePassword}</h3>
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="currentPassword">{t.currentPassword}</Label>
+                <Label htmlFor="currentPassword">{tl.currentPassword}</Label>
                 <div className="relative">
                   <Input
                     id="currentPassword"
@@ -307,7 +307,7 @@ const ProfileSettings = () => {
               </div>
               
               <div>
-                <Label htmlFor="newPassword">{t.newPassword}</Label>
+                <Label htmlFor="newPassword">{tl.newPassword}</Label>
                 <Input
                   id="newPassword"
                   type="password"
@@ -317,7 +317,7 @@ const ProfileSettings = () => {
               </div>
               
               <div>
-                <Label htmlFor="confirmPassword">{t.confirmPassword}</Label>
+                <Label htmlFor="confirmPassword">{tl.confirmPassword}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -328,7 +328,7 @@ const ProfileSettings = () => {
               
               <Button onClick={handlePasswordChange}>
                 <Check className="h-4 w-4 mr-2" />
-                {t.savePassword}
+                {tl.savePassword}
               </Button>
             </div>
           </div>
@@ -343,7 +343,7 @@ const ProfileSettings = () => {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 rounded-lg border">
             <div>
-              <h3 className="font-medium">{t.emailNotifications}</h3>
+              <h3 className="font-medium">{tl.emailNotifications}</h3>
               <p className="text-sm text-muted-foreground">Receive important account notifications</p>
             </div>
             <Switch
@@ -354,8 +354,8 @@ const ProfileSettings = () => {
           
           <div className="flex items-center justify-between p-4 rounded-lg border">
             <div>
-              <h3 className="font-medium">{t.marketingEmails}</h3>
-              <p className="text-sm text-muted-foreground">{t.marketingEmailsDesc}</p>
+              <h3 className="font-medium">{tl.marketingEmails}</h3>
+              <p className="text-sm text-muted-foreground">{tl.marketingEmailsDesc}</p>
             </div>
             <Switch
               checked={settings.marketingEmails}
@@ -369,7 +369,7 @@ const ProfileSettings = () => {
       <div className="flex justify-end">
         <Button onClick={handleSaveSettings}>
           <Save className="h-4 w-4 mr-2" />
-          {t.saveSettings}
+          {tl.saveSettings}
         </Button>
       </div>
 
@@ -384,8 +384,8 @@ const ProfileSettings = () => {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-red-600">{t.deleteAccount}</h3>
-              <p className="text-sm text-muted-foreground">{t.deleteAccountDesc}</p>
+              <h3 className="font-medium text-red-600">{tl.deleteAccount}</h3>
+              <p className="text-sm text-muted-foreground">{tl.deleteAccountDesc}</p>
             </div>
             <Button 
               variant="destructive" 
@@ -393,7 +393,7 @@ const ProfileSettings = () => {
               className="flex items-center"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {t.deleteAccount}
+              {tl.deleteAccount}
             </Button>
           </div>
         </CardContent>
