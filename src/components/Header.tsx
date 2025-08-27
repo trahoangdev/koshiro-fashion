@@ -205,10 +205,10 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-20 items-center justify-between px-10">
-        {/* Logo - Golden ratio proportions */}
-        <div className="flex items-center min-w-[130px]">
-          <Link to="/" className="flex items-center space-x-2">
+      <div className="container flex h-20 items-center justify-between px-6 lg:px-8 xl:px-12">
+        {/* Logo - Better spacing */}
+        <div className="flex items-center min-w-[140px] lg:min-w-[160px]">
+          <Link to="/" className="flex items-center space-x-3">
             <img 
               src="/koshino_logo_dark.png" 
               alt="KOSHIRO" 
@@ -219,22 +219,22 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
               alt="KOSHIRO" 
               className="h-8 w-auto hidden dark:block"
             />
-            <h1 className="text-3xl font-bold tracking-tight cursor-pointer hover:text-primary transition-colors duration-500 transform hover:scale-105">
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight cursor-pointer hover:text-primary transition-colors duration-500">
               KOSHIRO
             </h1>
           </Link>
         </div>
 
-        {/* Desktop Navigation - Golden ratio spacing */}
-        <nav className="hidden lg:flex items-center space-x-2 flex-1 justify-center max-w-[420px]">
+        {/* Desktop Navigation - Better spacing */}
+        <nav className="hidden lg:flex items-center space-x-6 flex-1 justify-center max-w-[480px] mx-8">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-2 py-2">
+              <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-3 py-2">
                 {t.categories}
-                <ChevronDown className="ml-1 h-4 w-4" />
+                <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="start" className="w-100">
               <DropdownMenuLabel>Shop by Category</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {categories.map((category) => (
@@ -263,8 +263,8 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
           </Link>
         </nav>
 
-        {/* Search - Golden ratio width */}
-        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-[320px] mx-10">
+        {/* Search - Better positioning */}
+        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-[360px] mx-6">
           <div className="relative w-full">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
             <Input
@@ -277,8 +277,8 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
           </div>
         </form>
 
-        {/* Right section - Golden ratio spacing */}
-        <div className="flex items-center space-x-3 min-w-[200px] justify-end">
+        {/* Right section - Better spacing */}
+        <div className="flex items-center space-x-4 lg:space-x-5 min-w-[220px] lg:min-w-[240px] justify-end">
           {/* Language Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -431,18 +431,18 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
 
       {/* Mobile/Tablet Navigation Bar */}
       <div className="lg:hidden border-t bg-background/95 backdrop-blur">
-        <div className="container px-6 py-3">
-          <nav className="flex items-center justify-between">
+        <div className="container px-4 lg:px-6 py-4">
+          <nav className="flex items-center justify-between space-x-2">
             <Link to="/categories">
-              <Button variant="ghost" size="sm" className="text-sm hover:text-primary transition-colors">
+              <Button variant="ghost" size="sm" className="text-sm hover:text-primary transition-colors px-3">
                 {t.categories}
               </Button>
             </Link>
             <Link to="/sale">
-              <Button variant="ghost" size="sm" className="text-sm hover:text-primary transition-colors">{t.sale}</Button>
+              <Button variant="ghost" size="sm" className="text-sm hover:text-primary transition-colors px-3">{t.sale}</Button>
             </Link>
             <Link to="/wishlist" className="md:hidden">
-              <Button variant="ghost" size="sm" className="relative text-sm hover:text-primary transition-colors">
+              <Button variant="ghost" size="sm" className="relative text-sm hover:text-primary transition-colors px-3">
                 <Heart className="h-4 w-4 mr-1" />
                 {wishlistCount > 0 && (
                   <Badge 
@@ -455,14 +455,14 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
               </Button>
             </Link>
             <Link to="/compare" className="md:hidden">
-              <Button variant="ghost" size="sm" className="text-sm hover:text-primary transition-colors">
+              <Button variant="ghost" size="sm" className="text-sm hover:text-primary transition-colors px-3">
                 <GitCompare className="h-4 w-4 mr-1" />
               </Button>
             </Link>
           </nav>
           
           {/* Mobile Search */}
-          <form onSubmit={handleSearch} className="mt-3">
+          <form onSubmit={handleSearch} className="mt-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input

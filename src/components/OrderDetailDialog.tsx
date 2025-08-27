@@ -312,11 +312,11 @@ export default function OrderDetailDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Package className="h-6 w-6" />
               {t.title}
             </DialogTitle>
             <div className="flex items-center gap-2">
@@ -349,112 +349,146 @@ export default function OrderDetailDialog({
                 <Mail className="h-4 w-4 mr-2" />
                 {t.sendEmail}
               </Button>
-                             <Button variant="outline" size="sm">
-                 <Download className="h-4 w-4 mr-2" />
-                 {t.downloadInvoice}
-               </Button>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                {t.downloadInvoice}
+              </Button>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Order Header */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">{order.orderNumber}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {t.orderDate}: {formatDate(order.createdAt)}
-                  </p>
+        <div className="space-y-8">
+          {/* Order Header - Improved Layout */}
+          <Card className="border-2">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-primary">{order.orderNumber}</h3>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{t.orderDate}: {formatDate(order.createdAt)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">{t.status}</p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="text-center sm:text-right">
+                    <p className="text-sm text-muted-foreground mb-1">{t.status}</p>
                     {getStatusBadge(order.status)}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">{t.paymentStatus}</p>
+                  <div className="text-center sm:text-right">
+                    <p className="text-sm text-muted-foreground mb-1">{t.paymentStatus}</p>
                     {getPaymentStatusBadge(order.paymentStatus)}
                   </div>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t.updateStatus} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">{t.pending}</SelectItem>
-                    <SelectItem value="processing">{t.processing}</SelectItem>
-                    <SelectItem value="shipped">{t.shipped}</SelectItem>
-                    <SelectItem value="delivered">{t.delivered}</SelectItem>
-                    <SelectItem value="completed">{t.completed}</SelectItem>
-                    <SelectItem value="cancelled">{t.cancelled}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button 
-                  onClick={handleUpdateStatus} 
-                  disabled={isUpdating || newStatus === order.status || order.status === 'cancelled'}
-                  size="sm"
-                >
-                  {isUpdating ? 'Updating...' : t.updateStatus}
-                </Button>
+            <CardContent className="pt-0">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">{t.updateStatus}</p>
+                  <div className="flex items-center gap-3">
+                    <Select value={newStatus} onValueChange={setNewStatus}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder={t.updateStatus} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">{t.pending}</SelectItem>
+                        <SelectItem value="processing">{t.processing}</SelectItem>
+                        <SelectItem value="shipped">{t.shipped}</SelectItem>
+                        <SelectItem value="delivered">{t.delivered}</SelectItem>
+                        <SelectItem value="completed">{t.completed}</SelectItem>
+                        <SelectItem value="cancelled">{t.cancelled}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={handleUpdateStatus} 
+                      disabled={isUpdating || newStatus === order.status || order.status === 'cancelled'}
+                      size="sm"
+                      className="min-w-[120px]"
+                    >
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        t.updateStatus
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Customer & Shipping Info - Better Grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {/* Customer Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
+            <Card className="border-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
                   {t.customerInfo}
                 </CardTitle>
               </CardHeader>
-                           <CardContent className="space-y-3">
-               <div>
-                 <p className="font-medium">{order.userId?.name}</p>
-                 <p className="text-sm text-muted-foreground">{order.userId?.email}</p>
-               </div>
-               <div className="flex items-center gap-2 text-sm">
-                 <Phone className="h-4 w-4" />
-                 <span>{order.userId?.phone || 'N/A'}</span>
-               </div>
-             </CardContent>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-lg">{order.userId?.name}</h4>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span>{order.userId?.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span>{order.userId?.phone || 'N/A'}</span>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
 
             {/* Shipping Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
+            <Card className="border-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <MapPin className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
                   {t.shippingAddress}
                 </CardTitle>
               </CardHeader>
-                           <CardContent className="space-y-2">
-               <p className="font-medium">{order.shippingAddress?.name}</p>
-               <p className="text-sm">{order.shippingAddress?.address}</p>
-               <p className="text-sm">
-                 {order.shippingAddress?.city}, {order.shippingAddress?.district}
-               </p>
-             </CardContent>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-lg">{order.shippingAddress?.name}</h4>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <p>{order.shippingAddress?.address}</p>
+                    <p className="font-medium">
+                      {order.shippingAddress?.city}, {order.shippingAddress?.district}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </div>
 
-          {/* Order Items */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.orderItems}</CardTitle>
+          {/* Order Items - Enhanced Product Display */}
+          <Card className="border-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                {t.orderItems} ({order.items.length} {order.items.length === 1 ? 'item' : 'items'})
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {order.items.map((item, index) => (
-                  <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
-                    <div className="w-16 h-16 bg-muted rounded overflow-hidden">
+                  <div key={index} className="flex flex-col lg:flex-row gap-6 p-6 border-2 rounded-xl bg-gradient-to-r from-muted/30 to-muted/10 hover:from-muted/50 hover:to-muted/20 transition-all duration-200">
+                    {/* Product Image */}
+                    <div className="w-24 h-24 lg:w-32 lg:h-32 bg-muted rounded-lg overflow-hidden border-2 border-border flex-shrink-0">
                       {item.productId?.images && item.productId.images.length > 0 ? (
                         <img
                           src={item.productId.images[0]}
@@ -463,28 +497,82 @@ export default function OrderDetailDialog({
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-6 w-6 text-muted-foreground" />
+                          <Package className="h-8 w-8 text-muted-foreground" />
                         </div>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium">{item.productId?.name || item.name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {item.size} • {item.color}
-                      </p>
+                    
+                    {/* Product Details */}
+                    <div className="flex-1 space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-xl font-semibold text-foreground">
+                          {item.productId?.name || item.name || 'Product Name'}
+                        </h4>
+                        <div className="flex flex-wrap gap-3">
+                          {item.size && (
+                            <Badge variant="outline" className="px-3 py-1">
+                              {language === 'vi' ? 'Kích thước' : language === 'ja' ? 'サイズ' : 'Size'}: {item.size}
+                            </Badge>
+                          )}
+                          {item.color && (
+                            <Badge variant="outline" className="px-3 py-1">
+                              {language === 'vi' ? 'Màu sắc' : language === 'ja' ? '色' : 'Color'}: {item.color}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Product Specifications */}
+                      {item.productId && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                          {item.productId.nameEn && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-muted-foreground">
+                                {language === 'vi' ? 'Tên tiếng Anh' : language === 'ja' ? '英語名' : 'English Name'}:
+                              </span>
+                              <span>{item.productId.nameEn}</span>
+                            </div>
+                          )}
+                          {item.productId.nameJa && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-muted-foreground">
+                                {language === 'vi' ? 'Tên tiếng Nhật' : language === 'ja' ? '日本語名' : 'Japanese Name'}:
+                              </span>
+                              <span>{item.productId.nameJa}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">
-                        {language === 'vi' ? 'Số lượng' : language === 'ja' ? '数量' : 'Quantity'}: {item.quantity}
-                      </p>
-                      <p className="font-medium">
-                        {formatCurrencyForDisplay(item.price)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">
-                        {formatCurrencyForDisplay(item.price * item.quantity)}
-                      </p>
+                    
+                    {/* Price & Quantity */}
+                    <div className="flex flex-col items-end gap-4 text-right">
+                      <div className="space-y-2">
+                        <div className="text-sm text-muted-foreground">
+                          {language === 'vi' ? 'Số lượng' : language === 'ja' ? '数量' : 'Quantity'}
+                        </div>
+                        <div className="text-2xl font-bold text-primary">
+                          {item.quantity}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm text-muted-foreground">
+                          {language === 'vi' ? 'Đơn giá' : language === 'ja' ? '単価' : 'Unit Price'}
+                        </div>
+                        <div className="text-lg font-semibold">
+                          {formatCurrencyForDisplay(item.price)}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 pt-2 border-t">
+                        <div className="text-sm text-muted-foreground">
+                          {language === 'vi' ? 'Thành tiền' : language === 'ja' ? '小計' : 'Item Total'}
+                        </div>
+                        <div className="text-xl font-bold text-primary">
+                          {formatCurrencyForDisplay(item.price * item.quantity)}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -492,72 +580,77 @@ export default function OrderDetailDialog({
             </CardContent>
           </Card>
 
-          {/* Order Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.orderNumber}: {order.orderNumber}</CardTitle>
+          {/* Order Summary - Enhanced Financial Display */}
+          <Card className="border-2 bg-gradient-to-r from-muted/20 to-muted/10">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                {t.orderNumber}: {order.orderNumber}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span>{t.subtotal}</span>
-                  <span>{formatCurrencyForDisplay(order.totalAmount)}</span>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">{t.subtotal}</span>
+                      <span className="font-medium">{formatCurrencyForDisplay(order.totalAmount)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">{t.shipping}</span>
+                      <span className="font-medium">{formatCurrencyForDisplay(0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">{t.tax}</span>
+                      <span className="font-medium">{formatCurrencyForDisplay(0)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">{t.paymentMethod}</span>
+                      <span className="font-medium">{order.paymentMethod || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">{t.trackingNumber}</span>
+                      <span className="font-medium">N/A</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">Order Date</span>
+                      <span className="font-medium">{formatDate(order.createdAt)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>{t.shipping}</span>
-                  <span>{formatCurrencyForDisplay(0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{t.tax}</span>
-                  <span>{formatCurrencyForDisplay(0)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>{t.total}</span>
-                  <span>{formatCurrencyForDisplay(order.totalAmount)}</span>
+                
+                <Separator className="my-4" />
+                
+                <div className="flex justify-between items-center py-4 bg-primary/10 rounded-lg px-4">
+                  <span className="text-xl font-semibold">{t.total}</span>
+                  <span className="text-2xl font-bold text-primary">
+                    {formatCurrencyForDisplay(order.totalAmount)}
+                  </span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Additional Information */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  {t.paymentMethod}
-                </CardTitle>
-              </CardHeader>
-                             <CardContent>
-                 <p>{order.paymentMethod || 'N/A'}</p>
-               </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Truck className="h-5 w-5" />
-                  {t.trackingNumber}
-                </CardTitle>
-              </CardHeader>
-                             <CardContent>
-                 <p>N/A</p>
-               </CardContent>
-            </Card>
-          </div>
-
-          {/* Notes */}
+          {/* Notes Section */}
           {order.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+            <Card className="border-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <FileText className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                  </div>
                   {t.notes}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm">{order.notes}</p>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm leading-relaxed">{order.notes}</p>
+                </div>
               </CardContent>
             </Card>
           )}
