@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import ProductDetail from "./pages/ProductDetail";
@@ -57,6 +58,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Router>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/profile" element={<Profile />} />

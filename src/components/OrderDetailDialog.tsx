@@ -387,6 +387,11 @@ export default function OrderDetailDialog({
                     <SelectValue placeholder={t.updateStatus} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="pending">{t.pending}</SelectItem>
+                    <SelectItem value="processing">{t.processing}</SelectItem>
+                    <SelectItem value="shipped">{t.shipped}</SelectItem>
+                    <SelectItem value="delivered">{t.delivered}</SelectItem>
+                    <SelectItem value="completed">{t.completed}</SelectItem>
                     <SelectItem value="cancelled">{t.cancelled}</SelectItem>
                   </SelectContent>
                 </Select>
