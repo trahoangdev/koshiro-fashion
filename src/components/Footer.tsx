@@ -124,6 +124,9 @@ const Footer = () => {
               <Link to="/info/returns" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.returns}
               </Link>
+              <Link to="/order-tracking" className="block text-muted-foreground hover:text-primary transition-colors">
+                {language === 'vi' ? 'Theo Dõi Đơn Hàng' : language === 'ja' ? '注文追跡' : 'Order Tracking'}
+              </Link>
             </nav>
           </div>
 

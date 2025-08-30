@@ -154,6 +154,28 @@ export const trackOrder = async (req: Request, res: Response) => {
   }
 };
 
+// Track order by email (public route)
+export const trackOrderByEmail = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+
+    const orders = await Order.find({ 'userId.email': email })
+      .populate('userId', 'name email phone')
+      .populate('items.productId', 'name nameEn nameJa images')
+      .sort({ createdAt: -1 })
+      .limit(5); // Limit to last 5 orders
+
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: 'No orders found for this email' });
+    }
+
+    res.json(orders);
+  } catch (error) {
+    console.error('Track order by email error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Create new order
 export const createOrder = async (req: AuthRequest, res: Response) => {
   try {

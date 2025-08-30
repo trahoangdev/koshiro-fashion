@@ -1,24 +1,41 @@
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-image.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
+  
+  const handleExplore = () => {
+    // Scroll to Collection section
+    const collectionSection = document.querySelector('[data-section="collection"]');
+    if (collectionSection) {
+      collectionSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Fallback: scroll to main content
+      const mainContent = document.querySelector('main');
+      if (mainContent) {
+        mainContent.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+  
   const translations = {
     en: {
-      title: "Timeless Japanese Fashion",
-      subtitle: "Discover the beauty of minimalist design and exceptional craftsmanship",
-      cta: "Shop Collection"
+      title: "Elevate Your Style with KOSHIRO",
+      subtitle: "Japanese-inspired fashion for the new generation. Redefine your wardrobe with minimal, bold, and timeless pieces.",
+      cta: "Explore Now"
     },
     vi: {
-      title: "Thời Trang Nhật Bản Vượt Thời Gian",
-      subtitle: "Khám phá vẻ đẹp của thiết kế tối giản và nghề thủ công đặc biệt",
-      cta: "Xem Bộ Sưu Tập"
+      title: "Nâng Tầm Phong Cách Cùng KOSHIRO",
+      subtitle: "Thời trang lấy cảm hứng từ Nhật Bản dành cho thế hệ mới. Tái định nghĩa tủ đồ của bạn với những thiết kế tối giản, cá tính và vượt thời gian.",
+      cta: "Khám Phá Ngay"
     },
     ja: {
-      title: "時代を超えた日本のファッション",
-      subtitle: "ミニマルなデザインと卓越した職人技の美しさを発見してください",
-      cta: "コレクションを見る"
+      title: "KOSHIROでスタイルを格上げ",
+      subtitle: "新世代のための日本発インスパイアファッション。ミニマルで大胆、そして時代を超えるデザインであなたのワードローブを再定義。",
+      cta: "今すぐ見る"
     }
   };
   const t = translations[language as keyof typeof translations] || translations.en;
@@ -39,7 +56,12 @@ const Hero = () => {
           <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed">
             {t.subtitle}
           </p>
-          <Button variant="ink" size="xl" className="shadow-strong text-slate-50">
+          <Button 
+            variant="ink" 
+            size="xl" 
+            className="shadow-strong text-slate-50 hover:scale-105 transition-transform duration-200"
+            onClick={handleExplore}
+          >
             {t.cta}
           </Button>
         </div>

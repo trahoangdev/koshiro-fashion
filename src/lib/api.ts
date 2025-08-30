@@ -440,6 +440,10 @@ class ApiClient {
     return this.request<Order>(`/orders/track/${orderNumber}`);
   }
 
+  async trackOrderByEmail(email: string): Promise<Order[]> {
+    return this.request<Order[]>(`/orders/track-email/${email}`);
+  }
+
   // Payment Methods
   async getPaymentMethods(): Promise<PaymentMethod[]> {
     try {

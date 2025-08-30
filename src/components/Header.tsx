@@ -362,6 +362,10 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
                     <CreditCard className="mr-2 h-4 w-4" />
                     {t.orders}
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/order-tracking')}>
+                    <Package className="mr-2 h-4 w-4" />
+                    Order Tracking
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/profile?section=addresses')}>
                     <MapPin className="mr-2 h-4 w-4" />
                     {t.addresses}

@@ -9,6 +9,7 @@ import Cart from "@/components/Cart";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { api, Product, Category } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -436,11 +437,26 @@ const Index = () => {
       
       <main className="py-16">
         <div className="container space-y-12">
-                     {/* Flash Sale Component */}
-           <FlashSale 
-             onAddToWishlist={addToWishlist}
-             onAddToCompare={addToCompare}
-           />
+                                {/* Flash Sale Section with Banner */}
+           <section className="relative overflow-hidden rounded-2xl">
+             {/* Banner Background */}
+             <div className="absolute inset-0">
+               <img 
+                 src="/images/categories/banner-01-flashsale.jpg" 
+                 alt="Flash Sale Banner"
+                 className="w-full h-full object-cover"
+               />
+               <div className="absolute inset-0 bg-gradient-to-r from-red-900/80 to-red-600/60"></div>
+             </div>
+             
+             {/* Content */}
+             <div className="relative z-10 p-8 md:p-12">
+               <FlashSale 
+                 onAddToWishlist={addToWishlist}
+                 onAddToCompare={addToCompare}
+               />
+             </div>
+           </section>
 
           {/* New Arrivals Section */}
           <section className="relative overflow-hidden rounded-2xl">
@@ -458,7 +474,7 @@ const Index = () => {
             <div className="relative z-10 p-8 md:p-12">
               <div className="text-center mb-8">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-                  ✨ {language === 'vi' ? 'Sản Phẩm Mới' : language === 'ja' ? '新着商品' : 'New Arrivals'}
+                   {language === 'vi' ? 'Sản Phẩm Mới' : language === 'ja' ? '新着商品' : 'New Arrivals'}
                 </h2>
                 <p className="text-lg text-white/90">
                   {language === 'vi' ? 'Khám phá những sản phẩm mới nhất trong bộ sưu tập của chúng tôi' :
@@ -491,56 +507,74 @@ const Index = () => {
             })()}
             </div>
           </section>
-          <section>
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                {language === 'vi' ? 'Bộ Sưu Tập' :
-                 language === 'ja' ? 'コレクション' : 'Collection'}
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                {language === 'vi' ? 'Khám phá bộ sưu tập thời trang Nhật Bản được tuyển chọn cẩn thận' :
-                 language === 'ja' ? '厳選された日本のファッションコレクションをご覧ください' :
-                 'Discover our carefully curated collection of Japanese fashion'}
-              </p>
-            </div>
+                                <section data-section="collection" className="relative overflow-hidden rounded-2xl">
+             {/* Banner Background */}
+             <div className="absolute inset-0">
+               <img 
+                 src="/images/categories/banner-03-collection.jpg" 
+                 alt="Collection Banner"
+                 className="w-full h-full object-cover"
+               />
+               <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-blue-600/60"></div>
+             </div>
+             
+             {/* Content */}
+             <div className="relative z-10 p-8 md:p-12">
+               {/* Collection Header */}
+               <div className="text-center mb-8">
+                 <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                   {language === 'vi' ? 'Bộ Sưu Tập' :
+                    language === 'ja' ? 'コレクション' : 'Collection'}
+                 </h2>
+                 <p className="text-lg text-white/90 max-w-2xl mx-auto">
+                   {language === 'vi' ? 'Khám phá bộ sưu tập thời trang Nhật Bản được tuyển chọn cẩn thận' :
+                    language === 'ja' ? '厳選された日本のファッションコレクションをご覧ください' :
+                    'Discover our carefully curated collection of Japanese fashion'}
+                 </p>
+               </div>
 
-            <FilterBar
-              selectedCategory={selectedCategory}
-              selectedPriceRange={selectedPriceRange}
-              selectedColor={selectedColor}
-              onCategoryChange={setSelectedCategory}
-              onPriceRangeChange={setSelectedPriceRange}
-              onColorChange={setSelectedColor}
-              onClearFilters={clearFilters}
-            />
-          </section>
+                {/* Filter Bar */}
+                <div className="mb-8">
+                  <FilterBar
+                    selectedCategory={selectedCategory}
+                    selectedPriceRange={selectedPriceRange}
+                    selectedColor={selectedColor}
+                    onCategoryChange={setSelectedCategory}
+                    onPriceRangeChange={setSelectedPriceRange}
+                    onColorChange={setSelectedColor}
+                    onClearFilters={clearFilters}
+                  />
+                </div>
 
-          <section>
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">
-                  {language === 'vi' ? 'Đang tải sản phẩm...' :
-                   language === 'ja' ? '商品を読み込み中...' : 'Loading products...'}
-                </p>
+                {/* Products Grid */}
+                <div>
+                  {isLoading ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                      <p className="text-white/90">
+                        {language === 'vi' ? 'Đang tải sản phẩm...' :
+                         language === 'ja' ? '商品を読み込み中...' : 'Loading products...'}
+                      </p>
+                    </div>
+                  ) : filteredProducts.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-white/90">
+                        {language === 'vi' ? 'Không tìm thấy sản phẩm nào.' :
+                         language === 'ja' ? '商品が見つかりません。' : 'No products found.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <EnhancedProductGrid
+                      products={filteredProducts}
+                      onAddToCart={addToCart}
+                      onAddToWishlist={addToWishlist}
+                      onAddToCompare={addToCompare}
+                      loading={isLoading}
+                    />
+                  )}
+                </div>
               </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">
-                  {language === 'vi' ? 'Không tìm thấy sản phẩm nào.' :
-                   language === 'ja' ? '商品が見つかりません。' : 'No products found.'}
-                </p>
-              </div>
-            ) : (
-              <EnhancedProductGrid
-                products={filteredProducts}
-                onAddToCart={addToCart}
-                onAddToWishlist={addToWishlist}
-                onAddToCompare={addToCompare}
-                loading={isLoading}
-              />
-            )}
-          </section>
+            </section>
 
           {/* Cart Toggle Button */}
           {cartItemsCount > 0 && (

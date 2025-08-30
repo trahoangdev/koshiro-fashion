@@ -8,7 +8,8 @@ import {
   updateOrderStatus,
   cancelOrder,
   getOrderStats,
-  trackOrder
+  trackOrder,
+  trackOrderByEmail
 } from '../controllers/orderController';
 import { authenticateToken, requireAdmin, requireCustomer, requireCustomerOrAdmin } from '../middleware/auth';
 
@@ -16,6 +17,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/track/:orderNumber', trackOrder);
+router.get('/track-email/:email', trackOrderByEmail);
 
 // Customer routes (protected)
 router.get('/my-orders', authenticateToken, requireCustomer, getUserOrders);
