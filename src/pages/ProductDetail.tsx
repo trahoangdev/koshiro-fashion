@@ -42,6 +42,7 @@ import {
   ArrowLeft,
   MoreHorizontal
 } from 'lucide-react';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 
 
@@ -848,9 +849,12 @@ const ProductDetail: React.FC = () => {
               <Card>
                 <CardContent className="pt-6">
                   <div className="prose max-w-none">
-                    <p className="text-base leading-7 text-muted-foreground">
-                      {getProductDescription() || 'No description available for this product.'}
-                    </p>
+                    <div className="text-base leading-7 text-muted-foreground">
+                      <MarkdownRenderer 
+                        content={getProductDescription() || 'No description available for this product.'}
+                        className="prose prose-sm max-w-none"
+                      />
+                    </div>
                     
                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>

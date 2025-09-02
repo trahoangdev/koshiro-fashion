@@ -33,6 +33,9 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Category } from "@/lib/api";
+import MDEditor from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
+import '@/styles/markdown-editor.css';
 
 interface ProductFormData {
   name: string;
@@ -449,30 +452,54 @@ export default function ProductForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">{t.description}</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-              />
+              <div className="border rounded-md overflow-hidden">
+                <MDEditor
+                  value={formData.description}
+                  onChange={(value) => setFormData(prev => ({ ...prev, description: value || '' }))}
+                  data-color-mode="light"
+                  height={250}
+                  preview="live"
+                  hideToolbar={false}
+                  visibleDragbar={false}
+                  textareaProps={{
+                    placeholder: 'Nhập mô tả sản phẩm bằng Markdown...\n\nVí dụ:\n**In đậm**\n*In nghiêng*\n# Tiêu đề\n- Danh sách\n1. Đánh số',
+                  }}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="descriptionEn">{t.descriptionEn}</Label>
-              <Textarea
-                id="descriptionEn"
-                value={formData.descriptionEn}
-                onChange={(e) => setFormData(prev => ({ ...prev, descriptionEn: e.target.value }))}
-                rows={3}
-              />
+              <div className="border rounded-md overflow-hidden">
+                <MDEditor
+                  value={formData.descriptionEn}
+                  onChange={(value) => setFormData(prev => ({ ...prev, descriptionEn: value || '' }))}
+                  data-color-mode="light"
+                  height={250}
+                  preview="live"
+                  hideToolbar={false}
+                  visibleDragbar={false}
+                  textareaProps={{
+                    placeholder: 'Enter product description in Markdown...\n\nExample:\n**Bold text**\n*Italic text*\n# Heading\n- List item\n1. Numbered list',
+                  }}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="descriptionJa">{t.descriptionJa}</Label>
-              <Textarea
-                id="descriptionJa"
-                value={formData.descriptionJa}
-                onChange={(e) => setFormData(prev => ({ ...prev, descriptionJa: e.target.value }))}
-                rows={3}
-              />
+              <div className="border rounded-md overflow-hidden">
+                <MDEditor
+                  value={formData.descriptionJa}
+                  onChange={(value) => setFormData(prev => ({ ...prev, descriptionJa: value || '' }))}
+                  data-color-mode="light"
+                  height={250}
+                  preview="live"
+                  hideToolbar={false}
+                  visibleDragbar={false}
+                  textareaProps={{
+                    placeholder: 'Markdownで商品説明を入力...\n\n例:\n**太字**\n*斜体*\n# 見出し\n- リスト\n1. 番号付きリスト',
+                  }}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

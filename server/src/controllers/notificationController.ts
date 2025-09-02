@@ -73,8 +73,154 @@ export const deleteNotification = async (req: Request, res: Response) => {
   }
 };
 
+// Create notification
+export const createNotification = async (req: Request, res: Response) => {
+  try {
+    const { userId, title, message, type, category, actionUrl, expiresAt } = req.body;
+
+    // Validate required fields
+    if (!title || !message || !type || !category) {
+      return res.status(400).json({ 
+        message: 'Title, message, type, and category are required' 
+      });
+    }
+
+    // Validate enum values
+    const validTypes = ['info', 'success', 'warning', 'error'];
+    const validCategories = ['system', 'order', 'product', 'user', 'marketing'];
+    
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ 
+        message: 'Invalid type. Must be one of: info, success, warning, error' 
+      });
+    }
+    
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ 
+        message: 'Invalid category. Must be one of: system, order, product, user, marketing' 
+      });
+    }
+
+    const notification = await Notification.create({
+      userId: userId || undefined,
+      title,
+      message,
+      type,
+      category,
+      actionUrl: actionUrl || undefined,
+      expiresAt: expiresAt ? new Date(expiresAt) : undefined,
+      read: false
+    });
+
+    res.status(201).json({
+      message: 'Notification created successfully',
+      data: notification
+    });
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Update notification
+export const updateNotification = async (req: Request, res: Response) => {
+  try {
+    const { notificationId } = req.params;
+    const { title, message, type, category, actionUrl, expiresAt, read } = req.body;
+
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
+    if (message !== undefined) updateData.message = message;
+    if (type !== undefined) updateData.type = type;
+    if (category !== undefined) updateData.category = category;
+    if (actionUrl !== undefined) updateData.actionUrl = actionUrl;
+    if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? new Date(expiresAt) : null;
+    if (read !== undefined) updateData.read = read;
+
+    const notification = await Notification.findByIdAndUpdate(
+      notificationId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    res.json({
+      message: 'Notification updated successfully',
+      data: notification
+    });
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Get single notification
+export const getNotificationById = async (req: Request, res: Response) => {
+  try {
+    const { notificationId } = req.params;
+    
+    const notification = await Notification.findById(notificationId);
+    
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    res.json({ data: notification });
+  } catch (error) {
+    console.error('Error getting notification:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Bulk operations
+export const bulkMarkAsRead = async (req: Request, res: Response) => {
+  try {
+    const { notificationIds } = req.body;
+    
+    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+      return res.status(400).json({ message: 'notificationIds array is required' });
+    }
+
+    const result = await Notification.updateMany(
+      { _id: { $in: notificationIds } },
+      { read: true }
+    );
+
+    res.json({
+      message: `${result.modifiedCount} notifications marked as read`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error bulk marking notifications as read:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const bulkDelete = async (req: Request, res: Response) => {
+  try {
+    const { notificationIds } = req.body;
+    
+    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+      return res.status(400).json({ message: 'notificationIds array is required' });
+    }
+
+    const result = await Notification.deleteMany({ _id: { $in: notificationIds } });
+
+    res.json({
+      message: `${result.deletedCount} notifications deleted`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error bulk deleting notifications:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Create notification (utility function for other controllers)
-export const createNotification = async (data: {
+export const createNotificationUtil = async (data: {
   userId?: string;
   title: string;
   message: string;

@@ -73,6 +73,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { Order, User as UserType, Product } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
+import { exportImportService } from "@/lib/exportImportService";
 import AdminLayout from "@/components/AdminLayout";
 import OrderDetailDialog from "@/components/OrderDetailDialog";
 import OrderForm from "@/components/OrderForm";
@@ -121,6 +122,7 @@ export default function AdminOrders() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { language } = useLanguage();
 
   const translations = {
@@ -875,78 +877,90 @@ export default function AdminOrders() {
 
   const handleExportOrders = async (format: 'csv' | 'excel' | 'json') => {
     try {
-      const dataToExport = filteredOrders.map(order => ({
+      setIsExporting(true);
+      
+      // Prepare order data for export using exportImportService
+      const exportData = filteredOrders.map(order => ({
+        id: order._id,
         orderNumber: order.orderNumber,
         customerName: order.userId?.name || 'Unknown',
         customerEmail: order.userId?.email || 'N/A',
+        customerPhone: order.shippingAddress?.phone || 'N/A',
         status: order.status,
         paymentStatus: order.paymentStatus,
         totalAmount: order.totalAmount,
         itemsCount: order.items.length,
-        createdAt: formatDate(order.createdAt),
+        createdAt: order.createdAt,
         shippingAddress: `${order.shippingAddress?.name || ''}, ${order.shippingAddress?.address || ''}, ${order.shippingAddress?.city || ''}`,
         paymentMethod: order.paymentMethod || 'N/A',
-        notes: order.notes || ''
+        notes: order.notes || '',
+        exportedAt: new Date().toISOString()
       }));
 
-      if (format === 'json') {
-        const dataStr = JSON.stringify(dataToExport, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `orders_export_${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        URL.revokeObjectURL(url);
-      } else if (format === 'csv') {
-        const headers = Object.keys(dataToExport[0] || {});
-        const csvContent = [
-          headers.join(','),
-          ...dataToExport.map(row => 
-            headers.map(header => 
-              `"${String(row[header as keyof typeof row]).replace(/"/g, '""')}"`
-            ).join(',')
-          )
-        ].join('\n');
-        
-        const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `orders_export_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
-      } else if (format === 'excel') {
-        // For Excel export, we'll use CSV format with .xlsx extension
-        // In a real application, you'd want to use a library like xlsx
-        const headers = Object.keys(dataToExport[0] || {});
-        const csvContent = [
-          headers.join('\t'),
-          ...dataToExport.map(row => 
-            headers.map(header => String(row[header as keyof typeof row])).join('\t')
-          )
-        ].join('\n');
-        
-        const dataBlob = new Blob([csvContent], { type: 'application/vnd.ms-excel' });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `orders_export_${new Date().toISOString().split('T')[0]}.xlsx`;
-        link.click();
-        URL.revokeObjectURL(url);
-      }
-
+      // Create export job using exportImportService
+      const job = await exportImportService.startExportJob('all', format, exportData);
+      
       toast({
-        title: "📁 Export Completed",
-        description: `${filteredOrders.length} orders exported as ${format.toUpperCase()} file`,
+        title: language === 'vi' ? "Xuất đơn hàng" : 
+               language === 'ja' ? "注文エクスポート" : 
+               "Export Orders",
+        description: language === 'vi' ? `Đang xuất ${filteredOrders.length} đơn hàng sang ${format.toUpperCase()}...` :
+                     language === 'ja' ? `${filteredOrders.length}件の注文を${format.toUpperCase()}にエクスポート中...` :
+                     `Exporting ${filteredOrders.length} orders to ${format.toUpperCase()}...`,
       });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getExportJob(job.id);
+        if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
+          // Trigger download
+          const link = document.createElement('a');
+          link.href = updatedJob.downloadUrl;
+          const extension = format === 'excel' ? 'xlsx' : format;
+          link.download = `orders_export_${new Date().toISOString().split('T')[0]}.${extension}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(updatedJob.downloadUrl);
+          
+          toast({
+            title: language === 'vi' ? "Xuất thành công" : 
+                   language === 'ja' ? "エクスポート成功" : 
+                   "Export Successful",
+            description: language === 'vi' ? `${filteredOrders.length} đơn hàng đã được xuất sang ${format.toUpperCase()}` :
+                         language === 'ja' ? `${filteredOrders.length}件の注文が${format.toUpperCase()}にエクスポートされました` :
+                         `${filteredOrders.length} orders exported to ${format.toUpperCase()}`,
+          });
+          setIsExporting(false);
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: language === 'vi' ? "Xuất thất bại" : 
+                   language === 'ja' ? "エクスポート失敗" : 
+                   "Export Failed",
+            description: updatedJob.error || (language === 'vi' ? "Không thể xuất đơn hàng" :
+                         language === 'ja' ? "注文をエクスポートできませんでした" :
+                         "Failed to export orders"),
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        } else {
+          setTimeout(checkJob, 500);
+        }
+      };
+      
+      checkJob();
     } catch (error) {
-      console.error('Error exporting orders:', error);
+      console.error('Export error:', error);
       toast({
-        title: "❌ Export Failed",
-        description: "Unable to export orders. Please try again.",
+        title: language === 'vi' ? "Lỗi xuất dữ liệu" : 
+               language === 'ja' ? "エクスポートエラー" : 
+               "Export Error",
+        description: language === 'vi' ? "Không thể xuất đơn hàng" :
+                     language === 'ja' ? "注文をエクスポートできませんでした" :
+                     "Failed to export orders",
         variant: "destructive",
       });
+      setIsExporting(false);
     }
   };
 
@@ -978,9 +992,9 @@ export default function AdminOrders() {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled={isExporting}>
                   <Download className="h-4 w-4 mr-2" />
-                  {t.export}
+                  {isExporting ? "Exporting..." : t.export}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

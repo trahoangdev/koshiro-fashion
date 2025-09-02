@@ -48,6 +48,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
+import { exportImportService } from "@/lib/exportImportService";
 import AdminLayout from "@/components/AdminLayout";
 import { Label } from "@/components/ui/label";
 
@@ -96,6 +97,7 @@ export default function AdminActivity() {
   const [selectedActivity, setSelectedActivity] = useState<ActivityLog | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const { language } = useLanguage();
 
   const translations = {
@@ -408,11 +410,92 @@ export default function AdminActivity() {
     setIsDetailDialogOpen(true);
   };
 
-  const handleExport = () => {
-    toast({
-      title: 'Export started',
-      description: 'Activity log export has been initiated',
-    });
+  const handleExport = async (format: 'csv' | 'excel' | 'json') => {
+    try {
+      setIsExporting(true);
+      
+      // Prepare activity data for export
+      const exportData = filteredActivities.map(activity => ({
+        id: activity.id,
+        timestamp: activity.timestamp,
+        userId: activity.userId,
+        userName: activity.userName,
+        userEmail: activity.userEmail,
+        action: activity.action,
+        resource: activity.resource,
+        resourceId: activity.resourceId,
+        details: activity.details,
+        category: activity.category,
+        severity: activity.severity,
+        ipAddress: activity.ipAddress,
+        userAgent: activity.userAgent
+      }));
+
+      // Create export job
+      const job = await exportImportService.startExportJob('all', format, exportData);
+      
+      toast({
+        title: language === 'vi' ? "Xuất nhật ký hoạt động" : 
+               language === 'ja' ? "アクティビティログエクスポート" : 
+               "Export Activity Log",
+        description: language === 'vi' ? `Đang xuất nhật ký hoạt động sang ${format.toUpperCase()}...` :
+                     language === 'ja' ? `アクティビティログを${format.toUpperCase()}にエクスポート中...` :
+                     `Exporting activity log to ${format.toUpperCase()}...`,
+      });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getExportJob(job.id);
+        if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
+          // Trigger download
+          const link = document.createElement('a');
+          link.href = updatedJob.downloadUrl;
+          const extension = format === 'excel' ? 'xlsx' : format;
+          link.download = `activity_log_export_${new Date().toISOString().split('T')[0]}.${extension}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(updatedJob.downloadUrl);
+          
+          toast({
+            title: language === 'vi' ? "Xuất thành công" : 
+                   language === 'ja' ? "エクスポート成功" : 
+                   "Export Successful",
+            description: language === 'vi' ? `Nhật ký hoạt động đã được xuất sang ${format.toUpperCase()}` :
+                         language === 'ja' ? `アクティビティログが${format.toUpperCase()}にエクスポートされました` :
+                         `Activity log exported to ${format.toUpperCase()}`,
+          });
+          setIsExporting(false);
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: language === 'vi' ? "Xuất thất bại" : 
+                   language === 'ja' ? "エクスポート失敗" : 
+                   "Export Failed",
+            description: updatedJob.error || (language === 'vi' ? "Không thể xuất nhật ký hoạt động" :
+                         language === 'ja' ? "アクティビティログをエクスポートできませんでした" :
+                         "Failed to export activity log"),
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        } else {
+          setTimeout(checkJob, 500);
+        }
+      };
+      
+      checkJob();
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: language === 'vi' ? "Lỗi xuất dữ liệu" : 
+               language === 'ja' ? "エクスポートエラー" : 
+               "Export Error",
+        description: language === 'vi' ? "Không thể xuất nhật ký hoạt động" :
+                     language === 'ja' ? "アクティビティログをエクスポートできませんでした" :
+                     "Failed to export activity log",
+        variant: "destructive",
+      });
+      setIsExporting(false);
+    }
   };
 
   const handleClear = () => {
@@ -501,10 +584,25 @@ export default function AdminActivity() {
             <Button variant="outline" size="sm" onClick={loadData}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              {t.export}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : t.export}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" size="sm" onClick={handleClear}>
               <Trash2 className="h-4 w-4 mr-2" />
               {t.clear}

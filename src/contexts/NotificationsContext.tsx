@@ -1,31 +1,37 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api } from '@/lib/api';
-
-interface Notification {
-  id: string;
-  type: 'order' | 'user' | 'product' | 'system' | 'alert';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'unread' | 'read' | 'archived';
-  title: string;
-  message: string;
-  timestamp: string;
-  sender?: string;
-  relatedId?: string;
-  actionUrl?: string;
-  icon?: string;
-}
+import { api, Notification } from '@/lib/api';
 
 interface NotificationsContextType {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
   loadNotifications: () => Promise<void>;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  archiveNotification: (id: string) => void;
-  deleteNotification: (id: string) => void;
-  clearAll: () => void;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  archiveNotification: (id: string) => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  clearAll: () => Promise<void>;
   refreshNotifications: () => void;
+  createNotification: (data: {
+    userId?: string;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    category: 'system' | 'order' | 'product' | 'user' | 'marketing';
+    actionUrl?: string;
+    expiresAt?: string;
+  }) => Promise<void>;
+  updateNotification: (id: string, data: {
+    title?: string;
+    message?: string;
+    type?: 'info' | 'success' | 'warning' | 'error';
+    category?: 'system' | 'order' | 'product' | 'user' | 'marketing';
+    actionUrl?: string;
+    expiresAt?: string;
+    read?: boolean;
+  }) => Promise<void>;
+  bulkMarkAsRead: (ids: string[]) => Promise<void>;
+  bulkDelete: (ids: string[]) => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
@@ -51,139 +57,14 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     try {
       setIsLoading(true);
       
-      // Load real notifications data from API
-      const [ordersResponse, usersResponse, productsResponse] = await Promise.all([
-        api.getAdminOrders({ page: 1, limit: 50 }),
-        api.getAdminUsers({ page: 1, limit: 50 }),
-        api.getAdminProducts({ page: 1, limit: 50 })
-      ]);
+      // Load notifications from API
+      const response = await api.getNotifications({ 
+        page: 1, 
+        limit: 100 
+      });
 
-      // Transform real data into notifications
-      const realNotifications: Notification[] = [];
-
-      // Order notifications
-      if (ordersResponse.data) {
-        ordersResponse.data.forEach((order: any) => {
-          // New order notification
-          realNotifications.push({
-            id: `order-${order._id}`,
-            type: 'order',
-            priority: 'high',
-            status: 'unread',
-            title: 'New Order Received',
-            message: `Order #${order.orderNumber} has been placed by ${order.userId?.name || 'Customer'}`,
-            timestamp: order.createdAt,
-            sender: 'System',
-            relatedId: order.orderNumber,
-            actionUrl: `/admin/orders/${order._id}`
-          });
-
-          // Order status change notifications
-          if (order.status === 'pending') {
-            realNotifications.push({
-              id: `order-pending-${order._id}`,
-              type: 'order',
-              priority: 'medium',
-              status: 'unread',
-              title: 'Order Pending Review',
-              message: `Order #${order.orderNumber} is pending review and processing`,
-              timestamp: order.updatedAt || order.createdAt,
-              sender: 'Order System',
-              relatedId: order.orderNumber
-            });
-          }
-
-          if (order.status === 'processing') {
-            realNotifications.push({
-              id: `order-processing-${order._id}`,
-              type: 'order',
-              priority: 'medium',
-              status: 'read',
-              title: 'Order Processing',
-              message: `Order #${order.orderNumber} is being processed`,
-              timestamp: order.updatedAt || order.createdAt,
-              sender: 'Order System',
-              relatedId: order.orderNumber
-            });
-          }
-        });
-      }
-
-      // User notifications
-      if (usersResponse.data) {
-        usersResponse.data.forEach((user: any) => {
-          const userCreated = new Date(user.createdAt);
-          const now = new Date();
-          const diffInHours = (now.getTime() - userCreated.getTime()) / (1000 * 60 * 60);
-
-          // New user registration (within last 24 hours)
-          if (diffInHours < 24) {
-            realNotifications.push({
-              id: `user-${user._id}`,
-              type: 'user',
-              priority: 'medium',
-              status: 'unread',
-              title: 'New User Registration',
-              message: `User ${user.email} has completed registration`,
-              timestamp: user.createdAt,
-              sender: 'System',
-              relatedId: user._id
-            });
-          }
-        });
-      }
-
-      // Product notifications
-      if (productsResponse.data) {
-        productsResponse.data.forEach((product: any) => {
-          // Low stock alerts
-          if (product.stock <= 10 && product.stock > 0) {
-            realNotifications.push({
-              id: `product-lowstock-${product._id}`,
-              type: 'product',
-              priority: 'medium',
-              status: 'unread',
-              title: 'Low Stock Alert',
-              message: `Product '${product.name}' is running low on stock (${product.stock} remaining)`,
-              timestamp: new Date().toISOString(),
-              sender: 'Inventory System',
-              relatedId: product._id
-            });
-          }
-
-          // Out of stock alerts
-          if (product.stock === 0) {
-            realNotifications.push({
-              id: `product-outofstock-${product._id}`,
-              type: 'product',
-              priority: 'high',
-              status: 'unread',
-              title: 'Out of Stock Alert',
-              message: `Product '${product.name}' is out of stock`,
-              timestamp: new Date().toISOString(),
-              sender: 'Inventory System',
-              relatedId: product._id
-            });
-          }
-        });
-      }
-
-      // System notifications (based on real data)
-      if (realNotifications.length > 0) {
-        realNotifications.push({
-          id: 'system-performance',
-          type: 'system',
-          priority: 'low',
-          status: 'read',
-          title: 'System Performance',
-          message: `System is running smoothly with ${realNotifications.length} active notifications`,
-          timestamp: new Date().toISOString(),
-          sender: 'System Monitor'
-        });
-      }
-
-      setNotifications(realNotifications);
-      updateUnreadCount(realNotifications);
+      setNotifications(response.data);
+      setUnreadCount(response.unreadCount);
     } catch (error) {
       console.error('Error loading notifications:', error);
       setNotifications([]);
@@ -193,54 +74,142 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     }
   };
 
-  const updateUnreadCount = (notifs: Notification[]) => {
-    const count = notifs.filter(n => n.status === 'unread').length;
-    setUnreadCount(count);
-  };
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev => {
-      const updated = prev.map(notification => 
-        notification.id === id 
-          ? { ...notification, status: 'read' as const }
-          : notification
+  const markAsRead = async (id: string) => {
+    try {
+      await api.markNotificationAsRead(id);
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification._id === id 
+            ? { ...notification, read: true }
+            : notification
+        )
       );
-      updateUnreadCount(updated);
-      return updated;
-    });
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => {
-      const updated = prev.map(notification => ({ ...notification, status: 'read' as const }));
-      updateUnreadCount(updated);
-      return updated;
-    });
-  };
-
-  const archiveNotification = (id: string) => {
-    setNotifications(prev => {
-      const updated = prev.map(notification => 
-        notification.id === id 
-          ? { ...notification, status: 'archived' as const }
-          : notification
+  const markAllAsRead = async () => {
+    try {
+      await api.markAllNotificationsAsRead();
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, read: true }))
       );
-      updateUnreadCount(updated);
-      return updated;
-    });
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => {
-      const updated = prev.filter(notification => notification.id !== id);
-      updateUnreadCount(updated);
-      return updated;
-    });
+  const archiveNotification = async (id: string) => {
+    try {
+      // For now, we'll just mark as read since we don't have archive functionality in backend
+      await api.markNotificationAsRead(id);
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification._id === id 
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error archiving notification:', error);
+    }
   };
 
-  const clearAll = () => {
-    setNotifications([]);
-    setUnreadCount(0);
+  const deleteNotification = async (id: string) => {
+    try {
+      await api.deleteNotification(id);
+      setNotifications(prev => prev.filter(notification => notification._id !== id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const clearAll = async () => {
+    try {
+      // Delete all notifications
+      const unreadIds = notifications.filter(n => !n.read).map(n => n._id);
+      if (unreadIds.length > 0) {
+        await api.bulkDelete(unreadIds);
+      }
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+    }
+  };
+
+  const createNotification = async (data: {
+    userId?: string;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    category: 'system' | 'order' | 'product' | 'user' | 'marketing';
+    actionUrl?: string;
+    expiresAt?: string;
+  }) => {
+    try {
+      const response = await api.createNotification(data);
+      setNotifications(prev => [response.data, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      throw error;
+    }
+  };
+
+  const updateNotification = async (id: string, data: {
+    title?: string;
+    message?: string;
+    type?: 'info' | 'success' | 'warning' | 'error';
+    category?: 'system' | 'order' | 'product' | 'user' | 'marketing';
+    actionUrl?: string;
+    expiresAt?: string;
+    read?: boolean;
+  }) => {
+    try {
+      const response = await api.updateNotification(id, data);
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification._id === id ? response.data : notification
+        )
+      );
+    } catch (error) {
+      console.error('Error updating notification:', error);
+      throw error;
+    }
+  };
+
+  const bulkMarkAsRead = async (ids: string[]) => {
+    try {
+      await api.bulkMarkAsRead(ids);
+      setNotifications(prev => 
+        prev.map(notification => 
+          ids.includes(notification._id) 
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - ids.length));
+    } catch (error) {
+      console.error('Error bulk marking notifications as read:', error);
+    }
+  };
+
+  const bulkDelete = async (ids: string[]) => {
+    try {
+      await api.bulkDelete(ids);
+      setNotifications(prev => prev.filter(notification => !ids.includes(notification._id)));
+      setUnreadCount(prev => Math.max(0, prev - ids.filter(id => 
+        notifications.find(n => n._id === id && !n.read)
+      ).length));
+    } catch (error) {
+      console.error('Error bulk deleting notifications:', error);
+    }
   };
 
   const refreshNotifications = () => {
@@ -267,7 +236,11 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     archiveNotification,
     deleteNotification,
     clearAll,
-    refreshNotifications
+    refreshNotifications,
+    createNotification,
+    updateNotification,
+    bulkMarkAsRead,
+    bulkDelete
   };
 
   return (

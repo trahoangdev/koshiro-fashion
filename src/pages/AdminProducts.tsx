@@ -597,24 +597,28 @@ export default function AdminProducts() {
   const handleExport = async (format: 'csv' | 'json' | 'excel') => {
     try {
       setIsExporting(true);
-      const exportData = exportImportService.transformProductsForExport(filteredProducts);
-      const job = await exportImportService.startExportJob('products', format, exportData);
+      
+      // Start export job - service will fetch data from API
+      const job = await exportImportService.startExportJob('products', format);
       
       toast({
         title: "Export Started",
-        description: `Exporting ${filteredProducts.length} products to ${format.toUpperCase()}`,
+        description: `Exporting products to ${format.toUpperCase()}`,
       });
 
-      // Wait for job completion
+      // Wait for job completion with better progress tracking
       const checkJob = async () => {
         const updatedJob = exportImportService.getExportJob(job.id);
         if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
+          // Trigger download
           const link = document.createElement('a');
           link.href = updatedJob.downloadUrl;
-          link.download = `products_${new Date().toISOString().split('T')[0]}.${format}`;
+          const extension = format === 'excel' ? 'xlsx' : format;
+          link.download = `products_export_${new Date().toISOString().split('T')[0]}.${extension}`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
+          URL.revokeObjectURL(updatedJob.downloadUrl);
           
           toast({
             title: "Export Completed",
@@ -629,7 +633,8 @@ export default function AdminProducts() {
           });
           setIsExporting(false);
         } else {
-          setTimeout(checkJob, 1000);
+          // Check more frequently for better UX
+          setTimeout(checkJob, 500);
         }
       };
       
@@ -655,6 +660,18 @@ export default function AdminProducts() {
       return;
     }
 
+    // Validate file type
+    const allowedTypes = ['.csv', '.json'];
+    const fileExtension = importFile.name.toLowerCase().substring(importFile.name.lastIndexOf('.'));
+    if (!allowedTypes.includes(fileExtension)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select a CSV or JSON file",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsImporting(true);
       const job = await exportImportService.startImportJob('products', importFile);
@@ -664,17 +681,22 @@ export default function AdminProducts() {
         description: `Importing products from ${importFile.name}`,
       });
 
-      // Wait for job completion
+      // Wait for job completion with progress tracking
       const checkJob = async () => {
         const updatedJob = exportImportService.getImportJob(job.id);
         if (updatedJob?.status === 'completed') {
+          const successMessage = updatedJob.error ? 
+            `Import completed with warnings: ${updatedJob.error}` :
+            `Successfully imported ${updatedJob.processedRows} products`;
+            
           toast({
             title: "Import Completed",
-            description: `Successfully imported ${updatedJob.processedRows} products`,
+            description: successMessage,
+            variant: updatedJob.error ? "default" : "default",
           });
           setIsImporting(false);
           setImportFile(null);
-          loadData(); // Reload data
+          loadData(); // Reload data to show new products
         } else if (updatedJob?.status === 'failed') {
           toast({
             title: "Import Failed",
@@ -683,7 +705,8 @@ export default function AdminProducts() {
           });
           setIsImporting(false);
         } else {
-          setTimeout(checkJob, 1000);
+          // Check more frequently for better progress updates
+          setTimeout(checkJob, 500);
         }
       };
       

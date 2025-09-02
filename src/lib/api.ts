@@ -241,16 +241,17 @@ export interface ActivityLog {
 }
 
 export interface Notification {
-  id: string;
-  type: 'info' | 'warning' | 'error' | 'success';
+  _id: string;
+  userId?: string;
   title: string;
   message: string;
-  timestamp: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  category: 'system' | 'order' | 'product' | 'user' | 'marketing';
   read: boolean;
-  action?: {
-    label: string;
-    url: string;
-  };
+  actionUrl?: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // API Client
@@ -1376,13 +1377,49 @@ class ApiClient {
     page?: number;
     limit?: number;
     read?: boolean;
+    unreadOnly?: boolean;
   }): Promise<PaginationResponse<Notification> & { unreadCount: number }> {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.read !== undefined) searchParams.append('read', params.read.toString());
+    if (params?.unreadOnly) searchParams.append('unreadOnly', 'true');
 
     return this.request<PaginationResponse<Notification> & { unreadCount: number }>(`/notifications?${searchParams}`);
+  }
+
+  async getNotificationById(id: string): Promise<{ data: Notification }> {
+    return this.request<{ data: Notification }>(`/notifications/${id}`);
+  }
+
+  async createNotification(notificationData: {
+    userId?: string;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    category: 'system' | 'order' | 'product' | 'user' | 'marketing';
+    actionUrl?: string;
+    expiresAt?: string;
+  }): Promise<{ message: string; data: Notification }> {
+    return this.request<{ message: string; data: Notification }>('/notifications', {
+      method: 'POST',
+      body: JSON.stringify(notificationData),
+    });
+  }
+
+  async updateNotification(id: string, notificationData: {
+    title?: string;
+    message?: string;
+    type?: 'info' | 'success' | 'warning' | 'error';
+    category?: 'system' | 'order' | 'product' | 'user' | 'marketing';
+    actionUrl?: string;
+    expiresAt?: string;
+    read?: boolean;
+  }): Promise<{ message: string; data: Notification }> {
+    return this.request<{ message: string; data: Notification }>(`/notifications/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(notificationData),
+    });
   }
 
   async markNotificationAsRead(id: string): Promise<{ message: string }> {
@@ -1392,8 +1429,22 @@ class ApiClient {
   }
 
   async markAllNotificationsAsRead(): Promise<{ message: string }> {
-    return this.request<{ message: string }>('/notifications/mark-all-read', {
+    return this.request<{ message: string }>('/notifications/all/read', {
       method: 'PUT',
+    });
+  }
+
+  async bulkMarkAsRead(notificationIds: string[]): Promise<{ message: string; modifiedCount: number }> {
+    return this.request<{ message: string; modifiedCount: number }>('/notifications/bulk/read', {
+      method: 'PUT',
+      body: JSON.stringify({ notificationIds }),
+    });
+  }
+
+  async bulkDelete(notificationIds: string[]): Promise<{ message: string; deletedCount: number }> {
+    return this.request<{ message: string; deletedCount: number }>('/notifications/bulk/delete', {
+      method: 'PUT',
+      body: JSON.stringify({ notificationIds }),
     });
   }
 
@@ -1401,6 +1452,22 @@ class ApiClient {
     return this.request<{ message: string }>(`/notifications/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async getNotificationStats(params?: {
+    period?: '1d' | '7d' | '30d' | '90d';
+  }): Promise<{
+    period: { startDate: string; endDate: string };
+    totalNotifications: number;
+    unreadNotifications: number;
+    readNotifications: number;
+    categoryStats: Array<{ _id: string; count: number; unread: number }>;
+    typeStats: Array<{ _id: string; count: number; unread: number }>;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params?.period) searchParams.append('period', params.period);
+
+    return this.request(`/notifications/stats?${searchParams}`);
   }
 }
 

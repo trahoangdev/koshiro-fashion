@@ -22,12 +22,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { exportImportService } from "@/lib/exportImportService";
 import {
   LineChart,
   Line,
@@ -111,6 +113,7 @@ export default function AdminAnalyticsPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("30d");
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
@@ -334,6 +337,125 @@ export default function AdminAnalyticsPage() {
 
     loadAnalyticsData();
   }, [toast, language, timeRange]);
+
+  const handleExport = async (format: 'csv' | 'excel' | 'json') => {
+    try {
+      setIsExporting(true);
+      
+      // Prepare analytics data for export - flatten complex objects
+      const exportData = [
+        // Revenue summary
+        {
+          category: 'Revenue',
+          total: data.revenue.total,
+          trend: data.revenue.trend,
+          timeRange: timeRange,
+          generatedAt: new Date().toISOString()
+        },
+        // Orders summary
+        {
+          category: 'Orders',
+          total: data.orders.total,
+          trend: data.orders.trend,
+          timeRange: timeRange,
+          generatedAt: new Date().toISOString()
+        },
+        // Products summary
+        {
+          category: 'Products',
+          total: data.products.total,
+          active: data.products.active,
+          lowStock: data.products.lowStock,
+          timeRange: timeRange,
+          generatedAt: new Date().toISOString()
+        },
+        // Customers summary
+        {
+          category: 'Customers',
+          total: data.customers.total,
+          active: data.customers.active,
+          newThisMonth: data.customers.newThisMonth,
+          timeRange: timeRange,
+          generatedAt: new Date().toISOString()
+        },
+        // Sales summary
+        {
+          category: 'Sales',
+          total: data.sales.total,
+          average: data.sales.average,
+          conversionRate: data.sales.conversionRate,
+          cartAbandonment: data.sales.cartAbandonment,
+          timeRange: timeRange,
+          generatedAt: new Date().toISOString()
+        }
+      ];
+
+      // Create export job
+      const job = await exportImportService.startExportJob('all', format, exportData);
+      
+      toast({
+        title: language === 'vi' ? "Xuất phân tích" : 
+               language === 'ja' ? "分析エクスポート" : 
+               "Export Analytics",
+        description: language === 'vi' ? `Đang xuất dữ liệu phân tích sang ${format.toUpperCase()}...` :
+                     language === 'ja' ? `分析データを${format.toUpperCase()}にエクスポート中...` :
+                     `Exporting analytics data to ${format.toUpperCase()}...`,
+      });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getExportJob(job.id);
+        if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
+          // Trigger download
+          const link = document.createElement('a');
+          link.href = updatedJob.downloadUrl;
+          const extension = format === 'excel' ? 'xlsx' : format;
+          link.download = `analytics_export_${new Date().toISOString().split('T')[0]}.${extension}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(updatedJob.downloadUrl);
+          
+          toast({
+            title: language === 'vi' ? "Xuất thành công" : 
+                   language === 'ja' ? "エクスポート成功" : 
+                   "Export Successful",
+            description: language === 'vi' ? `Dữ liệu phân tích đã được xuất sang ${format.toUpperCase()}` :
+                         language === 'ja' ? `分析データが${format.toUpperCase()}にエクスポートされました` :
+                         `Analytics data exported to ${format.toUpperCase()}`,
+          });
+          setIsExporting(false);
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: language === 'vi' ? "Xuất thất bại" : 
+                   language === 'ja' ? "エクスポート失敗" : 
+                   "Export Failed",
+            description: updatedJob.error || (language === 'vi' ? "Không thể xuất dữ liệu phân tích" :
+                         language === 'ja' ? "分析データをエクスポートできませんでした" :
+                         "Failed to export analytics data"),
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        } else {
+          setTimeout(checkJob, 500);
+        }
+      };
+      
+      checkJob();
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: language === 'vi' ? "Lỗi xuất dữ liệu" : 
+               language === 'ja' ? "エクスポートエラー" : 
+               "Export Error",
+        description: language === 'vi' ? "Không thể xuất dữ liệu phân tích" :
+                     language === 'ja' ? "分析データをエクスポートできませんでした" :
+                     "Failed to export analytics data",
+        variant: "destructive",
+      });
+      setIsExporting(false);
+    }
+  };
 
   const getTrendIcon = (trend: number) => {
     if (trend > 0) {
@@ -569,10 +691,25 @@ export default function AdminAnalyticsPage() {
                 <SelectItem value="1y">1 year</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              {t.export}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : t.export}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
               <RefreshCw className="h-4 w-4" />
             </Button>

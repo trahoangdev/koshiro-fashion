@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/currency";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import MarkdownRenderer from "./MarkdownRenderer";
 
 interface ProductCardProps {
   product: Product;
@@ -109,11 +110,11 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
             
             {/* Fallback: If no second image, show zoom effect on first image */}
             {!product.images[1] && (
-              <img
-                src={product.images[0] || '/placeholder.svg'}
-                alt={getName()}
+            <img
+              src={product.images[0] || '/placeholder.svg'}
+              alt={getName()}
                 className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-110"
-              />
+            />
             )}
             {/* Stock Status - Higher priority */}
             {product.stock <= 0 && (
@@ -167,9 +168,12 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
             <div className="flex flex-col h-full justify-between min-h-[180px]">
               <div className="space-y-3 flex-1">
                 <h3 className="font-semibold text-lg leading-tight line-clamp-2">{getName()}</h3>
-                <p className="text-muted-foreground text-sm line-clamp-3">
-                  {getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
-                </p>
+                <div className="text-muted-foreground text-sm line-clamp-3">
+                  <MarkdownRenderer 
+                    content={getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
+                    className="text-sm"
+                  />
+                </div>
                 
                 {/* Rating - Same design as Flash Sale */}
                 <div className="flex items-center gap-2 mb-2">
@@ -374,11 +378,11 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
         
         {/* Fallback: If no second image, show zoom effect on first image */}
         {!product.images[1] && (
-          <img
-            src={product.images[0] || '/placeholder.svg'}
-            alt={getName()}
+        <img
+          src={product.images[0] || '/placeholder.svg'}
+          alt={getName()}
             className="absolute inset-0 w-full h-full min-h-[280px] object-cover transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-110"
-          />
+        />
         )}
         
         {/* Stock Status - Higher priority */}
@@ -433,18 +437,21 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
       <CardContent className="p-4 flex-shrink-0">
         {/* Product Name */}
         <h3 className="font-semibold text-base leading-tight line-clamp-2 mb-2">
-          {getName()}
-        </h3>
-        
+            {getName()}
+          </h3>
+          
         {/* Product Description */}
-        <p className="text-muted-foreground text-xs line-clamp-2 mb-2">
-          {getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
-        </p>
-        
+        <div className="text-muted-foreground text-xs line-clamp-2 mb-2">
+            <MarkdownRenderer 
+              content={getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
+              className="text-xs"
+            />
+          </div>
+          
         {/* Rating */}
         <div className="flex items-center gap-2 mb-2">
           <div className="flex items-center">
-            {[1, 2, 3, 4, 5].map((star) => (
+              {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
                 className={`h-3 w-3 ${
@@ -458,22 +465,22 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           <span className="text-xs text-muted-foreground">
             (4.0)
           </span>
-        </div>
-          
+            </div>
+            
         {/* Colors */}
         <div className="mb-3">
           <p className="text-xs text-muted-foreground mb-1">
             {language === 'vi' ? 'Màu sắc' : language === 'ja' ? '色' : 'Colors'}:
           </p>
-          <div className="flex gap-1">
+            <div className="flex gap-1">
             {/* Show actual colors if available */}
             {product.colors && product.colors.length > 0 ? (
               <>
                 {product.colors.slice(0, 4).map((color, index) => (
-                  <div
+                <div
                     key={index}
                     className="w-4 h-4 rounded-full border border-gray-300"
-                    style={{ 
+                  style={{ 
                       backgroundColor: 
                         // Vietnamese colors
                         color === 'Đỏ' ? '#ef4444' :
@@ -559,8 +566,8 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                         '#6b7280'
                       }}
                       title={color}
-                    />
-                  ))}
+                />
+              ))}
                 {product.colors.length > 4 && (
                   <span className="text-xs text-muted-foreground ml-1">
                     +{product.colors.length - 4}
@@ -586,15 +593,15 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           {/* Price */}
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-red-600">
-              {formatCurrency(displayPrice, language)}
-            </span>
-            {originalDisplayPrice && originalDisplayPrice > displayPrice && (
-              <span className="text-sm text-muted-foreground line-through">
-                {formatCurrency(originalDisplayPrice, language)}
+                {formatCurrency(displayPrice, language)}
               </span>
-            )}
+              {originalDisplayPrice && originalDisplayPrice > displayPrice && (
+                <span className="text-sm text-muted-foreground line-through">
+                  {formatCurrency(originalDisplayPrice, language)}
+                </span>
+              )}
           </div>
-            
+          
           {/* Add to Cart Button */}
           <Button
             onClick={handleAddToCart}

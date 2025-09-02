@@ -24,7 +24,11 @@ import {
   ShoppingCart,
   CreditCard,
   Shield,
-  Zap
+  Zap,
+  Plus,
+  Edit,
+  Save,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,11 +37,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Notification } from "@/lib/api";
 
 interface NotificationSettings {
   email: boolean;
@@ -63,10 +71,14 @@ export default function AdminNotificationsPage() {
     archiveNotification, 
     deleteNotification, 
     clearAll,
-    refreshNotifications 
+    refreshNotifications,
+    createNotification,
+    updateNotification,
+    bulkMarkAsRead,
+    bulkDelete
   } = useNotifications();
   
-  const [filteredNotifications, setFilteredNotifications] = useState(notifications);
+  const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
   const [settings, setSettings] = useState<NotificationSettings>({
     email: true,
     push: true,
@@ -79,9 +91,23 @@ export default function AdminNotificationsPage() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [showSettings, setShowSettings] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
+  
+  // Form state for creating/editing notifications
+  const [formData, setFormData] = useState({
+    title: '',
+    message: '',
+    type: 'info' as 'info' | 'success' | 'warning' | 'error',
+    category: 'system' as 'system' | 'order' | 'product' | 'user' | 'marketing',
+    actionUrl: '',
+    expiresAt: ''
+  });
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
@@ -92,7 +118,7 @@ export default function AdminNotificationsPage() {
 
   useEffect(() => {
     filterNotifications();
-  }, [notifications, searchTerm, filterType, filterPriority, filterStatus]);
+  }, [notifications, searchTerm, filterType, filterCategory, filterStatus]);
 
   const filterNotifications = () => {
     let filtered = notifications;
@@ -101,8 +127,7 @@ export default function AdminNotificationsPage() {
     if (searchTerm) {
       filtered = filtered.filter(notification =>
         notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        notification.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        notification.sender?.toLowerCase().includes(searchTerm.toLowerCase())
+        notification.message.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -111,103 +136,269 @@ export default function AdminNotificationsPage() {
       filtered = filtered.filter(notification => notification.type === filterType);
     }
 
-    // Filter by priority
-    if (filterPriority !== "all") {
-      filtered = filtered.filter(notification => notification.priority === filterPriority);
+    // Filter by category
+    if (filterCategory !== "all") {
+      filtered = filtered.filter(notification => notification.category === filterCategory);
     }
 
     // Filter by status
     if (filterStatus !== "all") {
-      filtered = filtered.filter(notification => notification.status === filterStatus);
+      if (filterStatus === "unread") {
+        filtered = filtered.filter(notification => !notification.read);
+      } else if (filterStatus === "read") {
+        filtered = filtered.filter(notification => notification.read);
+      }
     }
 
     setFilteredNotifications(filtered);
   };
 
-  const handleMarkAsRead = (id: string) => {
-    markAsRead(id);
-    toast({
-      title: language === 'vi' ? "Đã đánh dấu đã đọc" : 
-             language === 'ja' ? "既読にマークされました" : 
-             "Marked as read",
-    });
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await markAsRead(id);
+      toast({
+        title: language === 'vi' ? "Đã đánh dấu đã đọc" : 
+               language === 'ja' ? "既読にマークされました" : 
+               "Marked as read",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to mark notification as read",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    markAllAsRead();
-    toast({
-      title: language === 'vi' ? "Đã đánh dấu tất cả" : 
-             language === 'ja' ? "すべて既読にしました" : 
-             "Marked all as read",
-    });
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead();
+      toast({
+        title: language === 'vi' ? "Đã đánh dấu tất cả" : 
+               language === 'ja' ? "すべて既読にしました" : 
+               "Marked all as read",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to mark all notifications as read",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleArchiveNotification = (id: string) => {
-    archiveNotification(id);
-    toast({
-      title: language === 'vi' ? "Đã lưu trữ thông báo" : 
-             language === 'ja' ? "通知がアーカイブされました" : 
-             "Notification archived",
-    });
+  const handleArchiveNotification = async (id: string) => {
+    try {
+      await archiveNotification(id);
+      toast({
+        title: language === 'vi' ? "Đã lưu trữ thông báo" : 
+               language === 'ja' ? "通知がアーカイブされました" : 
+               "Notification archived",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to archive notification",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteNotification = (id: string) => {
-    deleteNotification(id);
-    toast({
-      title: language === 'vi' ? "Đã xóa thông báo" : 
-             language === 'ja' ? "通知を削除しました" : 
-             "Notification deleted",
-    });
+  const handleDeleteNotification = async (id: string) => {
+    try {
+      await deleteNotification(id);
+      toast({
+        title: language === 'vi' ? "Đã xóa thông báo" : 
+               language === 'ja' ? "通知を削除しました" : 
+               "Notification deleted",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete notification",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleClearAll = () => {
-    clearAll();
-    toast({
-      title: language === 'vi' ? "Đã xóa tất cả" : 
-             language === 'ja' ? "すべて削除しました" : 
-             "Cleared all notifications",
+  const handleClearAll = async () => {
+    try {
+      await clearAll();
+      toast({
+        title: language === 'vi' ? "Đã xóa tất cả" : 
+               language === 'ja' ? "すべて削除しました" : 
+               "Cleared all notifications",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to clear all notifications",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreateNotification = async () => {
+    try {
+      await createNotification(formData);
+      setShowCreateDialog(false);
+      setFormData({
+        title: '',
+        message: '',
+        type: 'info',
+        category: 'system',
+        actionUrl: '',
+        expiresAt: ''
+      });
+      toast({
+        title: "Success",
+        description: "Notification created successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create notification",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditNotification = async () => {
+    if (!editingNotification) return;
+    
+    try {
+      await updateNotification(editingNotification._id, formData);
+      setShowEditDialog(false);
+      setEditingNotification(null);
+      setFormData({
+        title: '',
+        message: '',
+        type: 'info',
+        category: 'system',
+        actionUrl: '',
+        expiresAt: ''
+      });
+      toast({
+        title: "Success",
+        description: "Notification updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update notification",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBulkMarkAsRead = async () => {
+    if (selectedNotifications.length === 0) return;
+    
+    try {
+      await bulkMarkAsRead(selectedNotifications);
+      setSelectedNotifications([]);
+      toast({
+        title: "Success",
+        description: `Marked ${selectedNotifications.length} notifications as read`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to mark notifications as read",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedNotifications.length === 0) return;
+    
+    try {
+      await bulkDelete(selectedNotifications);
+      setSelectedNotifications([]);
+      toast({
+        title: "Success",
+        description: `Deleted ${selectedNotifications.length} notifications`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete notifications",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openEditDialog = (notification: Notification) => {
+    setEditingNotification(notification);
+    setFormData({
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      category: notification.category,
+      actionUrl: notification.actionUrl || '',
+      expiresAt: notification.expiresAt ? new Date(notification.expiresAt).toISOString().slice(0, 16) : ''
     });
+    setShowEditDialog(true);
+  };
+
+  const toggleNotificationSelection = (id: string) => {
+    setSelectedNotifications(prev => 
+      prev.includes(id) 
+        ? prev.filter(nId => nId !== id)
+        : [...prev, id]
+    );
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'order': return <ShoppingCart className="h-4 w-4" />;
-      case 'user': return <User className="h-4 w-4" />;
-      case 'product': return <Package className="h-4 w-4" />;
-      case 'system': return <Settings className="h-4 w-4" />;
-      case 'alert': return <AlertTriangle className="h-4 w-4" />;
+      case 'info': return <Info className="h-4 w-4" />;
+      case 'success': return <CheckCircle className="h-4 w-4" />;
+      case 'warning': return <AlertTriangle className="h-4 w-4" />;
+      case 'error': return <XCircle className="h-4 w-4" />;
       default: return <Bell className="h-4 w-4" />;
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-600';
-      case 'high': return 'bg-orange-600';
-      case 'medium': return 'bg-yellow-600';
-      case 'low': return 'bg-blue-600';
-      default: return 'bg-gray-600';
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'info': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/50';
+      case 'success': return 'text-green-600 bg-green-100 dark:bg-green-900/50';
+      case 'warning': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/50';
+      case 'error': return 'text-red-600 bg-red-100 dark:bg-red-900/50';
+      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-900/50';
     }
   };
 
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return language === 'vi' ? 'Khẩn cấp' : language === 'ja' ? '緊急' : 'Urgent';
-      case 'high': return language === 'vi' ? 'Cao' : language === 'ja' ? '高' : 'High';
-      case 'medium': return language === 'vi' ? 'Trung bình' : language === 'ja' ? '中' : 'Medium';
-      case 'low': return language === 'vi' ? 'Thấp' : language === 'ja' ? '低' : 'Low';
-      default: return priority;
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'order': return <ShoppingCart className="h-4 w-4" />;
+      case 'user': return <User className="h-4 w-4" />;
+      case 'product': return <Package className="h-4 w-4" />;
+      case 'system': return <Settings className="h-4 w-4" />;
+      case 'marketing': return <Zap className="h-4 w-4" />;
+      default: return <Bell className="h-4 w-4" />;
     }
   };
 
   const getTypeLabel = (type: string) => {
     switch (type) {
+      case 'info': return language === 'vi' ? 'Thông tin' : language === 'ja' ? '情報' : 'Info';
+      case 'success': return language === 'vi' ? 'Thành công' : language === 'ja' ? '成功' : 'Success';
+      case 'warning': return language === 'vi' ? 'Cảnh báo' : language === 'ja' ? '警告' : 'Warning';
+      case 'error': return language === 'vi' ? 'Lỗi' : language === 'ja' ? 'エラー' : 'Error';
+      default: return type;
+    }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
       case 'order': return language === 'vi' ? 'Đơn hàng' : language === 'ja' ? '注文' : 'Order';
       case 'user': return language === 'vi' ? 'Người dùng' : language === 'ja' ? 'ユーザー' : 'User';
       case 'product': return language === 'vi' ? 'Sản phẩm' : language === 'ja' ? '商品' : 'Product';
       case 'system': return language === 'vi' ? 'Hệ thống' : language === 'ja' ? 'システム' : 'System';
-      case 'alert': return language === 'vi' ? 'Cảnh báo' : language === 'ja' ? 'アラート' : 'Alert';
-      default: return type;
+      case 'marketing': return language === 'vi' ? 'Marketing' : language === 'ja' ? 'マーケティング' : 'Marketing';
+      default: return category;
     }
   };
 
@@ -338,6 +529,111 @@ export default function AdminNotificationsPage() {
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Notification
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Create New Notification</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Notification title"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="message">Message</Label>
+                    <Textarea
+                      id="message"
+                      value={formData.message}
+                      onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Notification message"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="type">Type</Label>
+                      <Select value={formData.type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="info">Info</SelectItem>
+                          <SelectItem value="success">Success</SelectItem>
+                          <SelectItem value="warning">Warning</SelectItem>
+                          <SelectItem value="error">Error</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="category">Category</Label>
+                      <Select value={formData.category} onValueChange={(value: any) => setFormData(prev => ({ ...prev, category: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="system">System</SelectItem>
+                          <SelectItem value="order">Order</SelectItem>
+                          <SelectItem value="product">Product</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="actionUrl">Action URL (optional)</Label>
+                    <Input
+                      id="actionUrl"
+                      value={formData.actionUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, actionUrl: e.target.value }))}
+                      placeholder="/admin/orders"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="expiresAt">Expires At (optional)</Label>
+                    <Input
+                      id="expiresAt"
+                      type="datetime-local"
+                      value={formData.expiresAt}
+                      onChange={(e) => setFormData(prev => ({ ...prev, expiresAt: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateNotification}>
+                    Create Notification
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            {selectedNotifications.length > 0 && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleBulkMarkAsRead}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark Selected as Read
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleBulkDelete}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Selected
+                </Button>
+              </>
+            )}
+            
             <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
               <CheckCircle className="h-4 w-4 mr-2" />
               {t.markAllRead}
@@ -381,12 +677,12 @@ export default function AdminNotificationsPage() {
           </Card>
           <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 dark:from-orange-950 dark:to-orange-900 dark:border-orange-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300">High Priority</CardTitle>
+              <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300">Errors & Warnings</CardTitle>
               <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-800 dark:text-orange-200">
-                {notifications.filter(n => n.priority === 'high' || n.priority === 'urgent').length}
+                {notifications.filter(n => n.type === 'error' || n.type === 'warning').length}
               </div>
             </CardContent>
           </Card>
@@ -399,7 +695,7 @@ export default function AdminNotificationsPage() {
               <div className="text-2xl font-bold text-purple-800 dark:text-purple-200">
                 {notifications.filter(n => {
                   const today = new Date();
-                  const notificationDate = new Date(n.timestamp);
+                  const notificationDate = new Date(n.createdAt);
                   return notificationDate.toDateString() === today.toDateString();
                 }).length}
               </div>
@@ -424,23 +720,23 @@ export default function AdminNotificationsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t.all}</SelectItem>
-                <SelectItem value="order">{t.orderNotifications}</SelectItem>
-                <SelectItem value="user">{t.userNotifications}</SelectItem>
-                <SelectItem value="product">{t.productNotifications}</SelectItem>
-                <SelectItem value="system">{t.systemNotifications}</SelectItem>
-                <SelectItem value="alert">{t.alertNotifications}</SelectItem>
+                <SelectItem value="info">Info</SelectItem>
+                <SelectItem value="success">Success</SelectItem>
+                <SelectItem value="warning">Warning</SelectItem>
+                <SelectItem value="error">Error</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t.all}</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="system">System</SelectItem>
+                <SelectItem value="order">Order</SelectItem>
+                <SelectItem value="product">Product</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="marketing">Marketing</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -451,7 +747,6 @@ export default function AdminNotificationsPage() {
                 <SelectItem value="all">{t.all}</SelectItem>
                 <SelectItem value="unread">{t.unread}</SelectItem>
                 <SelectItem value="read">{t.read}</SelectItem>
-                <SelectItem value="archived">{t.archived}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -551,19 +846,23 @@ export default function AdminNotificationsPage() {
         <div className="space-y-4">
           {filteredNotifications.length > 0 ? (
             filteredNotifications.map((notification) => (
-              <Card key={notification.id} className={`transition-all duration-200 ${
-                notification.status === 'unread' 
+              <Card key={notification._id} className={`transition-all duration-200 ${
+                !notification.read 
                   ? 'border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20' 
                   : 'border-l-4 border-l-transparent'
               }`}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
-                      <div className={`p-2 rounded-full ${
-                        notification.status === 'unread' 
-                          ? 'bg-blue-100 dark:bg-blue-900/50' 
-                          : 'bg-gray-100 dark:bg-gray-800'
-                      }`}>
+                      <input
+                        type="checkbox"
+                        checked={selectedNotifications.includes(notification._id)}
+                        onChange={() => toggleNotificationSelection(notification._id)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex-shrink-0">
+                      <div className={`p-2 rounded-full ${getTypeColor(notification.type)}`}>
                         {getTypeIcon(notification.type)}
                       </div>
                     </div>
@@ -573,24 +872,21 @@ export default function AdminNotificationsPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className={`font-medium ${
-                              notification.status === 'unread' 
+                              !notification.read 
                                 ? 'text-blue-900 dark:text-blue-100' 
                                 : 'text-gray-900 dark:text-gray-100'
                             }`}>
                               {notification.title}
                             </h3>
-                            <Badge 
-                              variant="secondary" 
-                              className={`${getPriorityColor(notification.priority)} text-white text-xs`}
-                            >
-                              {getPriorityLabel(notification.priority)}
-                            </Badge>
                             <Badge variant="outline" className="text-xs">
                               {getTypeLabel(notification.type)}
                             </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {getCategoryLabel(notification.category)}
+                            </Badge>
                           </div>
                           <p className={`text-sm ${
-                            notification.status === 'unread' 
+                            !notification.read 
                               ? 'text-blue-700 dark:text-blue-300' 
                               : 'text-gray-600 dark:text-gray-400'
                           }`}>
@@ -599,23 +895,33 @@ export default function AdminNotificationsPage() {
                           <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {formatTime(notification.timestamp)}
+                              {formatTime(notification.createdAt)}
                             </span>
-                            {notification.sender && (
-                              <span className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {notification.sender}
+                            <span className="flex items-center gap-1">
+                              {getCategoryIcon(notification.category)}
+                              {getCategoryLabel(notification.category)}
+                            </span>
+                            {notification.actionUrl && (
+                              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                                <Zap className="h-3 w-3" />
+                                Has Action
+                              </span>
+                            )}
+                            {notification.expiresAt && (
+                              <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                                <Clock className="h-3 w-3" />
+                                Expires {new Date(notification.expiresAt).toLocaleDateString()}
                               </span>
                             )}
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-2 ml-4">
-                          {notification.status === 'unread' && (
+                          {!notification.read && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleMarkAsRead(notification.id)}
+                              onClick={() => handleMarkAsRead(notification._id)}
                               className="h-8 w-8 p-0"
                             >
                               <Eye className="h-4 w-4" />
@@ -624,15 +930,15 @@ export default function AdminNotificationsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleArchiveNotification(notification.id)}
+                            onClick={() => openEditDialog(notification)}
                             className="h-8 w-8 p-0"
                           >
-                            <Archive className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteNotification(notification.id)}
+                            onClick={() => handleDeleteNotification(notification._id)}
                             className="h-8 w-8 p-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -653,6 +959,93 @@ export default function AdminNotificationsPage() {
             </Card>
           )}
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Notification</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-title">Title</Label>
+                <Input
+                  id="edit-title"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Notification title"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-message">Message</Label>
+                <Textarea
+                  id="edit-message"
+                  value={formData.message}
+                  onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Notification message"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-type">Type</Label>
+                  <Select value={formData.type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="info">Info</SelectItem>
+                      <SelectItem value="success">Success</SelectItem>
+                      <SelectItem value="warning">Warning</SelectItem>
+                      <SelectItem value="error">Error</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Select value={formData.category} onValueChange={(value: any) => setFormData(prev => ({ ...prev, category: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="system">System</SelectItem>
+                      <SelectItem value="order">Order</SelectItem>
+                      <SelectItem value="product">Product</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-actionUrl">Action URL (optional)</Label>
+                <Input
+                  id="edit-actionUrl"
+                  value={formData.actionUrl}
+                  onChange={(e) => setFormData(prev => ({ ...prev, actionUrl: e.target.value }))}
+                  placeholder="/admin/orders"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-expiresAt">Expires At (optional)</Label>
+                <Input
+                  id="edit-expiresAt"
+                  type="datetime-local"
+                  value={formData.expiresAt}
+                  onChange={(e) => setFormData(prev => ({ ...prev, expiresAt: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditNotification}>
+                Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
