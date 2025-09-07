@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { ActivityLog } from '../models/ActivityLog';
 
 // Get activity logs with filtering
-export const getActivityLogs = async (req: Request, res: Response) => {
-  try {
-    const { page = 1, limit = 50, category, severity, startDate, endDate } = req.query;
+export const getActivityLogs = asyncHandler(async (req: Request, res: Response) => {
+  const { page = 1, limit = 50, category, severity, startDate, endDate } = req.query;
     
     const query: any = {};
     
@@ -32,17 +32,10 @@ export const getActivityLogs = async (req: Request, res: Response) => {
         total,
         pages: Math.ceil(total / Number(limit))
       }
-    });
-  } catch (error) {
-    console.error('Error getting activity logs:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Clear activity logs
-export const clearActivityLogs = async (req: Request, res: Response) => {
-  try {
-    const { days } = req.body;
+export const clearActivityLogs = asyncHandler(async (req: Request, res: Response) => {
+  const { days } = req.body;
     
     let dateFilter = {};
     if (days) {
@@ -56,13 +49,7 @@ export const clearActivityLogs = async (req: Request, res: Response) => {
     res.json({ 
       message: `Cleared ${result.deletedCount} activity logs`,
       deletedCount: result.deletedCount
-    });
-  } catch (error) {
-    console.error('Error clearing activity logs:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Create activity log (utility function for other controllers)
 export const createActivityLog = async (data: {
   userId?: string;
@@ -85,7 +72,7 @@ export const createActivityLog = async (data: {
 };
 
 // Get activity log statistics
-export const getActivityStats = async (req: Request, res: Response) => {
+export const getActivityStats = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { period = '7d' } = req.query;
     
@@ -165,6 +152,6 @@ export const getActivityStats = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting activity stats:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Error getting activity statistics' });
   }
-}; 
+});

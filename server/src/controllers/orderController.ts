@@ -182,14 +182,29 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
     }
-    const userId = req.user.userId;
+    
+    const userRole = req.user.role;
     const {
+      userId: requestedUserId,
       items,
       shippingAddress,
       billingAddress,
       paymentMethod,
-      notes
+      notes,
+      status,
+      paymentStatus,
+      trackingNumber
     } = req.body;
+
+    // Determine the actual userId to use
+    let userId: string;
+    if (userRole === 'admin' && requestedUserId) {
+      // Admin creating order for another user
+      userId = requestedUserId;
+    } else {
+      // Customer creating order for themselves
+      userId = req.user.userId;
+    }
 
     // Validate items
     if (!items || items.length === 0) {
@@ -248,7 +263,8 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
     // Generate unique order number
     const orderNumber = await generateOrderNumber();
     
-    const order = new Order({
+    // Prepare order data
+    const orderData: any = {
       orderNumber,
       userId,
       items: orderItems,
@@ -257,7 +273,16 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
       billingAddress,
       paymentMethod,
       notes
-    });
+    };
+
+    // Add admin-specific fields if provided
+    if (userRole === 'admin') {
+      if (status) orderData.status = status;
+      if (paymentStatus) orderData.paymentStatus = paymentStatus;
+      if (trackingNumber) orderData.trackingNumber = trackingNumber;
+    }
+    
+    const order = new Order(orderData);
 
     await order.save();
 

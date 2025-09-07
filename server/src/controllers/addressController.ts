@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { User } from '../models/User';
 import mongoose from 'mongoose';
 
@@ -12,7 +13,7 @@ interface AuthRequest extends Request {
 }
 
 // Get user addresses
-export const getUserAddresses = async (req: AuthRequest, res: Response) => {
+export const getUserAddresses = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
@@ -23,9 +24,8 @@ export const getUserAddresses = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Return addresses with proper IDs
-    const addresses = (user.addresses || []).map(addr => ({
-      _id: (addr as any)._id || new mongoose.Types.ObjectId(),
+    const addresses = user.addresses?.map(addr => ({
+      _id: (addr as any)._id,
       type: addr.type,
       fullName: addr.fullName,
       phone: addr.phone,
@@ -35,17 +35,17 @@ export const getUserAddresses = async (req: AuthRequest, res: Response) => {
       zipCode: addr.zipCode,
       country: addr.country,
       isDefault: addr.isDefault
-    }));
+    })) || [];
 
     res.json({ addresses });
   } catch (error) {
     console.error('Get addresses error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
-};
+});
 
 // Add new address
-export const addAddress = async (req: AuthRequest, res: Response) => {
+export const addAddress = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
@@ -53,7 +53,6 @@ export const addAddress = async (req: AuthRequest, res: Response) => {
 
     const { type, fullName, phone, address, city, state, zipCode, country, isDefault } = req.body;
 
-    // Validate required fields
     if (!fullName || !phone || !address || !city || !state || !zipCode || !country) {
       return res.status(400).json({ message: 'All address fields are required' });
     }
@@ -70,10 +69,9 @@ export const addAddress = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Create new address
     const newAddress = {
       _id: new mongoose.Types.ObjectId(),
-      type: type || 'shipping',
+      type: type || 'home',
       fullName,
       phone,
       address,
@@ -81,15 +79,14 @@ export const addAddress = async (req: AuthRequest, res: Response) => {
       state,
       zipCode,
       country,
-      isDefault: isDefault || (user.addresses?.length === 0)
+      isDefault: isDefault || false
     };
 
-    // Add to user's addresses
     if (!user.addresses) {
       user.addresses = [];
     }
-    user.addresses.push(newAddress);
 
+    user.addresses.push(newAddress);
     await user.save();
 
     res.status(201).json({
@@ -98,12 +95,12 @@ export const addAddress = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Add address error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
-};
+});
 
 // Update address
-export const updateAddress = async (req: AuthRequest, res: Response) => {
+export const updateAddress = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
@@ -129,7 +126,6 @@ export const updateAddress = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Update address
     const updatedAddress = {
       ...user.addresses![addressIndex],
       type: type || user.addresses![addressIndex].type,
@@ -152,12 +148,12 @@ export const updateAddress = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Update address error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
-};
+});
 
 // Delete address
-export const deleteAddress = async (req: AuthRequest, res: Response) => {
+export const deleteAddress = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
@@ -175,14 +171,11 @@ export const deleteAddress = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Address not found' });
     }
 
-    // Check if it's the default address
-    const isDefaultAddress = user.addresses![addressIndex].isDefault;
+    const wasDefault = user.addresses![addressIndex].isDefault;
+    user.addresses!.splice(addressIndex, 1);
 
-    // Remove address
-    user.addresses?.splice(addressIndex, 1);
-
-    // If we deleted the default address, make the first remaining address default
-    if (isDefaultAddress && user.addresses && user.addresses.length > 0) {
+    // If deleted address was default, set first remaining address as default
+    if (wasDefault && user.addresses && user.addresses.length > 0) {
       user.addresses[0].isDefault = true;
     }
 
@@ -191,12 +184,12 @@ export const deleteAddress = async (req: AuthRequest, res: Response) => {
     res.json({ message: 'Address deleted successfully' });
   } catch (error) {
     console.error('Delete address error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
-};
+});
 
 // Set default address
-export const setDefaultAddress = async (req: AuthRequest, res: Response) => {
+export const setDefaultAddress = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
@@ -227,6 +220,6 @@ export const setDefaultAddress = async (req: AuthRequest, res: Response) => {
     res.json({ message: 'Default address updated successfully' });
   } catch (error) {
     console.error('Set default address error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
-};
+});

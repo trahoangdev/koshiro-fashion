@@ -45,6 +45,12 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminActivity from "./pages/AdminActivity";
 import AdminReviews from "./pages/AdminReviews";
 import AdminSettings from "./pages/AdminSettings";
+import AdminPromotionsPage from "./pages/AdminPromotionsPage";
+import AdminInventoryPage from "./pages/AdminInventoryPage";
+import AdminShippingPage from "./pages/AdminShippingPage";
+import AdminPaymentsPage from "./pages/AdminPaymentsPage";
+import AdminRolesPage from "./pages/AdminRolesPage";
+import AdminApiPage from "./pages/AdminApiPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -160,6 +166,48 @@ const App = () => (
                   <NotificationsProvider>
                     <ProtectedAdminRoute>
                       <AdminSettings />
+                    </ProtectedAdminRoute>
+                  </NotificationsProvider>
+                } />
+                <Route path="/admin/promotions" element={
+                  <NotificationsProvider>
+                    <ProtectedAdminRoute>
+                      <AdminPromotionsPage />
+                    </ProtectedAdminRoute>
+                  </NotificationsProvider>
+                } />
+                <Route path="/admin/inventory" element={
+                  <NotificationsProvider>
+                    <ProtectedAdminRoute>
+                      <AdminInventoryPage />
+                    </ProtectedAdminRoute>
+                  </NotificationsProvider>
+                } />
+                <Route path="/admin/shipping" element={
+                  <NotificationsProvider>
+                    <ProtectedAdminRoute>
+                      <AdminShippingPage />
+                    </ProtectedAdminRoute>
+                  </NotificationsProvider>
+                } />
+                <Route path="/admin/payments" element={
+                  <NotificationsProvider>
+                    <ProtectedAdminRoute>
+                      <AdminPaymentsPage />
+                    </ProtectedAdminRoute>
+                  </NotificationsProvider>
+                } />
+                <Route path="/admin/roles" element={
+                  <NotificationsProvider>
+                    <ProtectedAdminRoute>
+                      <AdminRolesPage />
+                    </ProtectedAdminRoute>
+                  </NotificationsProvider>
+                } />
+                <Route path="/admin/api" element={
+                  <NotificationsProvider>
+                    <ProtectedAdminRoute>
+                      <AdminApiPage />
                     </ProtectedAdminRoute>
                   </NotificationsProvider>
                 } />

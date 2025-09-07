@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { Category } from '../models/Category';
 import { Product } from '../models/Product';
 
 // Get all categories
-export const getCategories = async (req: Request, res: Response) => {
-  try {
-    const { isActive, parentId } = req.query;
+export const getCategories = asyncHandler(async (req: Request, res: Response) => {
+  const { isActive, parentId } = req.query;
 
     const filter: any = {};
     
@@ -20,17 +20,10 @@ export const getCategories = async (req: Request, res: Response) => {
     const categories = await Category.find(filter)
       .sort({ name: 1 });
 
-    res.json({ categories });
-  } catch (error) {
-    console.error('Get categories error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json({ categories });});
 // Get single category by ID
-export const getCategory = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+export const getCategory = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     
     const category = await Category.findById(id);
     
@@ -38,17 +31,10 @@ export const getCategory = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    res.json({ category });
-  } catch (error) {
-    console.error('Get category error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json({ category });});
 // Get category by slug
-export const getCategoryBySlug = async (req: Request, res: Response) => {
-  try {
-    const { slug } = req.params;
+export const getCategoryBySlug = asyncHandler(async (req: Request, res: Response) => {
+  const { slug } = req.params;
     
     const category = await Category.findOne({ slug });
     
@@ -56,17 +42,10 @@ export const getCategoryBySlug = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    res.json({ category });
-  } catch (error) {
-    console.error('Get category by slug error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json({ category });});
 // Create new category
-export const createCategory = async (req: Request, res: Response) => {
-  try {
-    const {
+export const createCategory = asyncHandler(async (req: Request, res: Response) => {
+  const {
       name,
       nameEn,
       nameJa,
@@ -111,17 +90,10 @@ export const createCategory = async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'Category created successfully',
       category
-    });
-  } catch (error) {
-    console.error('Create category error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Update category
-export const updateCategory = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+export const updateCategory = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     const updateData = req.body;
 
     // Check if slug is being updated and if it already exists
@@ -160,17 +132,10 @@ export const updateCategory = async (req: Request, res: Response) => {
     res.json({
       message: 'Category updated successfully',
       category
-    });
-  } catch (error) {
-    console.error('Update category error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Delete category
-export const deleteCategory = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+export const deleteCategory = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     
     // Check if category has products
     const productCount = await Product.countDocuments({ categoryId: id });
@@ -194,17 +159,10 @@ export const deleteCategory = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    res.json({ message: 'Category deleted successfully' });
-  } catch (error) {
-    console.error('Delete category error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json({ message: 'Category deleted successfully' });});
 // Get category tree (hierarchical)
-export const getCategoryTree = async (req: Request, res: Response) => {
-  try {
-    const { isActive } = req.query;
+export const getCategoryTree = asyncHandler(async (req: Request, res: Response) => {
+  const { isActive } = req.query;
 
     const filter: any = {};
     if (isActive !== undefined) {
@@ -225,17 +183,10 @@ export const getCategoryTree = async (req: Request, res: Response) => {
 
     const categoryTree = buildTree();
 
-    res.json({ categories: categoryTree });
-  } catch (error) {
-    console.error('Get category tree error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json({ categories: categoryTree });});
 // Get category with products
-export const getCategoryWithProducts = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+export const getCategoryWithProducts = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
     const pageNum = parseInt(page as string);
@@ -270,9 +221,4 @@ export const getCategoryWithProducts = async (req: Request, res: Response) => {
         total,
         pages: Math.ceil(total / limitNum)
       }
-    });
-  } catch (error) {
-    console.error('Get category with products error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}; 
+    });});

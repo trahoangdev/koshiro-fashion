@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { Cart } from '../models/Cart';
 import { Product } from '../models/Product';
 
-export const getCart = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+export const getCart = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     
     let cart = await Cart.findOne({ userId }).populate({
       path: 'items.productId',
@@ -38,16 +38,9 @@ export const getCart = async (req: Request, res: Response) => {
     res.json({
       items: activeItems,
       total
-    });
-  } catch (error) {
-    console.error('Get cart error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const addToCart = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    });});
+export const addToCart = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { productId, quantity = 1, size, color } = req.body;
 
     if (!productId) {
@@ -96,16 +89,9 @@ export const addToCart = async (req: Request, res: Response) => {
 
     await cart.save();
 
-    res.status(201).json({ message: 'Product added to cart successfully' });
-  } catch (error) {
-    console.error('Add to cart error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const updateCartItem = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    res.status(201).json({ message: 'Product added to cart successfully' });});
+export const updateCartItem = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { productId } = req.params;
     const { quantity, size, color } = req.body;
 
@@ -145,16 +131,9 @@ export const updateCartItem = async (req: Request, res: Response) => {
 
     await cart.save();
 
-    res.json({ message: 'Cart item updated successfully' });
-  } catch (error) {
-    console.error('Update cart item error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const removeFromCart = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    res.json({ message: 'Cart item updated successfully' });});
+export const removeFromCart = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { productId } = req.params;
 
     const cart = await Cart.findOne({ userId });
@@ -173,16 +152,9 @@ export const removeFromCart = async (req: Request, res: Response) => {
     cart.items.splice(itemIndex, 1);
     await cart.save();
 
-    res.json({ message: 'Product removed from cart successfully' });
-  } catch (error) {
-    console.error('Remove from cart error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const clearCart = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    res.json({ message: 'Product removed from cart successfully' });});
+export const clearCart = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
 
     let cart = await Cart.findOne({ userId });
     if (!cart) {
@@ -196,9 +168,4 @@ export const clearCart = async (req: Request, res: Response) => {
     cart.items = [];
     await cart.save();
 
-    res.json({ message: 'Cart cleared successfully' });
-  } catch (error) {
-    console.error('Clear cart error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}; 
+    res.json({ message: 'Cart cleared successfully' });});

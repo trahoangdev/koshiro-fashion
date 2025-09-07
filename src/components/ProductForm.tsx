@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Save,
   X,
@@ -100,41 +100,141 @@ export default function ProductForm({
 }: ProductFormProps) {
   const { toast } = useToast();
   const { language } = useLanguage();
-  const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
-    nameEn: '',
-    nameJa: '',
-    description: '',
-    descriptionEn: '',
-    descriptionJa: '',
-    price: 0,
-    originalPrice: 0,
-    categoryId: '',
-    images: [],
-    sizes: [],
-    colors: [],
-    stock: 0,
-    tags: [],
-    isActive: true,
-    isFeatured: false,
-    onSale: false,
-    metaTitle: '',
-    metaDescription: '',
-    weight: 0,
-    dimensions: {
-      length: 0,
-      width: 0,
-      height: 0
-    },
-    sku: '',
-    barcode: '',
-    ...initialData
+
+  // Function to get hex value from color name
+  const getColorHex = (colorName: string): string => {
+    const colorMap: { [key: string]: string } = {
+      // Vietnamese colors
+      'Đen': '#000000',
+      'Trắng': '#FFFFFF',
+      'Đỏ': '#FF0000',
+      'Xanh dương': '#0000FF',
+      'Xanh lá': '#008000',
+      'Vàng': '#FFFF00',
+      'Hồng': '#FFC0CB',
+      'Tím': '#800080',
+      'Cam': '#FFA500',
+      'Nâu': '#A52A2A',
+      'Xám': '#808080',
+      'Bạc': '#C0C0C0',
+      'Vàng kim': '#FFD700',
+      'Xanh ngọc': '#40E0D0',
+      
+      // English colors
+      'Black': '#000000',
+      'White': '#FFFFFF',
+      'Red': '#FF0000',
+      'Blue': '#0000FF',
+      'Green': '#008000',
+      'Yellow': '#FFFF00',
+      'Pink': '#FFC0CB',
+      'Purple': '#800080',
+      'Orange': '#FFA500',
+      'Brown': '#A52A2A',
+      'Gray': '#808080',
+      'Silver': '#C0C0C0',
+      'Gold': '#FFD700',
+      'Turquoise': '#40E0D0',
+      
+      // Japanese colors
+      '黒': '#000000',
+      '白': '#FFFFFF',
+      '赤': '#FF0000',
+      '青': '#0000FF',
+      '緑': '#008000',
+      '黄': '#FFFF00',
+      'ピンク': '#FFC0CB',
+      '紫': '#800080',
+      'オレンジ': '#FFA500',
+      '茶色': '#A52A2A',
+      'グレー': '#808080',
+      'シルバー': '#C0C0C0',
+      'ゴールド': '#FFD700',
+      'ターコイズ': '#40E0D0'
+    };
+    
+    return colorMap[colorName] || '#6b7280';
+  };
+
+  // Helper function to convert string colors to color objects
+  const convertColorsToObjects = (colors: string[]): Array<string | { name: string; value: string }> => {
+    return colors.map(color => {
+      // Check if it's already an object
+      if (typeof color === 'object') {
+        return color;
+      }
+      
+      // Find matching default color
+      const defaultColor = defaultColors.find(dc => dc.name === color);
+      if (defaultColor) {
+        return defaultColor;
+      }
+      
+      // For custom colors, try to get hex value from color name
+      const hexValue = getColorHex(color);
+      return { name: color, value: hexValue };
+    });
+  };
+
+  const [formData, setFormData] = useState<ProductFormData>(() => {
+    const baseData = {
+      name: '',
+      nameEn: '',
+      nameJa: '',
+      description: '',
+      descriptionEn: '',
+      descriptionJa: '',
+      price: 0,
+      originalPrice: 0,
+      categoryId: '',
+      images: [],
+      sizes: [],
+      colors: [],
+      stock: 0,
+      tags: [],
+      isActive: true,
+      isFeatured: false,
+      onSale: false,
+      metaTitle: '',
+      metaDescription: '',
+      weight: 0,
+      dimensions: {
+        length: 0,
+        width: 0,
+        height: 0
+      },
+      sku: '',
+      barcode: ''
+    };
+
+    if (initialData) {
+      return {
+        ...baseData,
+        ...initialData,
+        // Convert colors from string[] to objects if needed
+        colors: initialData.colors ? convertColorsToObjects(initialData.colors as string[]) : []
+      };
+    }
+
+    return baseData;
   });
 
   const [newTag, setNewTag] = useState('');
   const [newSize, setNewSize] = useState('');
-  const [newColor, setNewColor] = useState('');
+  const [newColor, setNewColor] = useState('#000000');
   const [newColorName, setNewColorName] = useState('');
+  const [displayValue, setDisplayValue] = useState('');
+
+  // Update formData when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        ...initialData,
+        colors: initialData.colors ? convertColorsToObjects(initialData.colors as string[]) : prev.colors
+      }));
+    }
+  }, [initialData]);
 
   const translations = {
     en: {
@@ -282,10 +382,62 @@ export default function ProductForm({
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
+  // Function to get color name from hex value
+  const getColorName = (hex: string): string => {
+    const colorMap: { [key: string]: string } = {
+      '#000000': language === 'vi' ? 'Đen' : language === 'ja' ? '黒' : 'Black',
+      '#FFFFFF': language === 'vi' ? 'Trắng' : language === 'ja' ? '白' : 'White',
+      '#FF0000': language === 'vi' ? 'Đỏ' : language === 'ja' ? '赤' : 'Red',
+      '#0000FF': language === 'vi' ? 'Xanh dương' : language === 'ja' ? '青' : 'Blue',
+      '#008000': language === 'vi' ? 'Xanh lá' : language === 'ja' ? '緑' : 'Green',
+      '#FFFF00': language === 'vi' ? 'Vàng' : language === 'ja' ? '黄' : 'Yellow',
+      '#800080': language === 'vi' ? 'Tím' : language === 'ja' ? '紫' : 'Purple',
+      '#FFA500': language === 'vi' ? 'Cam' : language === 'ja' ? 'オレンジ' : 'Orange',
+      '#FFC0CB': language === 'vi' ? 'Hồng' : language === 'ja' ? 'ピンク' : 'Pink',
+      '#A52A2A': language === 'vi' ? 'Nâu' : language === 'ja' ? '茶色' : 'Brown',
+      '#808080': language === 'vi' ? 'Xám' : language === 'ja' ? 'グレー' : 'Gray',
+      '#FFD700': language === 'vi' ? 'Vàng kim' : language === 'ja' ? '金色' : 'Gold',
+      '#C0C0C0': language === 'vi' ? 'Bạc' : language === 'ja' ? '銀色' : 'Silver',
+      '#FF6347': language === 'vi' ? 'Đỏ cam' : language === 'ja' ? 'トマト' : 'Tomato',
+      '#32CD32': language === 'vi' ? 'Xanh lá sáng' : language === 'ja' ? 'ライム' : 'Lime Green',
+      '#00CED1': language === 'vi' ? 'Xanh ngọc' : language === 'ja' ? 'ターコイズ' : 'Turquoise',
+      '#40E0D0': language === 'vi' ? 'Xanh ngọc' : language === 'ja' ? 'ターコイズ' : 'Turquoise',
+      '#FF1493': language === 'vi' ? 'Hồng đậm' : language === 'ja' ? 'ディープピンク' : 'Deep Pink',
+      '#8B4513': language === 'vi' ? 'Nâu sẫm' : language === 'ja' ? 'サドルブラウン' : 'Saddle Brown',
+      '#2F4F4F': language === 'vi' ? 'Xám đậm' : language === 'ja' ? 'ダークスレートグレー' : 'Dark Slate Gray',
+      '#DC143C': language === 'vi' ? 'Đỏ thẫm' : language === 'ja' ? 'クリムゾン' : 'Crimson'
+    };
+
+    // Check exact match first
+    if (colorMap[hex.toUpperCase()]) {
+      return colorMap[hex.toUpperCase()];
+    }
+
+    // Try to find closest match for similar colors
+    const hexUpper = hex.toUpperCase();
+    for (const [colorHex, colorName] of Object.entries(colorMap)) {
+      if (hexUpper.includes(colorHex.substring(1, 4)) || 
+          colorHex.includes(hexUpper.substring(1, 4))) {
+        return colorName;
+      }
+    }
+
+    // If no match found, return the hex value
+    return hex;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit(formData);
+      // Transform colors to string array for backend
+      const transformedData = {
+        ...formData,
+        colors: formData.colors.map(color => 
+          typeof color === 'string' ? color : color.name
+        )
+      };
+      
+      await onSubmit(transformedData);
       toast({
         title: t.success,
       });
@@ -333,7 +485,10 @@ export default function ProductForm({
   };
 
   const addColor = () => {
-    if (newColorName.trim() && newColor.trim()) {
+    // Validate hex color format
+    const isValidHex = /^#[0-9A-Fa-f]{6}$/.test(newColor) || /^#[0-9A-Fa-f]{3}$/.test(newColor);
+    
+    if (newColorName.trim() && newColor.trim() && isValidHex) {
       const colorExists = formData.colors.some(color => 
         typeof color === 'string' ? color === newColorName.trim() : color.name === newColorName.trim()
       );
@@ -344,8 +499,46 @@ export default function ProductForm({
           colors: [...prev.colors, { name: newColorName.trim(), value: newColor.trim() }]
         }));
         setNewColorName('');
-        setNewColor('');
+        setNewColor('#000000'); // Reset to default color
+        setDisplayValue('');
+        toast({
+          title: language === 'vi' ? 'Thêm màu thành công' : 
+                 language === 'ja' ? '色を追加しました' : 
+                 'Color added successfully',
+          description: language === 'vi' ? `Đã thêm màu ${newColorName.trim()}` :
+                       language === 'ja' ? `${newColorName.trim()}色を追加しました` :
+                       `Added color ${newColorName.trim()}`,
+        });
+      } else {
+        toast({
+          title: language === 'vi' ? 'Màu đã tồn tại' : 
+                 language === 'ja' ? '色が既に存在します' : 
+                 'Color already exists',
+          description: language === 'vi' ? 'Màu này đã được thêm vào danh sách' :
+                       language === 'ja' ? 'この色は既にリストに追加されています' :
+                       'This color has already been added to the list',
+          variant: 'destructive',
+        });
       }
+    } else {
+      let errorMessage = '';
+      if (!newColorName.trim()) {
+        errorMessage = language === 'vi' ? 'Vui lòng nhập tên màu' :
+                      language === 'ja' ? '色名を入力してください' :
+                      'Please enter color name';
+      } else if (!isValidHex) {
+        errorMessage = language === 'vi' ? 'Mã màu hex không hợp lệ (ví dụ: #FF0000)' :
+                      language === 'ja' ? '無効な16進数カラーコードです（例：#FF0000）' :
+                      'Invalid hex color code (e.g., #FF0000)';
+      }
+      
+      toast({
+        title: language === 'vi' ? 'Thiếu thông tin' : 
+               language === 'ja' ? '情報が不足しています' : 
+               'Missing information',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -638,46 +831,161 @@ export default function ProductForm({
               </div>
               <div className="space-y-2">
                 <Label>{t.colors}</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {defaultColors.map(color => (
-                    <Badge
-                      key={color.name}
-                      variant={formData.colors.some(c => 
-                        typeof c === 'string' ? c === color.name : c.name === color.name
-                      ) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      style={{ backgroundColor: color.value, color: color.value === '#FFFFFF' ? '#000' : '#fff' }}
-                      onClick={() => {
-                        const colorExists = formData.colors.some(c => 
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {/* Default colors */}
+                    {defaultColors.map(color => (
+                      <Badge
+                        key={color.name}
+                        variant={formData.colors.some(c => 
                           typeof c === 'string' ? c === color.name : c.name === color.name
+                        ) ? "default" : "outline"}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{ backgroundColor: color.value, color: color.value === '#FFFFFF' ? '#000' : '#fff' }}
+                        onClick={() => {
+                          const colorExists = formData.colors.some(c => 
+                            typeof c === 'string' ? c === color.name : c.name === color.name
+                          );
+                          if (colorExists) {
+                            removeColor(color.name);
+                          } else {
+                            setFormData(prev => ({ ...prev, colors: [...prev.colors, color] }));
+                            // Auto-fill color picker and name when selecting from default colors
+                            setNewColor(color.value);
+                            setNewColorName(color.name);
+                            setDisplayValue(getColorName(color.value));
+                          }
+                        }}
+                      >
+                        {color.name}
+                      </Badge>
+                    ))}
+                    
+                    {/* Custom colors */}
+                    {formData.colors
+                      .filter(color => 
+                        typeof color === 'object' && !defaultColors.some(dc => dc.name === color.name)
+                      )
+                      .map((color, index) => {
+                        const colorObj = color as { name: string; value: string };
+                        return (
+                          <Badge
+                            key={`custom-${index}`}
+                            variant="secondary"
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{ backgroundColor: colorObj.value, color: colorObj.value === '#FFFFFF' ? '#000' : '#fff' }}
+                            onClick={() => {
+                              removeColor(colorObj.name);
+                            }}
+                          >
+                            {colorObj.name}
+                          </Badge>
                         );
-                        if (colorExists) {
-                          removeColor(color.name);
-                        } else {
-                          setFormData(prev => ({ ...prev, colors: [...prev.colors, color] }));
-                        }
-                      }}
-                    >
-                      {color.name}
-                    </Badge>
-                  ))}
+                      })}
+                  </div>
+
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    placeholder="Color name"
-                    value={newColorName}
-                    onChange={(e) => setNewColorName(e.target.value)}
-                  />
-                  <Input
-                    type="color"
-                    value={newColor}
-                    onChange={(e) => setNewColor(e.target.value)}
-                  />
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                                            <Input
+                          placeholder={language === 'vi' ? 'Tên màu' : 
+                                     language === 'ja' ? '色名' : 
+                                     'Color name'}
+                          value={newColorName || getColorName(newColor)}
+                          onChange={(e) => setNewColorName(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addColor())}
+                        />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="color"
+                          value={newColor}
+                          onChange={(e) => {
+                            setNewColor(e.target.value);
+                            setDisplayValue(getColorName(e.target.value));
+                            // Always auto-fill color name when color picker changes
+                            setNewColorName(getColorName(e.target.value));
+                          }}
+                          className="w-12 h-10 p-1 border rounded cursor-pointer"
+                          title={`${getColorName(newColor)} (${newColor})`}
+                        />
+                        <div 
+                          className="w-8 h-8 rounded border"
+                          style={{ backgroundColor: newColor }}
+                          title={`${getColorName(newColor)} (${newColor})`}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder={language === 'vi' ? 'Nhập mã hex (ví dụ: #FF0000)' : 
+                                     language === 'ja' ? '16進数を入力（例：#FF0000）' : 
+                                     'Enter hex code (e.g., #FF0000)'}
+                          value={displayValue}
+                          onChange={(e) => {
+                            let inputValue = e.target.value;
+                            
+                            // If user is typing a hex code
+                            if (inputValue.startsWith('#') || /^[0-9A-Fa-f]/.test(inputValue)) {
+                              let hexValue = inputValue;
+                              
+                              // Auto-add # if user types without it
+                              if (hexValue && !hexValue.startsWith('#')) {
+                                hexValue = '#' + hexValue;
+                              }
+                              
+                              // Validate hex color format (3 or 6 digits)
+                              if (/^#[0-9A-Fa-f]{6}$/.test(hexValue) || /^#[0-9A-Fa-f]{3}$/.test(hexValue)) {
+                                setNewColor(hexValue);
+                                setDisplayValue(getColorName(hexValue));
+                                // Always auto-fill color name when valid hex is entered
+                                setNewColorName(getColorName(hexValue));
+                              } else if (hexValue === '' || hexValue === '#') {
+                                setNewColor('#000000');
+                                setDisplayValue('');
+                              } else {
+                                // Allow partial input for better UX
+                                setNewColor(hexValue);
+                                setDisplayValue(hexValue);
+                              }
+                            } else {
+                              // If user is typing a color name, search for matching hex
+                              setDisplayValue(inputValue);
+                              // You could add logic here to search for color names and match to hex values
+                            }
+                          }}
+                          className="flex-1 text-sm"
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {language === 'vi' ? 'Hex' : 
+                           language === 'ja' ? '16進数' : 
+                           'Hex'}
+                        </span>
+                      </div>
+                      
+
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" onClick={addColor} className="flex-1">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t.addColor}
+                    </Button>
+                    {(newColorName || newColor !== '#000000') && (
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setNewColorName('');
+                          setNewColor('#000000');
+                          setDisplayValue('');
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <Button type="button" variant="outline" onClick={addColor}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t.addColor}
-                </Button>
               </div>
             </div>
           </CardContent>

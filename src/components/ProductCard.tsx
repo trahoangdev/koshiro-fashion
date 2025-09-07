@@ -17,6 +17,73 @@ interface ProductCardProps {
   onAddToCompare?: (product: Product) => void;
 }
 
+// Helper function to get hex color from color name
+const getColorHex = (colorName: string): string => {
+  const colorMap: { [key: string]: string } = {
+    // Vietnamese colors
+    'Đỏ': '#ef4444',
+    'Xanh dương': '#3b82f6',
+    'Xanh nhạt': '#93c5fd',
+    'Xanh lá': '#22c55e',
+    'Vàng': '#eab308',
+    'Hồng': '#ec4899',
+    'Tím': '#a855f7',
+    'Cam': '#f97316',
+    'Nâu': '#a16207',
+    'Đen': '#000000',
+    'Trắng': '#ffffff',
+    'Xám': '#6b7280',
+    'Xám đậm': '#374151',
+    'Xám nhạt': '#d1d5db',
+    'Bạc': '#c0c0c0',
+    'Vàng kim': '#ffd700',
+    
+    // English colors
+    'Red': '#ef4444',
+    'Blue': '#3b82f6',
+    'Light Blue': '#93c5fd',
+    'Green': '#22c55e',
+    'Yellow': '#eab308',
+    'Pink': '#ec4899',
+    'Purple': '#a855f7',
+    'Orange': '#f97316',
+    'Brown': '#a16207',
+    'Black': '#000000',
+    'White': '#ffffff',
+    'Gray': '#6b7280',
+    'Dark Gray': '#374151',
+    'Light Gray': '#d1d5db',
+    'Silver': '#c0c0c0',
+    'Gold': '#ffd700',
+    
+    // Japanese colors
+    '赤': '#ef4444',
+    '青': '#3b82f6',
+    '薄い青': '#93c5fd',
+    '緑': '#22c55e',
+    '黄色': '#eab308',
+    'ピンク': '#ec4899',
+    '紫': '#a855f7',
+    'オレンジ': '#f97316',
+    '茶色': '#a16207',
+    '黒': '#000000',
+    '白': '#ffffff',
+    'グレー': '#6b7280',
+    '濃いグレー': '#374151',
+    '薄いグレー': '#d1d5db',
+    'シルバー': '#c0c0c0',
+    'ゴールド': '#ffd700',
+  };
+  
+  // Check if it's already a hex color
+  if (colorName.startsWith('#')) {
+    return colorName;
+  }
+  
+  // Return mapped color or default gray
+  return colorMap[colorName] || '#6b7280';
+};
+
 const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist, onAddToCompare }: ProductCardProps) => {
   const { language, t } = useLanguage();
   const { toast } = useToast();
@@ -165,7 +232,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           </div>
           
           <CardContent className="flex-1 p-4">
-            <div className="flex flex-col h-full justify-between min-h-[180px]">
+            <div className="flex flex-col h-full">
               <div className="space-y-3 flex-1">
                 <h3 className="font-semibold text-lg leading-tight line-clamp-2">{getName()}</h3>
                 <div className="text-muted-foreground text-sm line-clamp-3">
@@ -175,8 +242,8 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                   />
                 </div>
                 
-                {/* Rating - Same design as Flash Sale */}
-                <div className="flex items-center gap-2 mb-2">
+                {/* Rating */}
+                <div className="flex items-center gap-2">
                   <div className="flex items-center">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
@@ -192,10 +259,10 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                   <span className="text-xs text-muted-foreground">
                     (4.0)
                   </span>
-                  </div>
+                </div>
                   
-                {/* Colors - Always show colors section */}
-                <div className="mb-3">
+                {/* Colors */}
+                <div>
                   <p className="text-xs text-muted-foreground mb-1">
                     {language === 'vi' ? 'Màu sắc' : language === 'ja' ? '色' : 'Colors'}:
                   </p>
@@ -208,89 +275,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                             key={index}
                             className="w-4 h-4 rounded-full border border-gray-300"
                         style={{ 
-                              backgroundColor: 
-                                // Vietnamese colors
-                                color === 'Đỏ' ? '#ef4444' :
-                                color === 'Xanh dương' ? '#3b82f6' :
-                                color === 'Xanh nhạt' ? '#93c5fd' :
-                                color === 'Xanh lá' ? '#22c55e' :
-                                color === 'Vàng' ? '#eab308' :
-                                color === 'Hồng' ? '#ec4899' :
-                                color === 'Tím' ? '#a855f7' :
-                                color === 'Cam' ? '#f97316' :
-                                color === 'Nâu' ? '#a16207' :
-                                color === 'Đen' ? '#000000' :
-                                color === 'Trắng' ? '#ffffff' :
-                                color === 'Xám' ? '#6b7280' :
-                                color === 'Xám đậm' ? '#374151' :
-                                color === 'Xám nhạt' ? '#d1d5db' :
-                                
-                                // English colors
-                                color === 'Red' ? '#ef4444' :
-                                color === 'Blue' ? '#3b82f6' :
-                                color === 'Light Blue' ? '#93c5fd' :
-                                color === 'Green' ? '#22c55e' :
-                                color === 'Yellow' ? '#eab308' :
-                                color === 'Pink' ? '#ec4899' :
-                                color === 'Purple' ? '#a855f7' :
-                                color === 'Orange' ? '#f97316' :
-                                color === 'Brown' ? '#a16207' :
-                                color === 'Black' ? '#000000' :
-                                color === 'White' ? '#ffffff' :
-                                color === 'Gray' ? '#6b7280' :
-                                color === 'Dark Gray' ? '#374151' :
-                                color === 'Light Gray' ? '#d1d5db' :
-                                
-                                // Japanese colors
-                                color === '赤' ? '#ef4444' :
-                                color === '青' ? '#3b82f6' :
-                                color === '薄い青' ? '#93c5fd' :
-                                color === '緑' ? '#22c55e' :
-                                color === '黄色' ? '#eab308' :
-                                color === 'ピンク' ? '#ec4899' :
-                                color === '紫' ? '#a855f7' :
-                                color === 'オレンジ' ? '#f97316' :
-                                color === '茶色' ? '#a16207' :
-                                color === '黒' ? '#000000' :
-                                color === '白' ? '#ffffff' :
-                                color === 'グレー' ? '#6b7280' :
-                                color === '濃いグレー' ? '#374151' :
-                                color === '薄いグレー' ? '#d1d5db' :
-                                
-                                // Special colors
-                                color === 'Đa sắc' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
-                                color === 'Multicolor' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
-                                color === 'マルチカラー' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
-                                color === 'Bạc' ? '#c0c0c0' :
-                                color === 'Silver' ? '#c0c0c0' :
-                                color === 'シルバー' ? '#c0c0c0' :
-                                color === 'Vàng kim' ? '#fbbf24' :
-                                color === 'Gold' ? '#fbbf24' :
-                                color === 'ゴールド' ? '#fbbf24' :
-                                color === 'Đồng' ? '#cd7f32' :
-                                color === 'Bronze' ? '#cd7f32' :
-                                color === 'ブロンズ' ? '#cd7f32' :
-                                
-                                // Material colors
-                                color === 'natural' ? '#f5f5dc' :
-                                color === 'walnut' ? '#8b4513' :
-                                color === 'beige' ? '#f5f5dc' :
-                                color === 'cream' ? '#fefce8' :
-                                color === 'ivory' ? '#fffff0' :
-                                color === 'navy' ? '#1e3a8a' :
-                                color === 'maroon' ? '#7f1d1d' :
-                                color === 'olive' ? '#3f6212' :
-                                color === 'teal' ? '#0f766e' :
-                                color === 'coral' ? '#f97316' :
-                                color === 'lavender' ? '#e0e7ff' :
-                                color === 'mint' ? '#ecfdf5' :
-                                color === 'peach' ? '#fed7aa' :
-                                color === 'rose' ? '#fce7f3' :
-                                color === 'sage' ? '#f0fdf4' :
-                                color === 'slate' ? '#f8fafc' :
-                                
-                                // Default fallback
-                                '#6b7280'
+                              backgroundColor: getColorHex(color)
                             }}
                             title={color}
                       />
@@ -357,14 +342,14 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
   }
 
   return (
-    <Card className="group overflow-hidden border-border/40 hover:shadow-lg hover:border-border/60 transition-all duration-300 cursor-pointer rounded-md h-full flex flex-col" onClick={handleCardClick}>
-      {/* Image Section - Extended to take more space */}
-      <div className="relative overflow-hidden rounded-t-md flex-1">
+    <Card className="group overflow-hidden border-border/40 hover:shadow-lg hover:border-border/60 transition-all duration-300 cursor-pointer rounded-md h-[520px] flex flex-col" onClick={handleCardClick}>
+      {/* Image Section - Fixed height for consistency */}
+      <div className="relative overflow-hidden rounded-t-md h-[280px] flex-shrink-0">
         {/* Primary Image - Default */}
         <img
           src={product.images[0] || '/placeholder.svg'}
           alt={getName()}
-          className="w-full h-full min-h-[280px] object-cover transition-all duration-500 group-hover:opacity-0"
+          className="w-full h-full object-cover transition-all duration-500 group-hover:opacity-0"
         />
         
         {/* Secondary Image - On Hover */}
@@ -372,7 +357,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           <img
             src={product.images[1]}
             alt={getName()}
-            className="absolute inset-0 w-full h-full min-h-[280px] object-cover transition-all duration-500 opacity-0 group-hover:opacity-100"
+            className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 group-hover:opacity-100"
           />
         )}
         
@@ -381,7 +366,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
         <img
           src={product.images[0] || '/placeholder.svg'}
           alt={getName()}
-            className="absolute inset-0 w-full h-full min-h-[280px] object-cover transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-110"
+            className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-110"
         />
         )}
         
@@ -433,22 +418,22 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
         </div>
       </div>
       
-      {/* Content Section - Compact information at bottom */}
-      <CardContent className="p-4 flex-shrink-0">
+      {/* Content Section - Fixed height to ensure price/button visibility */}
+      <CardContent className="p-4 h-[240px] flex flex-col">
         {/* Product Name */}
         <h3 className="font-semibold text-base leading-tight line-clamp-2 mb-2">
-            {getName()}
-          </h3>
+          {getName()}
+        </h3>
           
-        {/* Product Description */}
+        {/* Product Description - Compact */}
         <div className="text-muted-foreground text-xs line-clamp-2 mb-2">
-            <MarkdownRenderer 
-              content={getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
-              className="text-xs"
-            />
-          </div>
+          <MarkdownRenderer 
+            content={getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
+            className="text-xs"
+          />
+        </div>
           
-        {/* Rating */}
+        {/* Rating - Compact */}
         <div className="flex items-center gap-2 mb-2">
           <div className="flex items-center">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -465,9 +450,9 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           <span className="text-xs text-muted-foreground">
             (4.0)
           </span>
-            </div>
+        </div>
             
-        {/* Colors */}
+        {/* Colors - Compact */}
         <div className="mb-3">
           <p className="text-xs text-muted-foreground mb-1">
             {language === 'vi' ? 'Màu sắc' : language === 'ja' ? '色' : 'Colors'}:
@@ -481,91 +466,9 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                     key={index}
                     className="w-4 h-4 rounded-full border border-gray-300"
                   style={{ 
-                      backgroundColor: 
-                        // Vietnamese colors
-                        color === 'Đỏ' ? '#ef4444' :
-                        color === 'Xanh dương' ? '#3b82f6' :
-                        color === 'Xanh nhạt' ? '#93c5fd' :
-                        color === 'Xanh lá' ? '#22c55e' :
-                        color === 'Vàng' ? '#eab308' :
-                        color === 'Hồng' ? '#ec4899' :
-                        color === 'Tím' ? '#a855f7' :
-                        color === 'Cam' ? '#f97316' :
-                        color === 'Nâu' ? '#a16207' :
-                        color === 'Đen' ? '#000000' :
-                        color === 'Trắng' ? '#ffffff' :
-                        color === 'Xám' ? '#6b7280' :
-                        color === 'Xám đậm' ? '#374151' :
-                        color === 'Xám nhạt' ? '#d1d5db' :
-                        
-                        // English colors
-                        color === 'Red' ? '#ef4444' :
-                        color === 'Blue' ? '#3b82f6' :
-                        color === 'Light Blue' ? '#93c5fd' :
-                        color === 'Green' ? '#22c55e' :
-                        color === 'Yellow' ? '#eab308' :
-                        color === 'Pink' ? '#ec4899' :
-                        color === 'Purple' ? '#a855f7' :
-                        color === 'Orange' ? '#f97316' :
-                        color === 'Brown' ? '#a16207' :
-                        color === 'Black' ? '#000000' :
-                        color === 'White' ? '#ffffff' :
-                        color === 'Gray' ? '#6b7280' :
-                        color === 'Dark Gray' ? '#374151' :
-                        color === 'Light Gray' ? '#d1d5db' :
-                        
-                        // Japanese colors
-                        color === '赤' ? '#ef4444' :
-                        color === '青' ? '#3b82f6' :
-                        color === '薄い青' ? '#93c5fd' :
-                        color === '緑' ? '#22c55e' :
-                        color === '黄色' ? '#eab308' :
-                        color === 'ピンク' ? '#ec4899' :
-                        color === '紫' ? '#a855f7' :
-                        color === 'オレンジ' ? '#f97316' :
-                        color === '茶色' ? '#a16207' :
-                        color === '黒' ? '#000000' :
-                        color === '白' ? '#ffffff' :
-                        color === 'グレー' ? '#6b7280' :
-                        color === '濃いグレー' ? '#374151' :
-                        color === '薄いグレー' ? '#d1d5db' :
-                        
-                        // Special colors
-                        color === 'Đa sắc' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
-                        color === 'Multicolor' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
-                        color === 'マルチカラー' ? 'linear-gradient(45deg, #ef4444, #3b82f6, #eab308)' :
-                        color === 'Bạc' ? '#c0c0c0' :
-                        color === 'Silver' ? '#c0c0c0' :
-                        color === 'シルバー' ? '#c0c0c0' :
-                        color === 'Vàng kim' ? '#fbbf24' :
-                        color === 'Gold' ? '#fbbf24' :
-                        color === 'ゴールド' ? '#fbbf24' :
-                        color === 'Đồng' ? '#cd7f32' :
-                        color === 'Bronze' ? '#cd7f32' :
-                        color === 'ブロンズ' ? '#cd7f32' :
-                        
-                        // Material colors
-                        color === 'natural' ? '#f5f5dc' :
-                        color === 'walnut' ? '#8b4513' :
-                        color === 'beige' ? '#f5f5dc' :
-                        color === 'cream' ? '#fefce8' :
-                        color === 'ivory' ? '#fffff0' :
-                        color === 'navy' ? '#1e3a8a' :
-                        color === 'maroon' ? '#7f1d1d' :
-                        color === 'olive' ? '#3f6212' :
-                        color === 'teal' ? '#0f766e' :
-                        color === 'coral' ? '#f97316' :
-                        color === 'lavender' ? '#e0e7ff' :
-                        color === 'mint' ? '#ecfdf5' :
-                        color === 'peach' ? '#fed7aa' :
-                        color === 'rose' ? '#fce7f3' :
-                        color === 'sage' ? '#f0fdf4' :
-                        color === 'slate' ? '#f8fafc' :
-                        
-                        // Default fallback
-                        '#6b7280'
-                      }}
-                      title={color}
+                      backgroundColor: getColorHex(color)
+                    }}
+                    title={color}
                 />
               ))}
                 {product.colors.length > 4 && (
@@ -588,10 +491,10 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           </div>
         </div>
         
-        {/* Price and Button Section */}
-        <div className="space-y-2">
+        {/* Price and Button - Fixed at bottom */}
+        <div className="mt-auto pt-2 border-t border-gray-100">
           {/* Price */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-2">
             <span className="text-lg font-bold text-red-600">
                 {formatCurrency(displayPrice, language)}
               </span>

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { Order } from '../models/Order';
 import { Product } from '../models/Product';
 import { User } from '../models/User';
@@ -10,19 +11,19 @@ import { Notification } from '../models/Notification';
 const updateCategoryProductCount = async (categoryId: string) => {
   try {
     const productCount = await Product.countDocuments({ 
-      categoryId: categoryId,
-      isActive: true 
-    });
-    
-    await Category.findByIdAndUpdate(categoryId, { productCount });
-    console.log(`Updated product count for category ${categoryId}: ${productCount}`);
-  } catch (error) {
-    console.error('Error updating category product count:', error);
-  }
+        categoryId: categoryId,
+        isActive: true 
+      });
+      
+      await Category.findByIdAndUpdate(categoryId, { productCount });
+      console.log(`Updated product count for category ${categoryId}: ${productCount}`);
+    } catch (error) {
+      console.error('Error updating category product count:', error);
+    }
 };
 
 // Get admin dashboard stats
-export const getAdminStats = async (req: Request, res: Response) => {
+export const getAdminStats = asyncHandler(async (req: Request, res: Response) => {
   try {
     console.log('Admin stats - Starting to get counts...');
     
@@ -98,14 +99,12 @@ export const getAdminStats = async (req: Request, res: Response) => {
     res.json(response);
   } catch (error) {
     console.error('Error getting admin stats:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Error getting admin statistics' });
   }
-};
-
+});
 // Get admin orders with pagination and filters
-export const getAdminOrders = async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
+export const getAdminOrders = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const status = req.query.status as string;
     const skip = (page - 1) * limit;
@@ -135,17 +134,10 @@ export const getAdminOrders = async (req: Request, res: Response) => {
         total,
         pages: Math.ceil(total / limit)
       }
-    });
-  } catch (error) {
-    console.error('Error getting admin orders:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Get admin products with pagination and filters
-export const getAdminProducts = async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
+export const getAdminProducts = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const isActive = req.query.isActive as string;
     const skip = (page - 1) * limit;
@@ -174,17 +166,10 @@ export const getAdminProducts = async (req: Request, res: Response) => {
         total,
         pages: Math.ceil(total / limit)
       }
-    });
-  } catch (error) {
-    console.error('Error getting admin products:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Get admin categories
-export const getAdminCategories = async (req: Request, res: Response) => {
-  try {
-    const isActive = req.query.isActive as string;
+export const getAdminCategories = asyncHandler(async (req: Request, res: Response) => {
+  const isActive = req.query.isActive as string;
     
     // Build filter
     const filter: { isActive?: boolean } = {};
@@ -199,17 +184,10 @@ export const getAdminCategories = async (req: Request, res: Response) => {
     
     res.json({
       categories: categories
-    });
-  } catch (error) {
-    console.error('Error getting admin categories:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Get admin users
-export const getAdminUsers = async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
+export const getAdminUsers = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const role = req.query.role as string;
     const isActive = req.query.isActive as string;
@@ -259,17 +237,10 @@ export const getAdminUsers = async (req: Request, res: Response) => {
         total,
         pages: Math.ceil(total / limit)
       }
-    });
-  } catch (error) {
-    console.error('Error getting admin users:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Get revenue data for chart
-export const getRevenueData = async (req: Request, res: Response) => {
-  try {
-    console.log('Getting revenue data for chart...');
+export const getRevenueData = asyncHandler(async (req: Request, res: Response) => {
+  console.log('Getting revenue data for chart...');
     
     // Get last 6 months of revenue data
     const months = [];
@@ -305,17 +276,10 @@ export const getRevenueData = async (req: Request, res: Response) => {
     }
     
     console.log('Revenue data:', revenueData);
-    res.json(revenueData);
-  } catch (error) {
-    console.error('Error getting revenue data:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json(revenueData);});
 // Get product statistics by category
-export const getProductStats = async (req: Request, res: Response) => {
-  try {
-    console.log('Getting product statistics...');
+export const getProductStats = asyncHandler(async (req: Request, res: Response) => {
+  console.log('Getting product statistics...');
     
     // Get all categories with their products and revenue
     const categories = await Category.find({ isActive: true });
@@ -358,17 +322,10 @@ export const getProductStats = async (req: Request, res: Response) => {
     productStats.sort((a, b) => b.revenue - a.revenue);
     
     console.log('Product stats:', productStats);
-    res.json(productStats);
-  } catch (error) {
-    console.error('Error getting product statistics:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json(productStats);});
 // Product CRUD operations
-export const createProduct = async (req: Request, res: Response) => {
-  try {
-    const productData = req.body;
+export const createProduct = asyncHandler(async (req: Request, res: Response) => {
+  const productData = req.body;
     const product = new Product(productData);
     await product.save();
     
@@ -381,16 +338,9 @@ export const createProduct = async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'Product created successfully',
       product: populatedProduct
-    });
-  } catch (error) {
-    console.error('Error creating product:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const updateProduct = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+    });});
+export const updateProduct = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     const updateData = req.body;
     
     // Get the old product to check if category changed
@@ -415,16 +365,9 @@ export const updateProduct = async (req: Request, res: Response) => {
     res.json({
       message: 'Product updated successfully',
       product
-    });
-  } catch (error) {
-    console.error('Error updating product:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const deleteProduct = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+    });});
+export const deleteProduct = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     
     const product = await Product.findById(id);
     
@@ -437,17 +380,10 @@ export const deleteProduct = async (req: Request, res: Response) => {
     // Update category product count
     await updateCategoryProductCount(product.categoryId.toString());
     
-    res.json({ message: 'Product deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting product:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json({ message: 'Product deleted successfully' });});
 // Category CRUD operations
-export const createCategory = async (req: Request, res: Response) => {
-  try {
-    const categoryData = req.body;
+export const createCategory = asyncHandler(async (req: Request, res: Response) => {
+  const categoryData = req.body;
     const category = new Category(categoryData);
     await category.save();
     
@@ -457,16 +393,9 @@ export const createCategory = async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'Category created successfully',
       category: populatedCategory
-    });
-  } catch (error) {
-    console.error('Error creating category:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const updateCategory = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+    });});
+export const updateCategory = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     const updateData = req.body;
     
     const category = await Category.findByIdAndUpdate(
@@ -482,16 +411,9 @@ export const updateCategory = async (req: Request, res: Response) => {
     res.json({
       message: 'Category updated successfully',
       category
-    });
-  } catch (error) {
-    console.error('Error updating category:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const deleteCategory = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+    });});
+export const deleteCategory = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     
     // Check if category has products
     const productsCount = await Product.countDocuments({ categoryId: id });
@@ -507,17 +429,10 @@ export const deleteCategory = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Category not found' });
     }
     
-    res.json({ message: 'Category deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting category:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json({ message: 'Category deleted successfully' });});
 // User CRUD operations
-export const createUser = async (req: Request, res: Response) => {
-  try {
-    const userData = req.body;
+export const createUser = asyncHandler(async (req: Request, res: Response) => {
+  const userData = req.body;
     
     // Check if email already exists
     const existingUser = await User.findOne({ email: userData.email });
@@ -548,16 +463,9 @@ export const createUser = async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'User created successfully',
       user: userResponse
-    });
-  } catch (error) {
-    console.error('Error creating user:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const updateUser = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+    });});
+export const updateUser = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     const updateData = req.body;
     
     // Don't allow updating password through this endpoint
@@ -593,16 +501,9 @@ export const updateUser = async (req: Request, res: Response) => {
     res.json({
       message: 'User updated successfully',
       user: userResponse
-    });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const deleteUser = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+    });});
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
     
     // Check if user has orders
     const ordersCount = await Order.countDocuments({ userId: id });
@@ -618,18 +519,10 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    res.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-
+    res.json({ message: 'User deleted successfully' });});
 // Enhanced User Management
-export const getUserById = async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
+export const getUserById = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.params;
     
     const user = await User.findById(userId).select('-password');
     
@@ -637,16 +530,9 @@ export const getUserById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
-  } catch (error) {
-    console.error('Error getting user by ID:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const bulkUpdateUserStatus = async (req: Request, res: Response) => {
-  try {
-    const { userIds, status } = req.body;
+    res.json(user);});
+export const bulkUpdateUserStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { userIds, status } = req.body;
     
     const result = await User.updateMany(
       { _id: { $in: userIds } },
@@ -656,17 +542,10 @@ export const bulkUpdateUserStatus = async (req: Request, res: Response) => {
     res.json({
       message: `Updated ${result.modifiedCount} users`,
       modifiedCount: result.modifiedCount
-    });
-  } catch (error) {
-    console.error('Error bulk updating user status:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Enhanced Order Management
-export const getOrderDetails = async (req: Request, res: Response) => {
-  try {
-    const { orderId } = req.params;
+export const getOrderDetails = asyncHandler(async (req: Request, res: Response) => {
+  const { orderId } = req.params;
     
     const order = await Order.findById(orderId)
       .populate('userId', 'name email phone')
@@ -676,16 +555,9 @@ export const getOrderDetails = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    res.json(order);
-  } catch (error) {
-    console.error('Error getting order details:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const bulkUpdateOrderStatus = async (req: Request, res: Response) => {
-  try {
-    const { orderIds, status } = req.body;
+    res.json(order);});
+export const bulkUpdateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { orderIds, status } = req.body;
     
     const result = await Order.updateMany(
       { _id: { $in: orderIds } },
@@ -695,16 +567,9 @@ export const bulkUpdateOrderStatus = async (req: Request, res: Response) => {
     res.json({
       message: `Updated ${result.modifiedCount} orders`,
       modifiedCount: result.modifiedCount
-    });
-  } catch (error) {
-    console.error('Error bulk updating order status:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const printOrder = async (req: Request, res: Response) => {
-  try {
-    const { orderId } = req.params;
+    });});
+export const printOrder = asyncHandler(async (req: Request, res: Response) => {
+  const { orderId } = req.params;
     
     const order = await Order.findById(orderId)
       .populate('userId', 'name email phone')
@@ -723,16 +588,9 @@ export const printOrder = async (req: Request, res: Response) => {
       date: order.createdAt
     };
 
-    res.json(printData);
-  } catch (error) {
-    console.error('Error printing order:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const sendOrderEmail = async (req: Request, res: Response) => {
-  try {
-    const { orderId } = req.params;
+    res.json(printData);});
+export const sendOrderEmail = asyncHandler(async (req: Request, res: Response) => {
+  const { orderId } = req.params;
     const { emailType = 'confirmation' } = req.body;
     
     const order = await Order.findById(orderId)
@@ -745,17 +603,10 @@ export const sendOrderEmail = async (req: Request, res: Response) => {
     // Send email logic here
     // This would integrate with your email service
 
-    res.json({ message: 'Email sent successfully' });
-  } catch (error) {
-    console.error('Error sending order email:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json({ message: 'Email sent successfully' });});
 // Analytics and Reports
-export const getAnalyticsData = async (req: Request, res: Response) => {
-  try {
-    const { period = '30d', type = 'revenue' } = req.query;
+export const getAnalyticsData = asyncHandler(async (req: Request, res: Response) => {
+  const { period = '30d', type = 'revenue' } = req.query;
     
     const endDate = new Date();
     const startDate = new Date();
@@ -811,16 +662,9 @@ export const getAnalyticsData = async (req: Request, res: Response) => {
       ]);
     }
 
-    res.json(data);
-  } catch (error) {
-    console.error('Error getting analytics data:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const generateReport = async (req: Request, res: Response) => {
-  try {
-    const { type, startDate, endDate, format = 'pdf' } = req.body;
+    res.json(data);});
+export const generateReport = asyncHandler(async (req: Request, res: Response) => {
+  const { type, startDate, endDate, format = 'pdf' } = req.body;
     
     let reportData: any = {};
 
@@ -846,13 +690,7 @@ export const generateReport = async (req: Request, res: Response) => {
       return res.send(pdfBuffer);
     } else {
       res.json(reportData);
-    }
-  } catch (error) {
-    console.error('Error generating report:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    }});
 // Helper functions
 const generateSalesReport = async (startDate: string, endDate: string) => {
   const orders = await Order.find({
@@ -922,9 +760,8 @@ const generatePDFReport = async (data: any, type: string): Promise<Buffer> => {
 };
 
 // Order Analytics
-export const getOrderAnalytics = async (req: Request, res: Response) => {
-  try {
-    // Get orders by status
+export const getOrderAnalytics = asyncHandler(async (req: Request, res: Response) => {
+  // Get orders by status
     const statusCounts = await Order.aggregate([
       {
         $group: {
@@ -1002,17 +839,10 @@ export const getOrderAnalytics = async (req: Request, res: Response) => {
       byStatus,
       byHour,
       byMonth: monthlyData
-    });
-  } catch (error) {
-    console.error('Error getting order analytics:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Customer Analytics
-export const getCustomerAnalytics = async (req: Request, res: Response) => {
-  try {
-    // Get top spenders
+export const getCustomerAnalytics = asyncHandler(async (req: Request, res: Response) => {
+  // Get top spenders
     const topSpenders = await Order.aggregate([
       {
         $match: { status: 'completed' }
@@ -1121,17 +951,10 @@ export const getCustomerAnalytics = async (req: Request, res: Response) => {
       topSpenders,
       byLocation: locationData,
       activity: dailyActivity
-    });
-  } catch (error) {
-    console.error('Error getting customer analytics:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Sales Analytics
-export const getSalesAnalytics = async (req: Request, res: Response) => {
-  try {
-    // Get sales by payment method
+export const getSalesAnalytics = asyncHandler(async (req: Request, res: Response) => {
+  // Get sales by payment method
     const paymentMethodData = await Order.aggregate([
       {
         $match: { status: 'completed' }
@@ -1172,17 +995,10 @@ export const getSalesAnalytics = async (req: Request, res: Response) => {
       conversionRate: Math.round(conversionRate * 100) / 100,
       cartAbandonment: Math.round(cartAbandonment * 100) / 100,
       averageOrderValue
-    });
-  } catch (error) {
-    console.error('Error getting sales analytics:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Product Analytics
-export const getProductAnalytics = async (req: Request, res: Response) => {
-  try {
-    // Get top selling products
+export const getProductAnalytics = asyncHandler(async (req: Request, res: Response) => {
+  // Get top selling products
     const topSelling = await Order.aggregate([
       {
         $match: { status: 'completed' }
@@ -1246,17 +1062,10 @@ export const getProductAnalytics = async (req: Request, res: Response) => {
       topSelling,
       performance,
       lowStock
-    });
-  } catch (error) {
-    console.error('Error getting product analytics:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Daily Revenue Data
-export const getDailyRevenueData = async (req: Request, res: Response) => {
-  try {
-    const days = parseInt(req.query.days as string) || 30;
+export const getDailyRevenueData = asyncHandler(async (req: Request, res: Response) => {
+  const days = parseInt(req.query.days as string) || 30;
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -1284,9 +1093,4 @@ export const getDailyRevenueData = async (req: Request, res: Response) => {
       });
     }
 
-    res.json(dailyData);
-  } catch (error) {
-    console.error('Error getting daily revenue data:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}; 
+    res.json(dailyData);});

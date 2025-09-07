@@ -23,8 +23,8 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { api } from "@/lib/api";
-import { Order } from "@/lib/api";
+import { api, Order } from "@/lib/api";
+import { formatCurrency } from "@/lib/currency";
 
 interface OrderStatus {
   id: string;
@@ -262,12 +262,6 @@ const OrderTracking = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-zen">
@@ -409,15 +403,21 @@ const OrderTracking = () => {
                                      <CardContent className="space-y-4">
                      <div>
                        <p className="text-sm text-muted-foreground">Name</p>
-                       <p className="font-medium">{orderDetails.userId.name}</p>
+                       <p className="font-medium">
+                         {typeof orderDetails.userId === 'object' ? orderDetails.userId.name : 'N/A'}
+                       </p>
                      </div>
                      <div>
                        <p className="text-sm text-muted-foreground">Email</p>
-                       <p className="font-medium">{orderDetails.userId.email}</p>
+                       <p className="font-medium">
+                         {typeof orderDetails.userId === 'object' ? orderDetails.userId.email : 'N/A'}
+                       </p>
                      </div>
                      <div>
                        <p className="text-sm text-muted-foreground">Phone</p>
-                       <p className="font-medium">{orderDetails.userId.phone}</p>
+                       <p className="font-medium">
+                         {typeof orderDetails.userId === 'object' ? orderDetails.userId.phone : 'N/A'}
+                       </p>
                      </div>
                      <div>
                        <p className="text-sm text-muted-foreground">Address</p>
@@ -467,41 +467,43 @@ const OrderTracking = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                                         {orderDetails.items.map((item, index) => (
-                       <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                         {item.productId?.images?.[0] ? (
-                           <img
-                             src={item.productId.images[0]}
-                             alt={item.name}
-                             className="w-16 h-16 object-cover rounded-md"
-                           />
-                         ) : (
-                           <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center">
-                             <Package className="h-8 w-8 text-gray-400" />
-                           </div>
-                         )}
-                         <div className="flex-1">
-                           <h4 className="font-medium">{item.name}</h4>
-                           <p className="text-sm text-muted-foreground">
-                             Quantity: {item.quantity}
-                           </p>
-                         </div>
-                         <div className="text-right">
-                           <p className="font-medium">{formatCurrency(item.price * item.quantity)}</p>
-                           <p className="text-sm text-muted-foreground">
-                             {formatCurrency(item.price)} each
-                           </p>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
+                    {orderDetails.items.map((item, index) => (
+                      <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                        {item.productId?.images?.[0] ? (
+                          <img
+                            src={item.productId.images[0]}
+                            alt={typeof item.productId === 'object' ? item.productId.name : item.name || 'Product'}
+                            className="w-16 h-16 object-cover rounded-md"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center">
+                            <Package className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium">
+                            {typeof item.productId === 'object' ? item.productId.name : item.name || 'Product'}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            Quantity: {item.quantity}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">{formatCurrency(item.price * item.quantity, language)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatCurrency(item.price, language)} each
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                    
                    <Separator className="my-6" />
                    
                    <div className="flex justify-between items-center">
                      <span className="text-lg font-semibold">{t.total}</span>
                      <span className="text-2xl font-bold text-primary">
-                       {formatCurrency(orderDetails.totalAmount)}
+                       {formatCurrency(orderDetails.totalAmount, language)}
                      </span>
                    </div>
                 </CardContent>

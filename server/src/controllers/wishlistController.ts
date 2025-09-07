@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { Wishlist } from '../models/Wishlist';
 import { Product } from '../models/Product';
 
-export const getWishlist = async (req: Request, res: Response) => {
+export const getWishlist = asyncHandler(async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { userId: string } }).user.userId;
     
@@ -22,11 +23,11 @@ export const getWishlist = async (req: Request, res: Response) => {
     res.json(activeProducts);
   } catch (error) {
     console.error('Get wishlist error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
-};
+});
 
-export const addToWishlist = async (req: Request, res: Response) => {
+export const addToWishlist = asyncHandler(async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { productId } = req.body;
@@ -62,9 +63,9 @@ export const addToWishlist = async (req: Request, res: Response) => {
     }
     return res.status(500).json({ message: 'Internal server error' });
   }
-};
+});
 
-export const removeFromWishlist = async (req: Request, res: Response) => {
+export const removeFromWishlist = asyncHandler(async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { productId } = req.params;
@@ -78,11 +79,11 @@ export const removeFromWishlist = async (req: Request, res: Response) => {
     res.json({ message: 'Product removed from wishlist successfully' });
   } catch (error) {
     console.error('Remove from wishlist error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
-};
+});
 
-export const clearWishlist = async (req: Request, res: Response) => {
+export const clearWishlist = asyncHandler(async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { userId: string } }).user.userId;
 
@@ -91,6 +92,6 @@ export const clearWishlist = async (req: Request, res: Response) => {
     res.json({ message: 'Wishlist cleared successfully' });
   } catch (error) {
     console.error('Clear wishlist error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
-}; 
+});

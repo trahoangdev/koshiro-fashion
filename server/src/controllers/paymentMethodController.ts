@@ -1,22 +1,15 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { PaymentMethod } from '../models/PaymentMethod';
 
-export const getPaymentMethods = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+export const getPaymentMethods = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     
     const paymentMethods = await PaymentMethod.find({ userId }).sort({ isDefault: -1, createdAt: -1 });
     
-    res.json(paymentMethods);
-  } catch (error) {
-    console.error('Get payment methods error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const addPaymentMethod = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    res.json(paymentMethods);});
+export const addPaymentMethod = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { type, name, cardNumber, expiryMonth, expiryYear, cvv, paypalEmail } = req.body;
 
     // Validate required fields
@@ -68,16 +61,9 @@ export const addPaymentMethod = async (req: Request, res: Response) => {
 
     await paymentMethod.save();
 
-    res.status(201).json(paymentMethod);
-  } catch (error) {
-    console.error('Add payment method error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const updatePaymentMethod = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    res.status(201).json(paymentMethod);});
+export const updatePaymentMethod = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { id } = req.params;
     const { type, name, cardNumber, expiryMonth, expiryYear, cvv, paypalEmail } = req.body;
 
@@ -108,16 +94,9 @@ export const updatePaymentMethod = async (req: Request, res: Response) => {
 
     await paymentMethod.save();
 
-    res.json(paymentMethod);
-  } catch (error) {
-    console.error('Update payment method error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const deletePaymentMethod = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    res.json(paymentMethod);});
+export const deletePaymentMethod = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { id } = req.params;
 
     const paymentMethod = await PaymentMethod.findOne({ _id: id, userId });
@@ -136,16 +115,9 @@ export const deletePaymentMethod = async (req: Request, res: Response) => {
       }
     }
 
-    res.json({ message: 'Payment method deleted successfully' });
-  } catch (error) {
-    console.error('Delete payment method error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const setDefaultPaymentMethod = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    res.json({ message: 'Payment method deleted successfully' });});
+export const setDefaultPaymentMethod = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as Request & { user: { userId: string } }).user.userId;
     const { id } = req.params;
 
     const paymentMethod = await PaymentMethod.findOne({ _id: id, userId });
@@ -163,9 +135,4 @@ export const setDefaultPaymentMethod = async (req: Request, res: Response) => {
     paymentMethod.isDefault = true;
     await paymentMethod.save();
 
-    res.json({ message: 'Default payment method updated successfully' });
-  } catch (error) {
-    console.error('Set default payment method error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}; 
+    res.json({ message: 'Default payment method updated successfully' });});

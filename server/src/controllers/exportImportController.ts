@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { User } from '../models/User';
 import { Product } from '../models/Product';
 import { Category } from '../models/Category';
 import { Order } from '../models/Order';
 
 // Export data
-export const exportData = async (req: Request, res: Response) => {
-  try {
-    const { type, format = 'json', filters } = req.body;
+export const exportData = asyncHandler(async (req: Request, res: Response) => {
+  const { type, format = 'json', filters } = req.body;
     
     let data: any[] = [];
     let filename = '';
@@ -43,17 +43,10 @@ export const exportData = async (req: Request, res: Response) => {
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}.json"`);
       return res.json(data);
-    }
-  } catch (error) {
-    console.error('Error exporting data:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    }});
 // Import data
-export const importData = async (req: Request, res: Response) => {
-  try {
-    const { type, data, options = {} } = req.body;
+export const importData = asyncHandler(async (req: Request, res: Response) => {
+  const { type, data, options = {} } = req.body;
     
     let result: any = {};
 
@@ -74,13 +67,7 @@ export const importData = async (req: Request, res: Response) => {
     res.json({
       message: 'Import completed successfully',
       ...result
-    });
-  } catch (error) {
-    console.error('Error importing data:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Helper functions
 const convertToCSV = (data: any[]): string => {
   if (data.length === 0) return '';

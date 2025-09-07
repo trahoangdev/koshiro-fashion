@@ -10,7 +10,6 @@ export default function ScrollToTop() {
   // Show button when page is scrolled up to given distance
   const toggleVisibility = () => {
     const scrolled = window.pageYOffset;
-    console.log('Scroll position:', scrolled); // Debug log
     if (scrolled > 300) {
       setIsVisible(true);
     } else {
@@ -30,7 +29,6 @@ export default function ScrollToTop() {
 
   // Scroll to top smoothly
   const scrollToTop = () => {
-    console.log('Scrolling to top...'); // Debug log
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
@@ -53,9 +51,6 @@ export default function ScrollToTop() {
   };
 
   const t = translations[language as keyof typeof translations] || translations.en;
-
-  // Debug log
-  console.log('ScrollToTop render - isVisible:', isVisible);
 
   return (
     <>

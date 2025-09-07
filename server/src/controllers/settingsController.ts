@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { Settings } from '../models/Settings';
 
 // Get system settings
-export const getSettings = async (req: Request, res: Response) => {
-  try {
-    let settings = await Settings.findOne();
+export const getSettings = asyncHandler(async (req: Request, res: Response) => {
+  let settings = await Settings.findOne();
     
     // If no settings exist, create default settings
     if (!settings) {
@@ -12,17 +12,10 @@ export const getSettings = async (req: Request, res: Response) => {
       await settings.save();
     }
 
-    res.json(settings);
-  } catch (error) {
-    console.error('Get settings error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    res.json(settings);});
 // Update system settings
-export const updateSettings = async (req: Request, res: Response) => {
-  try {
-    const {
+export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
+  const {
       websiteName,
       websiteDescription,
       contactEmail,
@@ -54,9 +47,4 @@ export const updateSettings = async (req: Request, res: Response) => {
     res.json({
       message: 'Settings updated successfully',
       settings
-    });
-  } catch (error) {
-    console.error('Update settings error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}; 
+    });});

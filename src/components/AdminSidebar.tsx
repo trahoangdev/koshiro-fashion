@@ -21,7 +21,13 @@ import {
   Activity,
   TrendingUp,
   HelpCircle,
-  MessageSquare
+  MessageSquare,
+  Percent,
+  Warehouse,
+  Truck,
+  CreditCard,
+  Key,
+  Link
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -136,6 +142,42 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           labelJa: "レビュー",
           icon: MessageSquare,
           path: "/admin/reviews"
+        },
+        {
+          id: "promotions",
+          label: "Khuyến mãi",
+          labelEn: "Promotions",
+          labelJa: "プロモーション",
+          icon: Percent,
+          path: "/admin/promotions",
+          isNew: true
+        },
+        {
+          id: "inventory",
+          label: "Tồn kho",
+          labelEn: "Inventory",
+          labelJa: "在庫",
+          icon: Warehouse,
+          path: "/admin/inventory",
+          isNew: true
+        },
+        {
+          id: "shipping",
+          label: "Vận chuyển",
+          labelEn: "Shipping",
+          labelJa: "配送",
+          icon: Truck,
+          path: "/admin/shipping",
+          isNew: true
+        },
+        {
+          id: "payments",
+          label: "Thanh toán",
+          labelEn: "Payments",
+          labelJa: "支払い",
+          icon: CreditCard,
+          path: "/admin/payments",
+          isNew: true
         }
       ]
     },
@@ -175,6 +217,24 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           icon: Bell,
           path: "/admin/notifications",
           badge: unreadCount > 0 ? unreadCount.toString() : undefined
+        },
+        {
+          id: "roles",
+          label: "Vai trò & Quyền",
+          labelEn: "Roles & Permissions",
+          labelJa: "ロール・権限",
+          icon: Shield,
+          path: "/admin/roles",
+          isNew: true
+        },
+        {
+          id: "api",
+          label: "API & Tích hợp",
+          labelEn: "API & Integration",
+          labelJa: "API・統合",
+          icon: Key,
+          path: "/admin/api",
+          isNew: true
         },
         {
           id: "settings",

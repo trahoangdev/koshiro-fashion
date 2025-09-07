@@ -356,7 +356,7 @@ const seedData = async () => {
         originalPrice: 550000,
         categoryId: createdCategories[1]._id, // Yukata
         images: [
-          '/images/products/yukata-summer-1.jpg',
+          '/images/products/yukata-summer-1.jpg',  
           '/images/products/yukata-summer-2.jpg'
         ],
         sizes: ['S', 'M', 'L'],

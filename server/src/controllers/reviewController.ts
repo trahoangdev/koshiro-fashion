@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/auth';
 import { Review } from '../models/Review';
 import { User } from '../models/User';
 import { Product } from '../models/Product';
 
 // Get reviews with pagination and filters
-export const getReviews = async (req: Request, res: Response) => {
-  try {
-    const {
+export const getReviews = asyncHandler(async (req: Request, res: Response) => {
+  const {
       page = 1,
       limit = 10,
       productId,
@@ -52,17 +52,10 @@ export const getReviews = async (req: Request, res: Response) => {
         total,
         pages: Math.ceil(total / limitNum)
       }
-    });
-  } catch (error) {
-    console.error('Get reviews error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Create new review
-export const createReview = async (req: Request, res: Response) => {
-  try {
-    const currentUser = (req as any).user;
+export const createReview = asyncHandler(async (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
     const { userId: targetUserId, productId, rating, title, comment } = req.body;
     
     // If admin is creating review, they can specify userId, otherwise use current user's ID
@@ -122,17 +115,10 @@ export const createReview = async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'Review created successfully',
       review
-    });
-  } catch (error) {
-    console.error('Create review error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Mark review as helpful
-export const markReviewHelpful = async (req: Request, res: Response) => {
-  try {
-    const { reviewId } = req.params;
+export const markReviewHelpful = asyncHandler(async (req: Request, res: Response) => {
+  const { reviewId } = req.params;
 
     const review = await Review.findById(reviewId);
     if (!review) {
@@ -146,17 +132,10 @@ export const markReviewHelpful = async (req: Request, res: Response) => {
     res.json({
       message: 'Review marked as helpful',
       helpful: review.helpful
-    });
-  } catch (error) {
-    console.error('Mark review helpful error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Update review
-export const updateReview = async (req: Request, res: Response) => {
-  try {
-    const { reviewId } = req.params;
+export const updateReview = asyncHandler(async (req: Request, res: Response) => {
+  const { reviewId } = req.params;
     const { userId, productId, rating, title, comment, verified } = req.body;
 
     const review = await Review.findById(reviewId);
@@ -214,17 +193,10 @@ export const updateReview = async (req: Request, res: Response) => {
     res.json({
       message: 'Review updated successfully',
       review
-    });
-  } catch (error) {
-    console.error('Update review error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Delete review
-export const deleteReview = async (req: Request, res: Response) => {
-  try {
-    const { reviewId } = req.params;
+export const deleteReview = asyncHandler(async (req: Request, res: Response) => {
+  const { reviewId } = req.params;
 
     const review = await Review.findById(reviewId);
     if (!review) {
@@ -235,17 +207,10 @@ export const deleteReview = async (req: Request, res: Response) => {
 
     res.json({
       message: 'Review deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete review error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
+    });});
 // Get review statistics
-export const getReviewStats = async (req: Request, res: Response) => {
-  try {
-    const { productId } = req.query;
+export const getReviewStats = asyncHandler(async (req: Request, res: Response) => {
+  const { productId } = req.query;
 
     const filter: Record<string, any> = {};
     if (productId) {
@@ -268,9 +233,4 @@ export const getReviewStats = async (req: Request, res: Response) => {
       totalReviews,
       averageRating: avgRating.length > 0 ? Math.round(avgRating[0].avgRating * 10) / 10 : 0,
       ratingDistribution
-    });
-  } catch (error) {
-    console.error('Get review stats error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}; 
+    });});

@@ -31,7 +31,7 @@ import {
   getProductAnalytics,
   getDailyRevenueData
 } from '../controllers/adminController';
-import { cancelOrder, deleteOrder, updateOrderStatus } from '../controllers/orderController';
+import { cancelOrder, deleteOrder, updateOrder, updateOrderStatus } from '../controllers/orderController';
 import { exportData, importData } from '../controllers/exportImportController';
 
 const router = express.Router();
@@ -48,6 +48,7 @@ router.get('/product-stats', getProductStats);
 // Orders management
 router.get('/orders', getAdminOrders);
 router.get('/orders/:orderId', getOrderDetails);
+router.put('/orders/:id', updateOrder);
 router.put('/orders/:id/status', updateOrderStatus);
 router.put('/orders/:id/cancel', cancelOrder);
 router.delete('/orders/:id', deleteOrder);

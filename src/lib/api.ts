@@ -738,6 +738,7 @@ class ApiClient {
   }
 
   async createOrder(orderData: {
+    userId?: string;
     items: Array<{
       productId: string;
       quantity: number;
@@ -760,8 +761,13 @@ class ApiClient {
     };
     paymentMethod: string;
     notes?: string;
+    status?: 'pending' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
+    paymentStatus?: 'pending' | 'paid' | 'failed';
+    trackingNumber?: string;
   }): Promise<{ message: string; order: Order }> {
-    return this.request<{ message: string; order: Order }>('/orders', {
+    // Use admin route if userId is provided (admin creating order for customer)
+    const endpoint = orderData.userId ? '/orders/admin' : '/orders';
+    return this.request<{ message: string; order: Order }>(endpoint, {
       method: 'POST',
       body: JSON.stringify(orderData),
     });

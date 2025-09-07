@@ -77,4 +77,9 @@ export const requireCustomerOrAdmin = (req: AuthRequest, res: Response, next: Ne
   }
 
   next();
+};
+
+// Async handler wrapper to catch errors
+export const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
 }; 

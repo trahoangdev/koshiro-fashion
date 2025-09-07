@@ -73,12 +73,23 @@ export default function OrderForm({
 }: OrderFormProps) {
   const { toast } = useToast();
   const { language } = useLanguage();
+  
+  // Helper function to get product name based on language
+  const getProductName = (product: any) => {
+    if (!product) return 'Unknown Product';
+    switch (language) {
+      case 'vi': return product.name;
+      case 'ja': return product.nameJa || product.name;
+      default: return product.nameEn || product.name;
+    }
+  };
+  
   const [formData, setFormData] = useState<OrderFormData>({
-    userId: initialData?.userId || '',
+    userId: typeof initialData?.userId === 'string' ? initialData.userId : initialData?.userId?._id || '',
     status: initialData?.status || 'pending',
     paymentStatus: initialData?.paymentStatus || 'pending',
     items: initialData?.items?.map(item => ({
-      productId: typeof item.product === 'object' ? item.product._id : item.productId,
+      productId: typeof item.productId === 'string' ? item.productId : item.productId._id,
       quantity: item.quantity,
       price: item.price,
       size: item.size,
@@ -93,7 +104,7 @@ export default function OrderForm({
     },
     paymentMethod: initialData?.paymentMethod || '',
     notes: initialData?.notes || '',
-    trackingNumber: initialData?.trackingNumber || ''
+    trackingNumber: (initialData as any)?.trackingNumber || ''
   });
 
   const [selectedProduct, setSelectedProduct] = useState<string>('');
@@ -202,8 +213,11 @@ export default function OrderForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('OrderForm - Submitting form data:', formData);
+    
     // Validation
     if (!formData.userId) {
+      console.log('OrderForm - Validation failed: No customer selected');
       toast({
         title: t.error,
         description: 'Please select a customer',
@@ -213,6 +227,7 @@ export default function OrderForm({
     }
 
     if (formData.items.length === 0) {
+      console.log('OrderForm - Validation failed: No items');
       toast({
         title: t.error,
         description: 'Please add at least one item to the order',
@@ -224,6 +239,7 @@ export default function OrderForm({
     if (!formData.shippingAddress.name || !formData.shippingAddress.phone || 
         !formData.shippingAddress.address || !formData.shippingAddress.city || 
         !formData.shippingAddress.district) {
+      console.log('OrderForm - Validation failed: Incomplete shipping address');
       toast({
         title: t.error,
         description: 'Please fill in all shipping address fields',
@@ -233,6 +249,7 @@ export default function OrderForm({
     }
 
     if (!formData.paymentMethod) {
+      console.log('OrderForm - Validation failed: No payment method');
       toast({
         title: t.error,
         description: 'Please specify a payment method',
@@ -241,12 +258,15 @@ export default function OrderForm({
       return;
     }
 
+    console.log('OrderForm - Validation passed, calling onSubmit');
     try {
       await onSubmit(formData);
+      console.log('OrderForm - Submit successful');
       toast({
         title: t.success,
       });
     } catch (error) {
+      console.error('OrderForm - Submit error:', error);
       toast({
         title: t.error,
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -256,10 +276,18 @@ export default function OrderForm({
   };
 
   const addItem = () => {
-    if (!selectedProduct || selectedQuantity <= 0) return;
+    console.log('OrderForm - addItem called:', { selectedProduct, selectedQuantity, selectedSize, selectedColor });
+    
+    if (!selectedProduct || selectedQuantity <= 0) {
+      console.log('OrderForm - addItem validation failed:', { selectedProduct, selectedQuantity });
+      return;
+    }
     
     const product = products.find(p => p._id === selectedProduct);
-    if (!product) return;
+    if (!product) {
+      console.log('OrderForm - addItem: Product not found:', selectedProduct);
+      return;
+    }
 
     const newItem = {
       productId: selectedProduct,
@@ -269,10 +297,16 @@ export default function OrderForm({
       color: selectedColor || undefined
     };
 
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, newItem]
-    }));
+    console.log('OrderForm - addItem: Adding new item:', newItem);
+
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        items: [...prev.items, newItem]
+      };
+      console.log('OrderForm - addItem: Updated formData:', updated);
+      return updated;
+    });
 
     // Reset form
     setSelectedProduct('');
@@ -532,7 +566,7 @@ export default function OrderForm({
                 <SelectContent>
                   {products.map(product => (
                     <SelectItem key={product._id} value={product._id}>
-                      {product.name}
+                      {getProductName(product)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -568,14 +602,18 @@ export default function OrderForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Price</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={products.find(p => p._id === selectedProduct)?.price || 0}
-                disabled
-              />
+              <Label>{t.price}</Label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={selectedProduct ? formatCurrency(products.find(p => p._id === selectedProduct)?.price || 0, language) : ''}
+                  disabled
+                  className="pr-8"
+                />
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                  {language === 'vi' ? 'VND' : language === 'ja' ? 'JPY' : 'USD'}
+                </div>
+              </div>
             </div>
 
             <Button type="button" onClick={addItem} disabled={!selectedProduct}>
@@ -593,18 +631,18 @@ export default function OrderForm({
               return (
                 <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
-                    <div className="font-medium">{product?.name}</div>
+                    <div className="font-medium">{getProductName(product)}</div>
                     <div className="text-sm text-muted-foreground">
-                      {t.quantity}: {item.quantity} | {t.price}: {formatCurrency(item.price)}
+                      {t.quantity}: {item.quantity} | {t.price}: {formatCurrency(item.price, language)}
                       {item.size && ` | ${t.size}: ${item.size}`}
                       {item.color && ` | ${t.color}: ${item.color}`}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-right">
-                      <div className="font-medium">{formatCurrency(item.price * item.quantity)}</div>
+                      <div className="font-medium">{formatCurrency(item.price * item.quantity, language)}</div>
                       <div className="text-sm text-muted-foreground">
-                        {item.quantity} × {formatCurrency(item.price)}
+                        {item.quantity} × {formatCurrency(item.price, language)}
                       </div>
                     </div>
                     <Button
@@ -626,16 +664,16 @@ export default function OrderForm({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>{t.subtotal}:</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <span>{formatCurrency(subtotal, language)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping:</span>
-                <span>{formatCurrency(shipping)}</span>
+                <span>{formatCurrency(shipping, language)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold text-lg">
                 <span>{t.total}:</span>
-                <span>{formatCurrency(total)}</span>
+                <span>{formatCurrency(total, language)}</span>
               </div>
             </div>
           </div>

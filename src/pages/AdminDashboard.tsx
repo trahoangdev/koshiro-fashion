@@ -53,7 +53,7 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
-import ExportImportDebug from "@/components/ExportImportDebug";
+
 
 
 // Types
@@ -786,13 +786,6 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
-
-        {/* Export/Import Debug Section */}
-        <div className="mt-8">
-          <div className="flex justify-center">
-            <ExportImportDebug />
           </div>
         </div>
       </div>
