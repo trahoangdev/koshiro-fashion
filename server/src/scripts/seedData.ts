@@ -5,6 +5,9 @@ import { User } from '../models/User';
 import { Category } from '../models/Category';
 import { Product } from '../models/Product';
 import { Order } from '../models/Order';
+import Inventory from '../models/Inventory';
+import StockMovement from '../models/StockMovement';
+import Promotion from '../models/Promotion';
 
 dotenv.config();
 
@@ -55,6 +58,9 @@ const seedData = async () => {
     await Category.deleteMany({});
     await Product.deleteMany({});
     await Order.deleteMany({});
+    await Inventory.deleteMany({});
+    await StockMovement.deleteMany({});
+    await Promotion.deleteMany({});
     console.log('✅ Cleared existing data');
 
     // Create admin user
@@ -493,6 +499,80 @@ const seedData = async () => {
     const createdProducts = await Product.insertMany(products);
     console.log('✅ Created products');
 
+    // Create inventory data for each product
+    const inventoryData = [];
+    const stockMovements = [];
+    
+    for (let i = 0; i < createdProducts.length; i++) {
+      const product = createdProducts[i];
+      
+      // Create inventory for each color and size combination
+      for (const color of product.colors) {
+        for (const size of product.sizes) {
+          const sku = `${product.name.substring(0, 3).toUpperCase()}-${String(i + 1).padStart(3, '0')}-${color.substring(0, 3).toUpperCase()}-${size}`;
+          const currentStock = Math.floor(Math.random() * 50) + 10; // Random stock between 10-60
+          const minStock = Math.floor(currentStock * 0.2); // 20% of current stock
+          const maxStock = Math.floor(currentStock * 2); // 200% of current stock
+          const reservedStock = Math.floor(Math.random() * 5); // Random reserved between 0-5
+          
+          const inventoryItem = {
+            productId: product._id,
+            productName: product.name,
+            productNameEn: product.nameEn,
+            productNameJa: product.nameJa,
+            sku: sku,
+            currentStock: currentStock,
+            minStock: minStock,
+            maxStock: maxStock,
+            reservedStock: reservedStock,
+            availableStock: currentStock - reservedStock,
+            costPrice: Math.floor(product.price * 0.6), // 60% of selling price
+            sellingPrice: product.salePrice || product.price,
+            location: `A-${String(Math.floor(i / 3) + 1).padStart(2, '0')}-${String((i % 3) + 1).padStart(2, '0')}`,
+            supplier: ['Kimono Supplier Co.', 'Yukata Supplier Ltd.', 'Belt Supplier Inc.', 'Accessories Co.'][i % 4],
+            lastRestocked: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date within last 30 days
+            lastSold: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date within last 7 days
+            status: currentStock === 0 ? 'out_of_stock' : currentStock <= minStock ? 'low_stock' : 'in_stock',
+            category: (product.categoryId as any).toString(),
+            size: size,
+            color: color,
+            notes: `Inventory for ${product.name} - ${color} - ${size}`,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          inventoryData.push(inventoryItem);
+          
+          // Create initial stock movement for restocking
+          const restockQuantity = Math.floor(currentStock * 1.5); // Initial restock was 150% of current
+          stockMovements.push({
+            productId: product._id,
+            inventoryId: null as any, // Will be set after inventory is created
+            type: 'in',
+            quantity: restockQuantity,
+            reason: 'Initial stock setup',
+            reference: 'INIT-2024-001',
+            userId: adminUser._id,
+            userName: 'Admin Koshiro',
+            location: inventoryItem.location,
+            notes: 'Initial inventory setup',
+            createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
+          });
+        }
+      }
+    }
+
+    const createdInventory = await Inventory.insertMany(inventoryData);
+    console.log('✅ Created inventory items');
+
+    // Update stock movements with inventory IDs
+    for (let i = 0; i < stockMovements.length; i++) {
+      stockMovements[i].inventoryId = createdInventory[i]._id;
+    }
+
+    await StockMovement.insertMany(stockMovements);
+    console.log('✅ Created stock movements');
+
     // Create sample orders
     const orders = [
       {
@@ -590,6 +670,126 @@ const seedData = async () => {
     await Order.insertMany(orders);
     console.log('✅ Created sample orders');
 
+    // Create promotions data
+    const promotions = [
+      {
+        code: 'WELCOME10',
+        name: 'Chào mừng khách hàng mới',
+        nameEn: 'Welcome New Customer',
+        nameJa: '新規顧客歓迎',
+        description: 'Giảm 10% cho đơn hàng đầu tiên',
+        descriptionEn: '10% off on first order',
+        descriptionJa: '初回注文10%オフ',
+        type: 'percentage',
+        value: 10,
+        minOrderAmount: 500000,
+        maxDiscountAmount: 100000,
+        usageLimit: 1000,
+        usedCount: 245,
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+        applicableProducts: [],
+        applicableCategories: [],
+        applicableUsers: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        code: 'FREESHIP',
+        name: 'Miễn phí vận chuyển',
+        nameEn: 'Free Shipping',
+        nameJa: '送料無料',
+        description: 'Miễn phí vận chuyển cho đơn hàng từ 1 triệu',
+        descriptionEn: 'Free shipping for orders over 1M VND',
+        descriptionJa: '100万円以上の注文で送料無料',
+        type: 'free_shipping',
+        value: 0,
+        minOrderAmount: 1000000,
+        usageLimit: 500,
+        usedCount: 89,
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+        applicableProducts: [],
+        applicableCategories: [],
+        applicableUsers: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        code: 'SAVE50K',
+        name: 'Tiết kiệm 50k',
+        nameEn: 'Save 50k',
+        nameJa: '5万円節約',
+        description: 'Giảm 50,000 VND cho đơn hàng từ 500k',
+        descriptionEn: '50,000 VND off for orders over 500k',
+        descriptionJa: '50万円以上の注文で5万円オフ',
+        type: 'fixed',
+        value: 50000,
+        minOrderAmount: 500000,
+        usageLimit: 200,
+        usedCount: 156,
+        isActive: false,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-06-30'),
+        applicableProducts: [],
+        applicableCategories: [],
+        applicableUsers: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        code: 'KIMONO20',
+        name: 'Giảm giá Kimono',
+        nameEn: 'Kimono Discount',
+        nameJa: '着物割引',
+        description: 'Giảm 20% cho tất cả sản phẩm Kimono',
+        descriptionEn: '20% off on all Kimono products',
+        descriptionJa: 'すべての着物商品20%オフ',
+        type: 'percentage',
+        value: 20,
+        minOrderAmount: 0,
+        maxDiscountAmount: 200000,
+        usageLimit: 100,
+        usedCount: 45,
+        isActive: true,
+        startDate: new Date('2024-02-01'),
+        endDate: new Date('2024-03-31'),
+        applicableProducts: [],
+        applicableCategories: [createdCategories[0]._id], // Kimono category
+        applicableUsers: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        code: 'VIP15',
+        name: 'Khách hàng VIP',
+        nameEn: 'VIP Customer',
+        nameJa: 'VIP顧客',
+        description: 'Giảm 15% cho khách hàng VIP',
+        descriptionEn: '15% off for VIP customers',
+        descriptionJa: 'VIP顧客15%オフ',
+        type: 'percentage',
+        value: 15,
+        minOrderAmount: 2000000,
+        maxDiscountAmount: 300000,
+        usageLimit: 50,
+        usedCount: 12,
+        isActive: true,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+        applicableProducts: [],
+        applicableCategories: [],
+        applicableUsers: [adminUser._id], // Admin user as VIP
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+
+    await Promotion.insertMany(promotions);
+    console.log('✅ Created promotions');
+
     // Update category product counts
     for (const category of createdCategories) {
       const count = await Product.countDocuments({ categoryId: category._id });
@@ -603,8 +803,13 @@ const seedData = async () => {
     console.log(`   - Categories: ${await Category.countDocuments()}`);
     console.log(`   - Products: ${await Product.countDocuments()}`);
     console.log(`   - Orders: ${await Order.countDocuments()}`);
+    console.log(`   - Inventory Items: ${await Inventory.countDocuments()}`);
+    console.log(`   - Stock Movements: ${await StockMovement.countDocuments()}`);
+    console.log(`   - Promotions: ${await Promotion.countDocuments()}`);
     console.log('🔑 Admin credentials: admin@koshiro.com / admin123');
     console.log('👥 Customer credentials: customer1@example.com / password123');
+    console.log('📦 Inventory Management: Ready with stock tracking and movements');
+    console.log('🎯 Promotions: Ready with discount codes and campaigns');
 
   } catch (error) {
     console.error('❌ Error seeding data:', error);

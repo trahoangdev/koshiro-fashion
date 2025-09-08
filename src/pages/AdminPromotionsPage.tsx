@@ -63,6 +63,7 @@ import {
   Loader2
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { exportImportService } from "@/lib/exportImportService";
 import AdminLayout from "@/components/AdminLayout";
 
 interface Promotion {
@@ -106,6 +107,8 @@ export default function AdminPromotionsPage() {
   const [promotionToDelete, setPromotionToDelete] = useState<Promotion | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const translations = {
     en: {
@@ -202,76 +205,40 @@ export default function AdminPromotionsPage() {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  // Mock data for demonstration
+  // Load promotions data
   useEffect(() => {
-    const mockPromotions: Promotion[] = [
-      {
-        _id: "1",
-        code: "WELCOME10",
-        name: "Chào mừng khách hàng mới",
-        nameEn: "Welcome New Customer",
-        nameJa: "新規顧客歓迎",
-        description: "Giảm 10% cho đơn hàng đầu tiên",
-        descriptionEn: "10% off on first order",
-        descriptionJa: "初回注文10%オフ",
-        type: "percentage",
-        value: 10,
-        minOrderAmount: 500000,
-        maxDiscountAmount: 100000,
-        usageLimit: 1000,
-        usedCount: 245,
-        isActive: true,
-        startDate: "2024-01-01",
-        endDate: "2024-12-31",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "2",
-        code: "FREESHIP",
-        name: "Miễn phí vận chuyển",
-        nameEn: "Free Shipping",
-        nameJa: "送料無料",
-        description: "Miễn phí vận chuyển cho đơn hàng từ 1 triệu",
-        descriptionEn: "Free shipping for orders over 1M VND",
-        descriptionJa: "100万円以上の注文で送料無料",
-        type: "free_shipping",
-        value: 0,
-        minOrderAmount: 1000000,
-        usageLimit: 500,
-        usedCount: 89,
-        isActive: true,
-        startDate: "2024-01-01",
-        endDate: "2024-12-31",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "3",
-        code: "SAVE50K",
-        name: "Tiết kiệm 50k",
-        nameEn: "Save 50k",
-        nameJa: "5万円節約",
-        description: "Giảm 50,000 VND cho đơn hàng từ 500k",
-        descriptionEn: "50,000 VND off for orders over 500k",
-        descriptionJa: "50万円以上の注文で5万円オフ",
-        type: "fixed",
-        value: 50000,
-        minOrderAmount: 500000,
-        usageLimit: 200,
-        usedCount: 156,
-        isActive: false,
-        startDate: "2024-01-01",
-        endDate: "2024-06-30",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      }
-    ];
-
-    setPromotions(mockPromotions);
-    setFilteredPromotions(mockPromotions);
-    setIsLoading(false);
+    loadPromotions();
   }, []);
+
+  const loadPromotions = async () => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('/api/promotions');
+      const data = await response.json();
+      
+      if (data.success) {
+        setPromotions(data.data);
+        setFilteredPromotions(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to load promotions');
+      }
+    } catch (error) {
+      console.error('Error loading promotions:', error);
+      
+      // Set empty arrays if API fails
+      setPromotions([]);
+      setFilteredPromotions([]);
+      
+      toast({
+        title: "Error",
+        description: "Failed to load promotions. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter promotions
   useEffect(() => {
@@ -368,16 +335,12 @@ export default function AdminPromotionsPage() {
     }
   };
 
-  const handleCreatePromotion = () => {
-    setIsCreateDialogOpen(true);
-  };
-
   const handleEditPromotion = (promotion: Promotion) => {
     setEditingPromotion(promotion);
     setIsEditDialogOpen(true);
   };
 
-  const handleDeletePromotion = (promotion: Promotion) => {
+  const handleDeleteClick = (promotion: Promotion) => {
     setPromotionToDelete(promotion);
     setIsDeleteDialogOpen(true);
   };
@@ -390,10 +353,204 @@ export default function AdminPromotionsPage() {
     });
   };
 
+  const handleExport = async (format: 'excel' | 'csv' | 'json') => {
+    try {
+      setIsExporting(true);
+      
+      // Flatten promotion data for export
+      const exportData = filteredPromotions.map(promotion => ({
+        'Code': promotion.code,
+        'Name (VI)': promotion.name,
+        'Name (EN)': promotion.nameEn || '',
+        'Name (JA)': promotion.nameJa || '',
+        'Description (VI)': promotion.description,
+        'Description (EN)': promotion.descriptionEn || '',
+        'Description (JA)': promotion.descriptionJa || '',
+        'Type': promotion.type,
+        'Value': promotion.value,
+        'Min Order Amount': promotion.minOrderAmount || 0,
+        'Max Discount Amount': promotion.maxDiscountAmount || 0,
+        'Usage Limit': promotion.usageLimit || 0,
+        'Used Count': promotion.usedCount,
+        'Is Active': promotion.isActive ? 'Yes' : 'No',
+        'Start Date': promotion.startDate,
+        'End Date': promotion.endDate,
+        'Created At': promotion.createdAt,
+        'Updated At': promotion.updatedAt
+      }));
+
+      await exportImportService.startExportJob(
+        'promotions',
+        format,
+        exportData
+      );
+
+      toast({
+        title: "Export started",
+        description: `Promotions will be exported as ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export promotions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      
+      // TODO: Implement import functionality
+      toast({
+        title: "Import started",
+        description: `Importing promotions from ${file.name}`,
+      });
+      
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import failed",
+        description: "Failed to import promotions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleCreatePromotion = async (promotionData: Partial<Promotion>) => {
+    try {
+      setIsSubmitting(true);
+      
+      const response = await fetch('/api/promotions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(promotionData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setPromotions(prev => [...prev, data.data]);
+        setFilteredPromotions(prev => [...prev, data.data]);
+        
+        toast({
+          title: "Promotion created",
+          description: `Promotion "${data.data.code}" has been created successfully.`,
+        });
+        
+        setIsCreateDialogOpen(false);
+      } else {
+        throw new Error(data.message || 'Failed to create promotion');
+      }
+    } catch (error) {
+      console.error('Create error:', error);
+      toast({
+        title: "Create failed",
+        description: error instanceof Error ? error.message : "Failed to create promotion",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdatePromotion = async (promotionData: Partial<Promotion>) => {
+    try {
+      setIsSubmitting(true);
+      
+      const response = await fetch(`/api/promotions/${editingPromotion?._id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(promotionData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setPromotions(prev => prev.map(p => p._id === editingPromotion?._id ? data.data : p));
+        setFilteredPromotions(prev => prev.map(p => p._id === editingPromotion?._id ? data.data : p));
+        
+        toast({
+          title: "Promotion updated",
+          description: `Promotion "${data.data.code}" has been updated successfully.`,
+        });
+        
+        setIsEditDialogOpen(false);
+        setEditingPromotion(null);
+      } else {
+        throw new Error(data.message || 'Failed to update promotion');
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      toast({
+        title: "Update failed",
+        description: error instanceof Error ? error.message : "Failed to update promotion",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeletePromotion = async (promotion: Promotion) => {
+    try {
+      const response = await fetch(`/api/promotions/${promotion._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setPromotions(prev => prev.filter(p => p._id !== promotion._id));
+        setFilteredPromotions(prev => prev.filter(p => p._id !== promotion._id));
+        
+        toast({
+          title: "Promotion deleted",
+          description: `Promotion "${promotion.code}" has been deleted successfully.`,
+        });
+        
+        setIsDeleteDialogOpen(false);
+        setPromotionToDelete(null);
+      } else {
+        throw new Error(data.message || 'Failed to delete promotion');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "Failed to delete promotion",
+        variant: "destructive",
+      });
+    }
+  };
+
   const stats = {
     total: promotions.length,
     active: promotions.filter(p => p.isActive && new Date(p.endDate) >= new Date()).length,
-    expired: promotions.filter(p => new Date(p.endDate) < new Date()).length
+    expired: promotions.filter(p => new Date(p.endDate) < new Date()).length,
+    usageRate: promotions.length > 0 
+      ? Math.round((promotions.reduce((sum, p) => sum + p.usedCount, 0) / Math.max(promotions.reduce((sum, p) => sum + (p.usageLimit || 0), 0), 1)) * 100) || 0 
+      : 0
   };
 
   if (isLoading) {
@@ -416,18 +573,45 @@ export default function AdminPromotionsPage() {
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : "Export"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button variant="outline" size="sm" disabled={isImporting} asChild>
+              <label htmlFor="import-file" className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                {isImporting ? "Importing..." : "Import"}
+              </label>
             </Button>
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            <input
+              id="import-file"
+              type="file"
+              accept=".xlsx,.csv,.json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            
+            <Button variant="outline" size="sm" onClick={loadPromotions}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button onClick={handleCreatePromotion}>
+            
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               {t.createPromotion}
             </Button>
@@ -470,7 +654,7 @@ export default function AdminPromotionsPage() {
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{stats.expired}</div>
               <p className="text-xs text-muted-foreground">
-                Expired promotions
+                {stats.expired === 1 ? 'Expired promotion' : 'Expired promotions'}
               </p>
             </CardContent>
           </Card>
@@ -482,7 +666,7 @@ export default function AdminPromotionsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {promotions.length > 0 ? Math.round((promotions.reduce((sum, p) => sum + p.usedCount, 0) / promotions.reduce((sum, p) => sum + (p.usageLimit || 0), 0)) * 100) || 0 : 0}%
+                {stats.usageRate}%
               </div>
               <p className="text-xs text-muted-foreground">
                 Average usage
@@ -544,6 +728,13 @@ export default function AdminPromotionsPage() {
             <div className="text-center py-8">
               <Tag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">{t.noPromotions}</p>
+              <Button 
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="mt-4"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t.createNew}
+              </Button>
             </div>
           ) : (
             <Table>
@@ -612,7 +803,7 @@ export default function AdminPromotionsPage() {
                             <Copy className="h-4 w-4 mr-2" />
                             {t.copy}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeletePromotion(promotion)}>
+                          <DropdownMenuItem onClick={() => handleDeleteClick(promotion)}>
                             <Trash2 className="h-4 w-4 mr-2" />
                             {t.delete}
                           </DropdownMenuItem>
@@ -642,15 +833,8 @@ export default function AdminPromotionsPage() {
             <AlertDialogAction
               onClick={() => {
                 if (promotionToDelete) {
-                  setPromotions(prev => prev.filter(p => p._id !== promotionToDelete._id));
-                  setFilteredPromotions(prev => prev.filter(p => p._id !== promotionToDelete._id));
-                  toast({
-                    title: "Promotion deleted",
-                    description: `Promotion "${promotionToDelete.code}" has been deleted.`,
-                  });
+                  handleDeletePromotion(promotionToDelete);
                 }
-                setIsDeleteDialogOpen(false);
-                setPromotionToDelete(null);
               }}
             >
               Delete
@@ -658,7 +842,464 @@ export default function AdminPromotionsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Promotion Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Promotion</DialogTitle>
+          </DialogHeader>
+          <CreatePromotionForm 
+            onSubmit={handleCreatePromotion}
+            onCancel={() => setIsCreateDialogOpen(false)}
+            isSubmitting={isSubmitting}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Promotion Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Promotion</DialogTitle>
+          </DialogHeader>
+          <EditPromotionForm 
+            promotion={editingPromotion}
+            onSubmit={handleUpdatePromotion}
+            onCancel={() => {
+              setIsEditDialogOpen(false);
+              setEditingPromotion(null);
+            }}
+            isSubmitting={isSubmitting}
+          />
+        </DialogContent>
+      </Dialog>
       </div>
     </AdminLayout>
+  );
+}
+
+// Create Promotion Form Component
+interface CreatePromotionFormProps {
+  onSubmit: (data: Partial<Promotion>) => void;
+  onCancel: () => void;
+  isSubmitting: boolean;
+}
+
+function CreatePromotionForm({ onSubmit, onCancel, isSubmitting }: CreatePromotionFormProps) {
+  const [formData, setFormData] = useState({
+    code: '',
+    name: '',
+    nameEn: '',
+    nameJa: '',
+    description: '',
+    descriptionEn: '',
+    descriptionJa: '',
+    type: 'percentage' as 'percentage' | 'fixed' | 'free_shipping',
+    value: 0,
+    minOrderAmount: 0,
+    maxDiscountAmount: 0,
+    usageLimit: 0,
+    isActive: true,
+    startDate: '',
+    endDate: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium">Code *</label>
+          <Input
+            value={formData.code}
+            onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+            placeholder="WELCOME10"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Type *</label>
+          <Select value={formData.type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="percentage">Percentage</SelectItem>
+              <SelectItem value="fixed">Fixed Amount</SelectItem>
+              <SelectItem value="free_shipping">Free Shipping</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium">Name (Vietnamese) *</label>
+        <Input
+          value={formData.name}
+          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          placeholder="Tên khuyến mãi"
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium">Name (English)</label>
+          <Input
+            value={formData.nameEn}
+            onChange={(e) => setFormData(prev => ({ ...prev, nameEn: e.target.value }))}
+            placeholder="Promotion name"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Name (Japanese)</label>
+          <Input
+            value={formData.nameJa}
+            onChange={(e) => setFormData(prev => ({ ...prev, nameJa: e.target.value }))}
+            placeholder="プロモーション名"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium">Description (Vietnamese) *</label>
+        <Input
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Mô tả khuyến mãi"
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium">Description (English)</label>
+          <Input
+            value={formData.descriptionEn}
+            onChange={(e) => setFormData(prev => ({ ...prev, descriptionEn: e.target.value }))}
+            placeholder="Promotion description"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Description (Japanese)</label>
+          <Input
+            value={formData.descriptionJa}
+            onChange={(e) => setFormData(prev => ({ ...prev, descriptionJa: e.target.value }))}
+            placeholder="プロモーション説明"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="text-sm font-medium">Value *</label>
+          <Input
+            type="number"
+            value={formData.value}
+            onChange={(e) => setFormData(prev => ({ ...prev, value: Number(e.target.value) }))}
+            placeholder="10"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Min Order Amount</label>
+          <Input
+            type="number"
+            value={formData.minOrderAmount}
+            onChange={(e) => setFormData(prev => ({ ...prev, minOrderAmount: Number(e.target.value) }))}
+            placeholder="500000"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Max Discount Amount</label>
+          <Input
+            type="number"
+            value={formData.maxDiscountAmount}
+            onChange={(e) => setFormData(prev => ({ ...prev, maxDiscountAmount: Number(e.target.value) }))}
+            placeholder="100000"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="text-sm font-medium">Usage Limit</label>
+          <Input
+            type="number"
+            value={formData.usageLimit}
+            onChange={(e) => setFormData(prev => ({ ...prev, usageLimit: Number(e.target.value) }))}
+            placeholder="1000"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Start Date *</label>
+          <Input
+            type="date"
+            value={formData.startDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">End Date *</label>
+          <Input
+            type="date"
+            value={formData.endDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="isActive"
+          checked={formData.isActive}
+          onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+        />
+        <label htmlFor="isActive" className="text-sm font-medium">
+          Active
+        </label>
+      </div>
+
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Creating..." : "Create Promotion"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// Edit Promotion Form Component
+interface EditPromotionFormProps {
+  promotion: Promotion | null;
+  onSubmit: (data: Partial<Promotion>) => void;
+  onCancel: () => void;
+  isSubmitting: boolean;
+}
+
+function EditPromotionForm({ promotion, onSubmit, onCancel, isSubmitting }: EditPromotionFormProps) {
+  const [formData, setFormData] = useState({
+    code: '',
+    name: '',
+    nameEn: '',
+    nameJa: '',
+    description: '',
+    descriptionEn: '',
+    descriptionJa: '',
+    type: 'percentage' as 'percentage' | 'fixed' | 'free_shipping',
+    value: 0,
+    minOrderAmount: 0,
+    maxDiscountAmount: 0,
+    usageLimit: 0,
+    isActive: true,
+    startDate: '',
+    endDate: ''
+  });
+
+  useEffect(() => {
+    if (promotion) {
+      setFormData({
+        code: promotion.code,
+        name: promotion.name,
+        nameEn: promotion.nameEn || '',
+        nameJa: promotion.nameJa || '',
+        description: promotion.description,
+        descriptionEn: promotion.descriptionEn || '',
+        descriptionJa: promotion.descriptionJa || '',
+        type: promotion.type,
+        value: promotion.value,
+        minOrderAmount: promotion.minOrderAmount || 0,
+        maxDiscountAmount: promotion.maxDiscountAmount || 0,
+        usageLimit: promotion.usageLimit || 0,
+        isActive: promotion.isActive,
+        startDate: promotion.startDate.split('T')[0],
+        endDate: promotion.endDate.split('T')[0]
+      });
+    }
+  }, [promotion]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium">Code *</label>
+          <Input
+            value={formData.code}
+            onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+            placeholder="WELCOME10"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Type *</label>
+          <Select value={formData.type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="percentage">Percentage</SelectItem>
+              <SelectItem value="fixed">Fixed Amount</SelectItem>
+              <SelectItem value="free_shipping">Free Shipping</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium">Name (Vietnamese) *</label>
+        <Input
+          value={formData.name}
+          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          placeholder="Tên khuyến mãi"
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium">Name (English)</label>
+          <Input
+            value={formData.nameEn}
+            onChange={(e) => setFormData(prev => ({ ...prev, nameEn: e.target.value }))}
+            placeholder="Promotion name"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Name (Japanese)</label>
+          <Input
+            value={formData.nameJa}
+            onChange={(e) => setFormData(prev => ({ ...prev, nameJa: e.target.value }))}
+            placeholder="プロモーション名"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium">Description (Vietnamese) *</label>
+        <Input
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Mô tả khuyến mãi"
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium">Description (English)</label>
+          <Input
+            value={formData.descriptionEn}
+            onChange={(e) => setFormData(prev => ({ ...prev, descriptionEn: e.target.value }))}
+            placeholder="Promotion description"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Description (Japanese)</label>
+          <Input
+            value={formData.descriptionJa}
+            onChange={(e) => setFormData(prev => ({ ...prev, descriptionJa: e.target.value }))}
+            placeholder="プロモーション説明"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="text-sm font-medium">Value *</label>
+          <Input
+            type="number"
+            value={formData.value}
+            onChange={(e) => setFormData(prev => ({ ...prev, value: Number(e.target.value) }))}
+            placeholder="10"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Min Order Amount</label>
+          <Input
+            type="number"
+            value={formData.minOrderAmount}
+            onChange={(e) => setFormData(prev => ({ ...prev, minOrderAmount: Number(e.target.value) }))}
+            placeholder="500000"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Max Discount Amount</label>
+          <Input
+            type="number"
+            value={formData.maxDiscountAmount}
+            onChange={(e) => setFormData(prev => ({ ...prev, maxDiscountAmount: Number(e.target.value) }))}
+            placeholder="100000"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="text-sm font-medium">Usage Limit</label>
+          <Input
+            type="number"
+            value={formData.usageLimit}
+            onChange={(e) => setFormData(prev => ({ ...prev, usageLimit: Number(e.target.value) }))}
+            placeholder="1000"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Start Date *</label>
+          <Input
+            type="date"
+            value={formData.startDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">End Date *</label>
+          <Input
+            type="date"
+            value={formData.endDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="isActive-edit"
+          checked={formData.isActive}
+          onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+        />
+        <label htmlFor="isActive-edit" className="text-sm font-medium">
+          Active
+        </label>
+      </div>
+
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Updating..." : "Update Promotion"}
+        </Button>
+      </div>
+    </form>
   );
 }

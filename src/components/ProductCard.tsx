@@ -234,7 +234,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           <CardContent className="flex-1 p-4">
             <div className="flex flex-col h-full">
               <div className="space-y-3 flex-1">
-                <h3 className="font-semibold text-lg leading-tight line-clamp-2">{getName()}</h3>
+                <h3 className="font-semibold text-lg leading-tight mb-2">{getName()}</h3>
                 <div className="text-muted-foreground text-sm line-clamp-3">
                   <MarkdownRenderer 
                     content={getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
@@ -421,7 +421,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
       {/* Content Section - Fixed height to ensure price/button visibility */}
       <CardContent className="p-4 h-[240px] flex flex-col">
         {/* Product Name */}
-        <h3 className="font-semibold text-base leading-tight line-clamp-2 mb-2">
+        <h3 className="font-semibold text-base leading-tight mb-2">
           {getName()}
         </h3>
           

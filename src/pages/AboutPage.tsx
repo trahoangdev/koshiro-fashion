@@ -216,19 +216,19 @@ const AboutPage = () => {
 
           {/* CTA Section */}
           <section className="text-center">
-            <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-              <CardContent className="p-12">
-                <h2 className="text-3xl font-bold mb-4">Ready to Experience Japanese Fashion?</h2>
-                <p className="text-lg mb-8 opacity-90">
+            <div className="bg-gray-900 rounded-2xl overflow-hidden">
+              <div className="bg-gray-100 p-12 mx-4 my-4 rounded-xl">
+                <h2 className="text-3xl font-bold mb-4 text-gray-900">Ready to Experience Japanese Fashion?</h2>
+                <p className="text-lg mb-8 text-gray-600">
                   Discover our collection and find your perfect piece
                 </p>
                 <Link to="/">
-                  <Button size="lg" variant="secondary">
-                    {t.cta}
+                  <Button size="lg" className="bg-gray-900 text-white hover:bg-gray-800 px-8 py-3 rounded-lg font-semibold">
+                    Khám Phá Bộ Sưu Tập
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </section>
         </div>
       </main>

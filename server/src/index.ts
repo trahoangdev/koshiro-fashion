@@ -3,18 +3,22 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { connectDB } from './config/database';
+
+// Import routes
 import authRoutes from './routes/auth';
 import productRoutes from './routes/products';
 import categoryRoutes from './routes/categories';
 import orderRoutes from './routes/orders';
-import paymentMethodRoutes from './routes/paymentMethods';
-import wishlistRoutes from './routes/wishlist';
 import cartRoutes from './routes/cart';
+import wishlistRoutes from './routes/wishlist';
 import reviewRoutes from './routes/reviews';
-import settingsRoutes from './routes/settings';
 import adminRoutes from './routes/admin';
 import activityRoutes from './routes/activity';
 import notificationRoutes from './routes/notifications';
+import settingsRoutes from './routes/settings';
+import paymentMethodRoutes from './routes/paymentMethods';
+import promotionRoutes from './routes/promotions';
+import inventoryRoutes from './routes/inventory';
 
 // Load environment variables
 dotenv.config();
@@ -22,68 +26,86 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Connect to MongoDB
-connectDB();
-
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
-    : ['http://localhost:8080', 'http://localhost:8081', 'http://localhost:3000'],
+  origin: process.env.FRONTEND_URL || 'http://localhost:8080',
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/payment-methods', paymentMethodRoutes);
-app.use('/api/wishlist', wishlistRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/activity', activityRoutes);
-app.use('/api/notifications', notificationRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
     message: 'Koshiro Fashion API is running',
     timestamp: new Date().toISOString()
   });
 });
 
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/payment-methods', paymentMethodRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/inventory', inventoryRoutes);
+
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
 });
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ message: 'Route not found' });
+  res.status(404).json({
+    message: 'Route not found',
+    path: req.originalUrl
+  });
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-});
+const startServer = async () => {
+  try {
+    // Connect to database
+    await connectDB();
+    
+    // Start listening
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+      console.log(`🌐 API URL: http://localhost:${PORT}`);
+      console.log(`💾 Database: ${process.env.MONGODB_URI ? 'Connected' : 'Not configured'}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
-// Graceful shutdown
+// Handle graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
+  console.log('🛑 SIGTERM received, shutting down gracefully');
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
+  console.log('🛑 SIGINT received, shutting down gracefully');
   process.exit(0);
-}); 
+});
+
+// Start the server
+startServer();

@@ -66,6 +66,7 @@ import {
   Loader2
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { exportImportService } from "@/lib/exportImportService";
 import AdminLayout from "@/components/AdminLayout";
 
 interface InventoryItem {
@@ -123,6 +124,8 @@ export default function AdminInventoryPage() {
   const [adjustmentReason, setAdjustmentReason] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const translations = {
     en: {
@@ -234,126 +237,54 @@ export default function AdminInventoryPage() {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  // Mock data for demonstration
+  // Load inventory data
   useEffect(() => {
-    const mockInventory: InventoryItem[] = [
-      {
-        _id: "1",
-        productId: "prod1",
-        productName: "Kimono Truyền thống",
-        productNameEn: "Traditional Kimono",
-        productNameJa: "伝統着物",
-        sku: "KIM-001-RED-M",
-        currentStock: 15,
-        minStock: 5,
-        maxStock: 50,
-        reservedStock: 3,
-        availableStock: 12,
-        costPrice: 800000,
-        sellingPrice: 1200000,
-        location: "A-01-01",
-        supplier: "Kimono Supplier Co.",
-        lastRestocked: "2024-01-15T00:00:00Z",
-        lastSold: "2024-01-20T00:00:00Z",
-        status: "in_stock",
-        category: "Kimono",
-        size: "M",
-        color: "Red",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-20T00:00:00Z"
-      },
-      {
-        _id: "2",
-        productId: "prod2",
-        productName: "Yukata Mùa hè",
-        productNameEn: "Summer Yukata",
-        productNameJa: "夏浴衣",
-        sku: "YUK-002-BLUE-L",
-        currentStock: 3,
-        minStock: 10,
-        maxStock: 30,
-        reservedStock: 1,
-        availableStock: 2,
-        costPrice: 400000,
-        sellingPrice: 600000,
-        location: "A-02-03",
-        supplier: "Yukata Supplier Ltd.",
-        lastRestocked: "2024-01-10T00:00:00Z",
-        lastSold: "2024-01-19T00:00:00Z",
-        status: "low_stock",
-        category: "Yukata",
-        size: "L",
-        color: "Blue",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-19T00:00:00Z"
-      },
-      {
-        _id: "3",
-        productId: "prod3",
-        productName: "Obi Belt",
-        productNameEn: "Obi Belt",
-        productNameJa: "帯ベルト",
-        sku: "OBI-003-GOLD-OS",
-        currentStock: 0,
-        minStock: 5,
-        maxStock: 20,
-        reservedStock: 0,
-        availableStock: 0,
-        costPrice: 150000,
-        sellingPrice: 250000,
-        location: "B-01-01",
-        supplier: "Belt Supplier Inc.",
-        lastRestocked: "2024-01-05T00:00:00Z",
-        lastSold: "2024-01-18T00:00:00Z",
-        status: "out_of_stock",
-        category: "Accessories",
-        size: "OS",
-        color: "Gold",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-18T00:00:00Z"
-      }
-    ];
-
-    const mockMovements: StockMovement[] = [
-      {
-        _id: "1",
-        productId: "prod1",
-        type: "in",
-        quantity: 20,
-        reason: "Restock from supplier",
-        reference: "PO-2024-001",
-        userId: "admin1",
-        userName: "Admin User",
-        createdAt: "2024-01-15T10:00:00Z"
-      },
-      {
-        _id: "2",
-        productId: "prod1",
-        type: "out",
-        quantity: 5,
-        reason: "Sale",
-        reference: "ORDER-2024-001",
-        userId: "system",
-        userName: "System",
-        createdAt: "2024-01-20T14:30:00Z"
-      },
-      {
-        _id: "3",
-        productId: "prod2",
-        type: "adjustment",
-        quantity: -2,
-        reason: "Damaged goods",
-        userId: "admin1",
-        userName: "Admin User",
-        createdAt: "2024-01-19T09:15:00Z"
-      }
-    ];
-
-    setInventory(mockInventory);
-    setFilteredInventory(mockInventory);
-    setStockMovements(mockMovements);
-    setIsLoading(false);
+    loadInventory();
+    loadStockMovements();
   }, []);
+
+  const loadInventory = async () => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('/api/inventory');
+      const data = await response.json();
+      
+      if (data.success) {
+        setInventory(data.data);
+        setFilteredInventory(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to load inventory');
+      }
+    } catch (error) {
+      console.error('Error loading inventory:', error);
+      
+      // Set empty arrays if API fails
+      setInventory([]);
+      setFilteredInventory([]);
+      
+      toast({
+        title: "Error",
+        description: "Failed to load inventory. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadStockMovements = async () => {
+    try {
+      const response = await fetch('/api/inventory/movements?limit=10');
+      const data = await response.json();
+      
+      if (data.success) {
+        setStockMovements(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading stock movements:', error);
+    }
+  };
 
   // Filter inventory
   useEffect(() => {
@@ -438,46 +369,138 @@ export default function AdminInventoryPage() {
     setIsAdjustStockDialogOpen(true);
   };
 
-  const handleSaveAdjustment = () => {
+  const handleSaveAdjustment = async () => {
     if (!selectedItem || !adjustmentReason) return;
 
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const newQuantity = selectedItem.currentStock + adjustmentQuantity;
-      const newStatus = newQuantity <= 0 ? 'out_of_stock' : 
-                       newQuantity <= selectedItem.minStock ? 'low_stock' : 'in_stock';
-
-      setInventory(prev => prev.map(item => 
-        item._id === selectedItem._id 
-          ? { ...item, currentStock: newQuantity, status: newStatus, availableStock: newQuantity - item.reservedStock }
-          : item
-      ));
-
-      // Add stock movement record
-      const newMovement: StockMovement = {
-        _id: Date.now().toString(),
-        productId: selectedItem.productId,
-        type: adjustmentQuantity > 0 ? 'in' : 'out',
-        quantity: Math.abs(adjustmentQuantity),
-        reason: adjustmentReason,
-        userId: "admin1",
-        userName: "Admin User",
-        createdAt: new Date().toISOString()
-      };
-
-      setStockMovements(prev => [newMovement, ...prev]);
-
-      toast({
-        title: "Stock adjusted",
-        description: `Stock for ${getProductName(selectedItem)} has been adjusted by ${adjustmentQuantity > 0 ? '+' : ''}${adjustmentQuantity}`,
+    try {
+      setIsSubmitting(true);
+      
+      const response = await fetch(`/api/inventory/${selectedItem._id}/adjust`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          quantity: adjustmentQuantity,
+          reason: adjustmentReason
+        })
       });
 
-      setIsAdjustStockDialogOpen(false);
-      setSelectedItem(null);
+      const data = await response.json();
+
+      if (data.success) {
+        // Update inventory in state
+        setInventory(prev => prev.map(item => 
+          item._id === selectedItem._id ? data.data : item
+        ));
+
+        // Add new movement to the beginning of the list
+        if (data.movement) {
+          setStockMovements(prev => [data.movement, ...prev.slice(0, 9)]);
+        }
+
+        toast({
+          title: "Stock adjusted",
+          description: `Stock for ${getProductName(selectedItem)} has been adjusted by ${adjustmentQuantity > 0 ? '+' : ''}${adjustmentQuantity}`,
+        });
+
+        setIsAdjustStockDialogOpen(false);
+        setSelectedItem(null);
+        setAdjustmentQuantity(0);
+        setAdjustmentReason("");
+      } else {
+        throw new Error(data.message || 'Failed to adjust stock');
+      }
+    } catch (error) {
+      console.error('Adjust stock error:', error);
+      toast({
+        title: "Adjustment failed",
+        description: error instanceof Error ? error.message : "Failed to adjust stock",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
+  };
+
+  const handleExport = async (format: 'excel' | 'csv' | 'json') => {
+    try {
+      setIsExporting(true);
+      
+      // Flatten inventory data for export
+      const exportData = filteredInventory.map(item => ({
+        'SKU': item.sku,
+        'Product Name (VI)': item.productName,
+        'Product Name (EN)': item.productNameEn || '',
+        'Product Name (JA)': item.productNameJa || '',
+        'Category': item.category,
+        'Size': item.size || '',
+        'Color': item.color || '',
+        'Current Stock': item.currentStock,
+        'Min Stock': item.minStock,
+        'Max Stock': item.maxStock,
+        'Reserved Stock': item.reservedStock,
+        'Available Stock': item.availableStock,
+        'Cost Price': item.costPrice,
+        'Selling Price': item.sellingPrice,
+        'Location': item.location,
+        'Supplier': item.supplier,
+        'Status': item.status,
+        'Last Restocked': item.lastRestocked ? new Date(item.lastRestocked).toLocaleDateString() : '',
+        'Last Sold': item.lastSold ? new Date(item.lastSold).toLocaleDateString() : '',
+        'Notes': item.notes || '',
+        'Created At': new Date(item.createdAt).toLocaleDateString(),
+        'Updated At': new Date(item.updatedAt).toLocaleDateString()
+      }));
+
+      await exportImportService.startExportJob(
+        'inventory',
+        format,
+        exportData
+      );
+
+      toast({
+        title: "Export started",
+        description: `Inventory will be exported as ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export inventory",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      
+      // TODO: Implement import functionality
+      toast({
+        title: "Import started",
+        description: `Importing inventory from ${file.name}`,
+      });
+      
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import failed",
+        description: "Failed to import inventory",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const stats = {
@@ -509,15 +532,41 @@ export default function AdminInventoryPage() {
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : "Export"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button variant="outline" size="sm" disabled={isImporting} asChild>
+              <label htmlFor="import-file" className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                {isImporting ? "Importing..." : "Import"}
+              </label>
             </Button>
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            <input
+              id="import-file"
+              type="file"
+              accept=".xlsx,.csv,.json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            
+            <Button variant="outline" size="sm" onClick={loadInventory}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
@@ -632,6 +681,13 @@ export default function AdminInventoryPage() {
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">{t.noInventory}</p>
+              <Button 
+                onClick={loadInventory}
+                className="mt-4"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
             </div>
           ) : (
             <Table>
@@ -725,7 +781,7 @@ export default function AdminInventoryPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {inventory.find(item => item.productId === movement.productId)?.productName || 'Unknown Product'}
+                    {(movement.productId as any)?.name || 'Unknown Product'}
                   </TableCell>
                   <TableCell className={movement.quantity > 0 ? 'text-green-600' : 'text-red-600'}>
                     {movement.quantity > 0 ? '+' : ''}{movement.quantity}

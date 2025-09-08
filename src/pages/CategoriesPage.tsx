@@ -402,32 +402,31 @@ const CategoriesPage = () => {
 
           {/* Enhanced CTA Section */}
           <section className="text-center">
-            <Card className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-primary-foreground overflow-hidden relative">
-              <div className="absolute inset-0 bg-black/5"></div>
-              <CardContent className="p-12 relative z-10">
+            <div className="bg-gray-900 rounded-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-100 to-gray-200 p-12 mx-4 my-4 rounded-xl">
                 <div className="flex items-center justify-center mb-4">
-                  <Star className="h-8 w-8 mr-2" />
-                  <h2 className="text-3xl font-bold">{t.ready}</h2>
+                  <Star className="h-8 w-8 mr-2 text-gray-700" />
+                  <h2 className="text-3xl font-bold text-gray-900">Sẵn sàng mua sắm?</h2>
                 </div>
-                <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-                  {t.exploreCollection}
+                <p className="text-lg mb-8 text-gray-600 max-w-2xl mx-auto">
+                  Khám phá bộ sưu tập thời trang Nhật Bản hoàn chỉnh
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
                   <Link to="/">
-                    <Button size="lg" variant="secondary" className="px-8">
+                    <Button size="lg" className="px-8 py-3 bg-gray-900 text-white hover:bg-gray-800 rounded-lg font-semibold">
                       <Eye className="h-5 w-5 mr-2" />
-                      {t.browse}
+                      Duyệt tất cả sản phẩm
                     </Button>
                   </Link>
                   <Link to="/sale">
-                    <Button size="lg" variant="outline" className="px-8 bg-white/10 border-white/20 text-white hover:bg-white/20">
+                    <Button size="lg" className="px-8 py-3 bg-gray-200 text-gray-900 hover:bg-gray-300 border-0 rounded-lg font-semibold">
                       <TrendingUp className="h-5 w-5 mr-2" />
                       Sale Items
                     </Button>
                   </Link>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </section>
         </div>
       </main>

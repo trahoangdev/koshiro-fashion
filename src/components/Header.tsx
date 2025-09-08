@@ -227,31 +227,40 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
 
         {/* Desktop Navigation - Better spacing */}
         <nav className="hidden lg:flex items-center space-x-6 flex-1 justify-center max-w-[480px] mx-8">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-3 py-2">
-                {t.categories}
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-100">
-              <DropdownMenuLabel>Shop by Category</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {categories.map((category) => (
-                <DropdownMenuItem key={category._id} asChild>
-                  <Link to={`/category/${category.slug}`} className="cursor-pointer">
-                    {getCategoryName(category)}
+          <div className="relative group">
+            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-3 py-2">
+              {t.categories}
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+            
+            {/* Hover Dropdown */}
+            <div className="absolute top-full left-0 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-out transform translate-y-2 group-hover:translate-y-0 z-50">
+              <div className="p-2">
+                <div className="px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 mb-2">
+                  Shop by Category
+                </div>
+                <div className="space-y-1">
+                  {categories.map((category) => (
+                    <Link 
+                      key={category._id} 
+                      to={`/category/${category.slug}`} 
+                      className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors duration-200"
+                    >
+                      {getCategoryName(category)}
+                    </Link>
+                  ))}
+                </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
+                  <Link 
+                    to="/categories" 
+                    className="block px-3 py-2 text-sm font-medium text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors duration-200"
+                  >
+                    View All Categories
                   </Link>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/categories" className="cursor-pointer font-medium text-primary">
-                  View All Categories
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </div>
+              </div>
+            </div>
+          </div>
           <Link to="/sale">
             <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">{t.sale}</Button>
           </Link>
