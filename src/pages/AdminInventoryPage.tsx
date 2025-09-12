@@ -454,7 +454,7 @@ export default function AdminInventoryPage() {
         'Updated At': new Date(item.updatedAt).toLocaleDateString()
       }));
 
-      await exportImportService.startExportJob(
+      const job = await exportImportService.startExportJob(
         'inventory',
         format,
         exportData
@@ -464,6 +464,38 @@ export default function AdminInventoryPage() {
         title: "Export started",
         description: `Inventory will be exported as ${format.toUpperCase()}`,
       });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getExportJob(job.id);
+        if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
+          const link = document.createElement('a');
+          link.href = updatedJob.downloadUrl;
+          const fileExtension = format === 'excel' ? 'xlsx' : format;
+          link.download = `inventory_${new Date().toISOString().split('T')[0]}.${fileExtension}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(updatedJob.downloadUrl);
+          
+          toast({
+            title: "Export Completed",
+            description: `Inventory exported successfully to ${format.toUpperCase()}`,
+          });
+          setIsExporting(false);
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: "Export Failed",
+            description: updatedJob.error || "Failed to export inventory",
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        } else {
+          setTimeout(checkJob, 1000);
+        }
+      };
+      
+      checkJob();
     } catch (error) {
       console.error('Export error:', error);
       toast({

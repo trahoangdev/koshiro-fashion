@@ -379,7 +379,7 @@ export default function AdminPromotionsPage() {
         'Updated At': promotion.updatedAt
       }));
 
-      await exportImportService.startExportJob(
+      const job = await exportImportService.startExportJob(
         'promotions',
         format,
         exportData
@@ -389,6 +389,38 @@ export default function AdminPromotionsPage() {
         title: "Export started",
         description: `Promotions will be exported as ${format.toUpperCase()}`,
       });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getExportJob(job.id);
+        if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
+          const link = document.createElement('a');
+          link.href = updatedJob.downloadUrl;
+          const fileExtension = format === 'excel' ? 'xlsx' : format;
+          link.download = `promotions_${new Date().toISOString().split('T')[0]}.${fileExtension}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(updatedJob.downloadUrl);
+          
+          toast({
+            title: "Export Completed",
+            description: `Promotions exported successfully to ${format.toUpperCase()}`,
+          });
+          setIsExporting(false);
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: "Export Failed",
+            description: updatedJob.error || "Failed to export promotions",
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        } else {
+          setTimeout(checkJob, 1000);
+        }
+      };
+      
+      checkJob();
     } catch (error) {
       console.error('Export error:', error);
       toast({

@@ -65,6 +65,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Product, Category } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
@@ -96,6 +97,7 @@ interface ProductFormData {
 export default function AdminProducts() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -289,11 +291,12 @@ export default function AdminProducts() {
   const t = translations[language as keyof typeof translations] || translations.en;
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== 'admin') {
+        navigate("/admin/login");
+      }
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     loadData();

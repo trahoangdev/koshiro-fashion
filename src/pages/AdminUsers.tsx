@@ -71,6 +71,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { User as UserType } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
@@ -93,6 +94,8 @@ interface UserStats {
 export default function AdminUsers() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { language } = useLanguage();
   const [users, setUsers] = useState<UserType[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserType[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -124,7 +127,6 @@ export default function AdminUsers() {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const { language } = useLanguage();
 
   const translations = {
     vi: {
@@ -302,11 +304,12 @@ export default function AdminUsers() {
   const t = translations[language as keyof typeof translations] || translations.en;
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== 'admin') {
+        navigate("/admin/login");
+      }
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     loadData();
@@ -695,7 +698,22 @@ export default function AdminUsers() {
   const handleExport = async (format: 'csv' | 'json' | 'excel') => {
     try {
       setIsExporting(true);
-      const exportData = exportImportService.transformUsersForExport(filteredUsers);
+      // Transform users data for export
+      const exportData = filteredUsers.map(user => ({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        role: user.role,
+        status: user.status,
+        isActive: user.isActive,
+        totalOrders: user.totalOrders,
+        orderCount: user.orderCount,
+        totalSpent: user.totalSpent,
+        address: user.address || '',
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }));
       const job = await exportImportService.startExportJob('customers', format, exportData);
       
       toast({
@@ -709,7 +727,8 @@ export default function AdminUsers() {
         if (updatedJob?.status === 'completed' && updatedJob.downloadUrl) {
           const link = document.createElement('a');
           link.href = updatedJob.downloadUrl;
-          link.download = `users_${new Date().toISOString().split('T')[0]}.${format}`;
+          const fileExtension = format === 'excel' ? 'xlsx' : format;
+          link.download = `users_${new Date().toISOString().split('T')[0]}.${fileExtension}`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -743,7 +762,7 @@ export default function AdminUsers() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -754,6 +773,11 @@ export default function AdminUsers() {
         </div>
       </AdminLayout>
     );
+  }
+
+  // Don't render if not authenticated or not admin
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return null;
   }
 
   return (

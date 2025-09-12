@@ -29,6 +29,7 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { exportImportService } from "@/lib/exportImportService";
 import {
   LineChart,
@@ -104,6 +105,7 @@ export default function AdminAnalyticsPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<AnalyticsData>({
     revenue: { total: 0, trend: 0, monthly: [], daily: [], byCategory: [] },
     orders: { total: 0, trend: 0, byStatus: [], byMonth: [], byHour: [] },
@@ -116,11 +118,12 @@ export default function AdminAnalyticsPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== 'admin') {
+        navigate("/admin/login");
+      }
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     const loadAnalyticsData = async () => {
@@ -657,7 +660,7 @@ export default function AdminAnalyticsPage() {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -668,6 +671,11 @@ export default function AdminAnalyticsPage() {
         </div>
       </AdminLayout>
     );
+  }
+
+  // Don't render if not authenticated or not admin
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return null;
   }
 
   return (

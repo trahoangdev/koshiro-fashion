@@ -53,6 +53,7 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 
@@ -119,6 +120,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalOrders: 0,
     totalProducts: 0,
@@ -149,11 +151,12 @@ export default function AdminDashboard() {
   const [selectedMetric, setSelectedMetric] = useState("revenue");
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== 'admin') {
+        navigate("/admin/login");
+      }
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   const formatCurrencyForDisplay = (amount: number) => {
     return formatCurrency(amount, language);
@@ -430,7 +433,7 @@ export default function AdminDashboard() {
     });
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -441,6 +444,11 @@ export default function AdminDashboard() {
         </div>
       </AdminLayout>
     );
+  }
+
+  // Don't render if not authenticated or not admin
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return null;
   }
 
   return (

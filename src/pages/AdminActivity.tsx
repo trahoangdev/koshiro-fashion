@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { exportImportService } from "@/lib/exportImportService";
 import AdminLayout from "@/components/AdminLayout";
@@ -80,6 +81,7 @@ interface ActivityStats {
 export default function AdminActivity() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<ActivityLog[]>([]);
   const [stats, setStats] = useState<ActivityStats>({
@@ -244,11 +246,12 @@ export default function AdminActivity() {
   const t = translations[language as keyof typeof translations] || translations.en;
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== 'admin') {
+        navigate("/admin/login");
+      }
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     loadData();
@@ -558,7 +561,7 @@ export default function AdminActivity() {
     );
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -569,6 +572,11 @@ export default function AdminActivity() {
         </div>
       </AdminLayout>
     );
+  }
+
+  // Don't render if not authenticated or not admin
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return null;
   }
 
   return (

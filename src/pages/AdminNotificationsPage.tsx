@@ -45,6 +45,7 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Notification } from "@/lib/api";
 
 interface NotificationSettings {
@@ -62,6 +63,7 @@ export default function AdminNotificationsPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { 
     notifications, 
     unreadCount, 
@@ -110,11 +112,12 @@ export default function AdminNotificationsPage() {
   });
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== 'admin') {
+        navigate("/admin/login");
+      }
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     filterNotifications();
@@ -506,7 +509,7 @@ export default function AdminNotificationsPage() {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -517,6 +520,11 @@ export default function AdminNotificationsPage() {
         </div>
       </AdminLayout>
     );
+  }
+
+  // Don't render if not authenticated or not admin
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return null;
   }
 
   return (

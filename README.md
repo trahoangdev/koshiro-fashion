@@ -1,4 +1,5 @@
-# Koshiro Japan Style Fashion
+
+# Koshiro Fashion – E-commerce Platform
 
 A modern e-commerce website built with React, TypeScript, and Tailwind CSS.
 

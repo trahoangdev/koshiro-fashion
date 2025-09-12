@@ -61,6 +61,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 
@@ -114,6 +115,7 @@ export default function AdminSettings() {
   const { t: tFn } = useLanguage();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [settings, setSettings] = useState<SystemSettings>({
     general: {
       siteName: "Koshiro Japan Style Fashion",
@@ -167,11 +169,12 @@ export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState("general");
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== 'admin') {
+        navigate("/admin/login");
+      }
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     loadSettings();
@@ -401,7 +404,7 @@ export default function AdminSettings() {
 
   const tl = translations[language as keyof typeof translations] || translations.en;
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -412,6 +415,11 @@ export default function AdminSettings() {
         </div>
       </AdminLayout>
     );
+  }
+
+  // Don't render if not authenticated or not admin
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return null;
   }
 
   return (
