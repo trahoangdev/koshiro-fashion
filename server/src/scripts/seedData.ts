@@ -8,6 +8,9 @@ import { Order } from '../models/Order';
 import Inventory from '../models/Inventory';
 import StockMovement from '../models/StockMovement';
 import Promotion from '../models/Promotion';
+import FlashSale from '../models/FlashSale';
+import { ShippingMethod } from '../models/Shipping';
+import { AdminPaymentMethod } from '../models/Payment';
 
 dotenv.config();
 
@@ -61,6 +64,9 @@ const seedData = async () => {
     await Inventory.deleteMany({});
     await StockMovement.deleteMany({});
     await Promotion.deleteMany({});
+    await FlashSale.deleteMany({});
+    await ShippingMethod.deleteMany({});
+    await AdminPaymentMethod.deleteMany({});
     console.log('✅ Cleared existing data');
 
     // Create admin user
@@ -790,6 +796,281 @@ const seedData = async () => {
     await Promotion.insertMany(promotions);
     console.log('✅ Created promotions');
 
+    // Create FlashSale data
+    const flashSales = [
+      {
+        name: 'Flash Sale Kimono - Giảm 50%',
+        nameEn: 'Flash Sale Kimono - 50% Off',
+        nameJa: 'フラッシュセール着物 - 50%オフ',
+        description: 'Cơ hội duy nhất để sở hữu kimono cao cấp với giá ưu đãi',
+        descriptionEn: 'One-time opportunity to own premium kimono at discounted price',
+        descriptionJa: 'プレミアム着物を割引価格で手に入れる一度きりの機会',
+        discountType: 'percentage',
+        discountValue: 50,
+        startTime: new Date('2024-12-01T00:00:00Z'),
+        endTime: new Date('2024-12-01T23:59:59Z'),
+        isActive: true,
+        maxQuantity: 10,
+        soldQuantity: 3,
+        applicableProducts: [createdProducts[0]._id, createdProducts[1]._id], // Kimono products
+        applicableCategories: [createdCategories[0]._id], // Kimono category
+        minOrderAmount: 0,
+        maxDiscountAmount: 500000,
+        usageLimit: 100,
+        usedCount: 3,
+        image: '/images/flash-sales/kimono-flash-sale.jpg',
+        bannerColor: '#FF6B6B',
+        textColor: '#FFFFFF',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Flash Sale Yukata - Chỉ 299k',
+        nameEn: 'Flash Sale Yukata - Only 299k',
+        nameJa: 'フラッシュセール浴衣 - 299kのみ',
+        description: 'Yukata mùa hè với giá siêu ưu đãi - chỉ còn 299k',
+        descriptionEn: 'Summer yukata at super discounted price - only 299k',
+        descriptionJa: '夏の浴衣が超割引価格 - 299kのみ',
+        discountType: 'fixed',
+        discountValue: 299000,
+        startTime: new Date('2024-12-02T00:00:00Z'),
+        endTime: new Date('2024-12-02T23:59:59Z'),
+        isActive: true,
+        maxQuantity: 20,
+        soldQuantity: 8,
+        applicableProducts: [createdProducts[2]._id, createdProducts[3]._id], // Yukata products
+        applicableCategories: [createdCategories[1]._id], // Yukata category
+        minOrderAmount: 0,
+        maxDiscountAmount: 0,
+        usageLimit: 50,
+        usedCount: 8,
+        image: '/images/flash-sales/yukata-flash-sale.jpg',
+        bannerColor: '#4ECDC4',
+        textColor: '#FFFFFF',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Flash Sale Phụ Kiện - Giảm 70%',
+        nameEn: 'Flash Sale Accessories - 70% Off',
+        nameJa: 'フラッシュセールアクセサリー - 70%オフ',
+        description: 'Tất cả phụ kiện truyền thống Nhật Bản giảm giá 70%',
+        descriptionEn: 'All traditional Japanese accessories 70% off',
+        descriptionJa: 'すべての伝統的な日本のアクセサリー70%オフ',
+        discountType: 'percentage',
+        discountValue: 70,
+        startTime: new Date('2024-12-03T00:00:00Z'),
+        endTime: new Date('2024-12-03T23:59:59Z'),
+        isActive: true,
+        maxQuantity: 50,
+        soldQuantity: 15,
+        applicableProducts: [createdProducts[6]._id, createdProducts[7]._id], // Accessories
+        applicableCategories: [createdCategories[7]._id], // Accessories category
+        minOrderAmount: 0,
+        maxDiscountAmount: 100000,
+        usageLimit: 200,
+        usedCount: 15,
+        image: '/images/flash-sales/accessories-flash-sale.jpg',
+        bannerColor: '#45B7D1',
+        textColor: '#FFFFFF',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+
+    await FlashSale.insertMany(flashSales);
+    console.log('✅ Created flash sales');
+
+    // Create Shipping data
+    const shippingMethods = [
+      {
+        name: 'Giao hàng tiêu chuẩn',
+        nameEn: 'Standard Shipping',
+        nameJa: '標準配送',
+        description: 'Giao hàng trong 3-5 ngày làm việc',
+        descriptionEn: 'Delivery within 3-5 business days',
+        descriptionJa: '3-5営業日以内の配送',
+        type: 'standard',
+        cost: 30000,
+        freeShippingThreshold: 500000,
+        estimatedDays: 4,
+        isActive: true,
+        supportedRegions: ['Vietnam', 'Japan', 'USA'],
+        weightLimit: 5000, // 5kg
+        dimensions: {
+          maxLength: 100,
+          maxWidth: 80,
+          maxHeight: 60
+        },
+        trackingAvailable: true,
+        insuranceIncluded: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Giao hàng nhanh',
+        nameEn: 'Express Shipping',
+        nameJa: '速達配送',
+        description: 'Giao hàng trong 1-2 ngày làm việc',
+        descriptionEn: 'Delivery within 1-2 business days',
+        descriptionJa: '1-2営業日以内の配送',
+        type: 'express',
+        cost: 80000,
+        freeShippingThreshold: 1000000,
+        estimatedDays: 2,
+        isActive: true,
+        supportedRegions: ['Vietnam', 'Japan'],
+        weightLimit: 3000, // 3kg
+        dimensions: {
+          maxLength: 80,
+          maxWidth: 60,
+          maxHeight: 40
+        },
+        trackingAvailable: true,
+        insuranceIncluded: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Giao hàng quốc tế',
+        nameEn: 'International Shipping',
+        nameJa: '国際配送',
+        description: 'Giao hàng quốc tế trong 7-14 ngày',
+        descriptionEn: 'International delivery within 7-14 days',
+        descriptionJa: '7-14日以内の国際配送',
+        type: 'overnight',
+        cost: 200000,
+        freeShippingThreshold: 2000000,
+        estimatedDays: 10,
+        isActive: true,
+        supportedRegions: ['USA', 'Canada', 'Australia', 'Singapore'],
+        weightLimit: 10000, // 10kg
+        dimensions: {
+          maxLength: 120,
+          maxWidth: 100,
+          maxHeight: 80
+        },
+        trackingAvailable: true,
+        insuranceIncluded: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Giao hàng miễn phí',
+        nameEn: 'Free Shipping',
+        nameJa: '送料無料',
+        description: 'Miễn phí vận chuyển cho đơn hàng từ 1 triệu',
+        descriptionEn: 'Free shipping for orders over 1M VND',
+        descriptionJa: '100万円以上の注文で送料無料',
+        type: 'pickup',
+        cost: 0,
+        freeShippingThreshold: 1000000,
+        estimatedDays: 1,
+        isActive: true,
+        supportedRegions: ['Vietnam'],
+        weightLimit: 5000,
+        dimensions: {
+          maxLength: 100,
+          maxWidth: 80,
+          maxHeight: 60
+        },
+        trackingAvailable: true,
+        insuranceIncluded: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+
+    await ShippingMethod.insertMany(shippingMethods);
+    console.log('✅ Created shipping methods');
+
+    // Create Payment data
+    const paymentMethods = [
+      {
+        name: 'Thanh toán khi nhận hàng',
+        nameEn: 'Cash on Delivery',
+        nameJa: '代金引換',
+        description: 'Thanh toán bằng tiền mặt khi nhận hàng',
+        descriptionEn: 'Pay with cash when receiving the order',
+        descriptionJa: '注文受取時に現金で支払い',
+        type: 'cod',
+        provider: 'Koshiro Fashion',
+        isActive: true,
+        processingFee: 0,
+        minAmount: 0,
+        maxAmount: 5000000,
+        supportedCurrencies: ['VND'],
+        icon: '/images/payment-icons/cod.png'
+      },
+      {
+        name: 'Chuyển khoản ngân hàng',
+        nameEn: 'Bank Transfer',
+        nameJa: '銀行振込',
+        description: 'Chuyển khoản qua ngân hàng',
+        descriptionEn: 'Transfer via bank',
+        descriptionJa: '銀行振込',
+        type: 'bank_transfer',
+        provider: 'Vietcombank',
+        isActive: true,
+        processingFee: 0,
+        minAmount: 0,
+        maxAmount: 50000000,
+        supportedCurrencies: ['VND', 'JPY', 'USD'],
+        icon: '/images/payment-icons/bank-transfer.png'
+      },
+      {
+        name: 'Thẻ tín dụng',
+        nameEn: 'Credit Card',
+        nameJa: 'クレジットカード',
+        description: 'Thanh toán bằng thẻ tín dụng Visa, Mastercard',
+        descriptionEn: 'Pay with Visa, Mastercard credit card',
+        descriptionJa: 'Visa、Mastercardクレジットカードで支払い',
+        type: 'credit_card',
+        provider: 'VNPay',
+        isActive: true,
+        processingFee: 3000,
+        minAmount: 10000,
+        maxAmount: 10000000,
+        supportedCurrencies: ['VND', 'JPY', 'USD'],
+        icon: '/images/payment-icons/credit-card.png'
+      },
+      {
+        name: 'Ví điện tử',
+        nameEn: 'E-Wallet',
+        nameJa: '電子財布',
+        description: 'Thanh toán qua ví điện tử MoMo, ZaloPay',
+        descriptionEn: 'Pay via MoMo, ZaloPay e-wallet',
+        descriptionJa: 'MoMo、ZaloPay電子財布で支払い',
+        type: 'e_wallet',
+        provider: 'MoMo',
+        isActive: true,
+        processingFee: 0,
+        minAmount: 1000,
+        maxAmount: 5000000,
+        supportedCurrencies: ['VND'],
+        icon: '/images/payment-icons/e-wallet.png'
+      },
+      {
+        name: 'PayPal',
+        nameEn: 'PayPal',
+        nameJa: 'PayPal',
+        description: 'Thanh toán qua PayPal',
+        descriptionEn: 'Pay via PayPal',
+        descriptionJa: 'PayPalで支払い',
+        type: 'crypto',
+        provider: 'PayPal',
+        isActive: true,
+        processingFee: 5000,
+        minAmount: 10000,
+        maxAmount: 20000000,
+        supportedCurrencies: ['USD', 'JPY'],
+        icon: '/images/payment-icons/paypal.png'
+      }
+    ];
+
+    await AdminPaymentMethod.insertMany(paymentMethods);
+    console.log('✅ Created payment methods');
+
     // Update category product counts
     for (const category of createdCategories) {
       const count = await Product.countDocuments({ categoryId: category._id });
@@ -806,10 +1087,16 @@ const seedData = async () => {
     console.log(`   - Inventory Items: ${await Inventory.countDocuments()}`);
     console.log(`   - Stock Movements: ${await StockMovement.countDocuments()}`);
     console.log(`   - Promotions: ${await Promotion.countDocuments()}`);
+    console.log(`   - Flash Sales: ${await FlashSale.countDocuments()}`);
+    console.log(`   - Shipping Methods: ${await ShippingMethod.countDocuments()}`);
+    console.log(`   - Payment Methods: ${await AdminPaymentMethod.countDocuments()}`);
     console.log('🔑 Admin credentials: admin@koshiro.com / admin123');
     console.log('👥 Customer credentials: customer1@example.com / password123');
     console.log('📦 Inventory Management: Ready with stock tracking and movements');
     console.log('🎯 Promotions: Ready with discount codes and campaigns');
+    console.log('⚡ Flash Sales: Ready with time-limited offers');
+    console.log('🚚 Shipping: Ready with multiple delivery options');
+    console.log('💳 Payments: Ready with various payment methods');
 
   } catch (error) {
     console.error('❌ Error seeding data:', error);

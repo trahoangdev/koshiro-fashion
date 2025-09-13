@@ -512,25 +512,66 @@ export default function AdminInventoryPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    const allowedTypes = ['.csv', '.json'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    if (!allowedTypes.includes(fileExtension)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select a CSV or JSON file",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsImporting(true);
+      const job = await exportImportService.startImportJob('inventory', file);
       
-      // TODO: Implement import functionality
       toast({
-        title: "Import started",
+        title: "Import Started",
         description: `Importing inventory from ${file.name}`,
       });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getImportJob(job.id);
+        if (updatedJob?.status === 'completed') {
+          const successMessage = updatedJob.error ? 
+            `Import completed with warnings: ${updatedJob.error}` :
+            `Successfully imported ${updatedJob.processedRows} inventory items`;
+            
+          toast({
+            title: "Import Completed",
+            description: successMessage,
+            variant: updatedJob.error ? "default" : "default",
+          });
+          setIsImporting(false);
+          // Reload data to show new inventory items
+          window.location.reload();
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: "Import Failed",
+            description: updatedJob.error || "Failed to import inventory",
+            variant: "destructive",
+          });
+          setIsImporting(false);
+        } else {
+          setTimeout(checkJob, 500);
+        }
+      };
+      
+      checkJob();
       
       // Reset file input
       event.target.value = '';
     } catch (error) {
       console.error('Import error:', error);
       toast({
-        title: "Import failed",
+        title: "Import Failed",
         description: "Failed to import inventory",
         variant: "destructive",
       });
-    } finally {
       setIsImporting(false);
     }
   };

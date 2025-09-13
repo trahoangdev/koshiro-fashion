@@ -79,6 +79,18 @@ export const requireCustomerOrAdmin = (req: AuthRequest, res: Response, next: Ne
   next();
 };
 
+export const authorizeRoles = (roles: string[]) => (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  if (!roles.includes(req.user.role)) {
+    return res.status(403).json({ message: 'Insufficient permissions' });
+  }
+
+  next();
+};
+
 // Async handler wrapper to catch errors
 export const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
   Promise.resolve(fn(req, res, next)).catch(next);

@@ -19,6 +19,9 @@ import settingsRoutes from './routes/settings';
 import paymentMethodRoutes from './routes/paymentMethods';
 import promotionRoutes from './routes/promotions';
 import inventoryRoutes from './routes/inventory';
+import adminShippingRoutes from './routes/adminShipping';
+import adminPaymentsRoutes from './routes/adminPayments';
+import flashSaleRoutes from './routes/flashSale';
 
 // Load environment variables
 dotenv.config();
@@ -59,6 +62,9 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/admin/shipping', adminShippingRoutes);
+app.use('/api/admin/payments', adminPaymentsRoutes);
+app.use('/api/flash-sales', flashSaleRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

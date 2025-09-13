@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,9 +70,10 @@ import {
   RefreshCw
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { exportImportService } from "@/lib/exportImportService";
 import AdminLayout from "@/components/AdminLayout";
 
-interface PaymentMethod {
+interface AdminPaymentMethod {
   _id: string;
   name: string;
   nameEn?: string;
@@ -131,8 +134,9 @@ interface Refund {
 export default function AdminPaymentsPage() {
   const { language } = useLanguage();
   const { toast } = useToast();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<AdminPaymentMethod[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
@@ -142,11 +146,29 @@ export default function AdminPaymentsPage() {
   const [filterDateRange, setFilterDateRange] = useState<string>("all");
   const [isCreateMethodDialogOpen, setIsCreateMethodDialogOpen] = useState(false);
   const [isEditMethodDialogOpen, setIsEditMethodDialogOpen] = useState(false);
-  const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
+  const [editingMethod, setEditingMethod] = useState<AdminPaymentMethod | null>(null);
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
+  const [isUpdateTransactionDialogOpen, setIsUpdateTransactionDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [transactionUpdateData, setTransactionUpdateData] = useState({
+    status: '',
+    notes: ''
+  });
+  const [refundData, setRefundData] = useState({
+    amount: 0,
+    reason: ''
+  });
+  const [stats, setStats] = useState({
+    total: 0,
+    completed: 0,
+    failed: 0,
+    pending: 0,
+    refunded: 0,
+    totalAmount: 0,
+    refundStats: []
+  });
 
   const translations = {
     en: {
@@ -279,158 +301,43 @@ export default function AdminPaymentsPage() {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  // Mock data for demonstration
+  // Load data from API
   useEffect(() => {
-    const mockPaymentMethods: PaymentMethod[] = [
-      {
-        _id: "1",
-        name: "Thẻ tín dụng",
-        nameEn: "Credit Card",
-        nameJa: "クレジットカード",
-        type: "credit_card",
-        provider: "VNPay",
-        isActive: true,
-        processingFee: 1.5,
-        minAmount: 10000,
-        maxAmount: 50000000,
-        supportedCurrencies: ["VND", "USD"],
-        description: "Thanh toán bằng thẻ tín dụng qua VNPay",
-        descriptionEn: "Pay with credit card via VNPay",
-        descriptionJa: "VNPay経由でクレジットカード決済",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "2",
-        name: "Ví điện tử",
-        nameEn: "E-Wallet",
-        nameJa: "電子ウォレット",
-        type: "e_wallet",
-        provider: "MoMo",
-        isActive: true,
-        processingFee: 0.5,
-        minAmount: 1000,
-        maxAmount: 20000000,
-        supportedCurrencies: ["VND"],
-        description: "Thanh toán qua ví MoMo",
-        descriptionEn: "Pay with MoMo wallet",
-        descriptionJa: "MoMoウォレットで決済",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "3",
-        name: "Thanh toán khi nhận hàng",
-        nameEn: "Cash on Delivery",
-        nameJa: "代金引換",
-        type: "cod",
-        provider: "Internal",
-        isActive: true,
-        processingFee: 0,
-        minAmount: 50000,
-        maxAmount: 10000000,
-        supportedCurrencies: ["VND"],
-        description: "Thanh toán khi nhận hàng",
-        descriptionEn: "Pay when receiving goods",
-        descriptionJa: "商品受取時支払い",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      }
-    ];
+    if (!isAuthenticated || user?.role !== 'admin') {
+      return;
+    }
 
-    const mockTransactions: Transaction[] = [
-      {
-        _id: "1",
-        orderId: "order1",
-        orderNumber: "ORD-2024-001",
-        transactionId: "TXN-2024-001",
-        paymentMethod: "Thẻ tín dụng",
-        paymentProvider: "VNPay",
-        amount: 1200000,
-        currency: "VND",
-        status: "completed",
-        customerName: "Nguyễn Văn A",
-        customerEmail: "nguyenvana@email.com",
-        customerPhone: "+84 123 456 789",
-        gatewayTransactionId: "VNPAY-123456789",
-        processedAt: "2024-01-20T10:30:00Z",
-        createdAt: "2024-01-20T10:25:00Z",
-        updatedAt: "2024-01-20T10:30:00Z"
-      },
-      {
-        _id: "2",
-        orderId: "order2",
-        orderNumber: "ORD-2024-002",
-        transactionId: "TXN-2024-002",
-        paymentMethod: "Ví điện tử",
-        paymentProvider: "MoMo",
-        amount: 600000,
-        currency: "VND",
-        status: "completed",
-        customerName: "Trần Thị B",
-        customerEmail: "tranthib@email.com",
-        customerPhone: "+84 987 654 321",
-        gatewayTransactionId: "MOMO-987654321",
-        processedAt: "2024-01-19T15:45:00Z",
-        createdAt: "2024-01-19T15:40:00Z",
-        updatedAt: "2024-01-19T15:45:00Z"
-      },
-      {
-        _id: "3",
-        orderId: "order3",
-        orderNumber: "ORD-2024-003",
-        transactionId: "TXN-2024-003",
-        paymentMethod: "Thanh toán khi nhận hàng",
-        paymentProvider: "Internal",
-        amount: 800000,
-        currency: "VND",
-        status: "pending",
-        customerName: "Lê Văn C",
-        customerEmail: "levanc@email.com",
-        customerPhone: "+84 555 123 456",
-        createdAt: "2024-01-21T09:15:00Z",
-        updatedAt: "2024-01-21T09:15:00Z"
-      },
-      {
-        _id: "4",
-        orderId: "order4",
-        orderNumber: "ORD-2024-004",
-        transactionId: "TXN-2024-004",
-        paymentMethod: "Thẻ tín dụng",
-        paymentProvider: "VNPay",
-        amount: 1500000,
-        currency: "VND",
-        status: "failed",
-        customerName: "Phạm Thị D",
-        customerEmail: "phamthid@email.com",
-        customerPhone: "+84 777 888 999",
-        failedAt: "2024-01-18T14:20:00Z",
-        createdAt: "2024-01-18T14:15:00Z",
-        updatedAt: "2024-01-18T14:20:00Z"
-      }
-    ];
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load payment methods, transactions, refunds, and stats in parallel
+        const [methodsResponse, transactionsResponse, refundsResponse, statsResponse] = await Promise.all([
+          api.getPaymentMethods(),
+          api.getTransactions({ page: 1, limit: 100 }),
+          api.getRefunds({ page: 1, limit: 100 }),
+          api.getPaymentStats()
+        ]);
 
-    const mockRefunds: Refund[] = [
-      {
-        _id: "1",
-        transactionId: "TXN-2024-001",
-        orderId: "order1",
-        amount: 200000,
-        reason: "Product defect",
-        status: "approved",
-        requestedBy: "customer1",
-        approvedBy: "admin1",
-        processedAt: "2024-01-22T10:00:00Z",
-        createdAt: "2024-01-21T16:30:00Z"
+        setPaymentMethods(methodsResponse);
+        setTransactions(transactionsResponse.transactions);
+        setFilteredTransactions(transactionsResponse.transactions);
+        setRefunds(refundsResponse.refunds);
+        setStats(statsResponse);
+      } catch (error) {
+        console.error('Error loading payment data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load payment data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    ];
+    };
 
-    setPaymentMethods(mockPaymentMethods);
-    setTransactions(mockTransactions);
-    setFilteredTransactions(mockTransactions);
-    setRefunds(mockRefunds);
-    setIsLoading(false);
-  }, []);
+    loadData();
+  }, [isAuthenticated, user?.role, toast]);
 
   // Filter transactions
   useEffect(() => {
@@ -468,11 +375,12 @@ export default function AdminPaymentsPage() {
     setFilteredTransactions(filtered);
   }, [transactions, searchTerm, filterStatus, filterMethod, filterDateRange]);
 
-  const getMethodName = (method: PaymentMethod) => {
+  const getMethodName = (method: AdminPaymentMethod | undefined) => {
+    if (!method) return 'Unknown Method';
     switch (language) {
-      case 'vi': return method.name;
-      case 'ja': return method.nameJa || method.name;
-      default: return method.nameEn || method.name;
+      case 'vi': return method.name || 'Unknown';
+      case 'ja': return method.nameJa || method.name || 'Unknown';
+      default: return method.nameEn || method.name || 'Unknown';
     }
   };
 
@@ -514,32 +422,298 @@ export default function AdminPaymentsPage() {
     setIsRefundDialogOpen(true);
   };
 
-  const handleViewDetails = (transaction: Transaction) => {
-    // Implementation for viewing transaction details
-    toast({
-      title: "Transaction Details",
-      description: `Viewing details for ${transaction.transactionId}`,
+  const handleViewDetails = async (transaction: Transaction) => {
+    try {
+      const response = await api.getTransaction(transaction._id);
+      toast({
+        title: "Transaction Details",
+        description: `Viewing details for ${transaction.transactionId}`,
+      });
+    } catch (error) {
+      console.error('Error loading transaction details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load transaction details",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateTransactionStatus = async (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setTransactionUpdateData({
+      status: transaction.status,
+      notes: transaction.notes || ''
     });
+    setIsUpdateTransactionDialogOpen(true);
   };
 
-  const handleExportTransactions = () => {
-    // Implementation for exporting transactions
-    toast({
-      title: "Export Started",
-      description: "Transaction data is being exported...",
-    });
+  const handleTransactionStatusUpdateSubmit = async () => {
+    if (!selectedTransaction) return;
+    
+    try {
+      setIsSubmitting(true);
+      const response = await api.updateTransactionStatus(selectedTransaction._id, transactionUpdateData);
+      
+      // Update local state
+      setTransactions(prev => 
+        prev.map(transaction => 
+          transaction._id === selectedTransaction._id 
+            ? { ...transaction, ...response.transaction }
+            : transaction
+        )
+      );
+      
+      setIsUpdateTransactionDialogOpen(false);
+      setSelectedTransaction(null);
+      toast({
+        title: "Status Updated",
+        description: `Transaction status updated successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating transaction status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update transaction status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const stats = {
-    total: transactions.length,
-    completed: transactions.filter(t => t.status === 'completed').length,
-    failed: transactions.filter(t => t.status === 'failed').length,
-    totalAmount: transactions
-      .filter(t => t.status === 'completed')
-      .reduce((sum, t) => sum + t.amount, 0)
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['.csv', '.json'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    if (!allowedTypes.includes(fileExtension)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select a CSV or JSON file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const job = await exportImportService.startImportJob('payments', file);
+      
+      toast({
+        title: "Import Started",
+        description: `Importing payment methods from ${file.name}`,
+      });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getImportJob(job.id);
+        if (updatedJob?.status === 'completed') {
+          const successMessage = updatedJob.error ? 
+            `Import completed with warnings: ${updatedJob.error}` :
+            `Successfully imported ${updatedJob.processedRows} payment methods`;
+            
+          toast({
+            title: "Import Completed",
+            description: successMessage,
+            variant: updatedJob.error ? "default" : "default",
+          });
+          setIsSubmitting(false);
+          // Reload data to show new payment methods
+          window.location.reload();
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: "Import Failed",
+            description: updatedJob.error || "Failed to import payment methods",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+        } else {
+          setTimeout(checkJob, 500);
+        }
+      };
+      
+      checkJob();
+      
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Failed",
+        description: "Failed to import payment methods",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
   };
 
-  if (isLoading) {
+  const handleExportTransactions = async (format: 'csv' | 'excel' | 'json') => {
+    try {
+      const exportData = filteredTransactions.map(transaction => ({
+        orderNumber: transaction.orderNumber,
+        transactionId: transaction.transactionId,
+        customerName: transaction.customerName,
+        customerEmail: transaction.customerEmail,
+        paymentMethod: transaction.paymentMethod,
+        paymentProvider: transaction.paymentProvider,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        status: transaction.status,
+        processedAt: transaction.processedAt || '',
+        failedAt: transaction.failedAt || '',
+        refundAmount: transaction.refundAmount || 0,
+        refundReason: transaction.refundReason || '',
+        createdAt: transaction.createdAt,
+        updatedAt: transaction.updatedAt
+      }));
+
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const extension = format === 'excel' ? 'xlsx' : format;
+      const exportFileDefaultName = `transactions_${new Date().toISOString().split('T')[0]}.${extension}`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      toast({
+        title: "Export Successful",
+        description: `Transactions exported as ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export transactions data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateMethod = async (methodData: any) => {
+    try {
+      setIsSubmitting(true);
+      const response = await api.createPaymentMethod(methodData);
+      
+      // Ensure the method object has all required properties
+      const newMethod: AdminPaymentMethod = {
+        _id: response.method?._id || Date.now().toString(),
+        name: response.method?.name || methodData.name || 'Unknown',
+        nameEn: response.method?.nameEn || methodData.nameEn || '',
+        nameJa: response.method?.nameJa || methodData.nameJa || '',
+        description: response.method?.description || methodData.description || '',
+        type: response.method?.type || methodData.type || 'credit_card',
+        provider: response.method?.provider || methodData.provider || 'Unknown',
+        processingFee: response.method?.processingFee || methodData.processingFee || 0,
+        minAmount: response.method?.minAmount || methodData.minAmount || 0,
+        maxAmount: response.method?.maxAmount || methodData.maxAmount || 0,
+        supportedCurrencies: response.method?.supportedCurrencies || methodData.supportedCurrencies || ['USD'],
+        isActive: response.method?.isActive !== undefined ? response.method.isActive : (methodData.isActive !== undefined ? methodData.isActive : true),
+        createdAt: response.method?.createdAt || new Date().toISOString(),
+        updatedAt: response.method?.updatedAt || new Date().toISOString()
+      };
+      
+      setPaymentMethods(prev => [newMethod, ...prev]);
+      setIsCreateMethodDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Payment method created successfully",
+      });
+    } catch (error) {
+      console.error('Error creating payment method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create payment method",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateMethod = async (id: string, methodData: any) => {
+    try {
+      setIsSubmitting(true);
+      const response = await api.updatePaymentMethod(id, methodData);
+      setPaymentMethods(prev => 
+        prev.map(method => method._id === id ? response.method : method)
+      );
+      setIsEditMethodDialogOpen(false);
+      setEditingMethod(null);
+      toast({
+        title: "Success",
+        description: "Payment method updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating payment method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update payment method",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteMethod = async (id: string) => {
+    try {
+      await api.deletePaymentMethod(id);
+      setPaymentMethods(prev => prev.filter(method => method._id !== id));
+      toast({
+        title: "Success",
+        description: "Payment method deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting payment method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete payment method",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProcessRefundSubmit = async (refundData: { amount: number; reason: string }) => {
+    if (!selectedTransaction) return;
+    
+    try {
+      setIsSubmitting(true);
+      const response = await api.processRefund(selectedTransaction._id, refundData);
+      setRefunds(prev => [response.refund, ...prev]);
+      setIsRefundDialogOpen(false);
+      setSelectedTransaction(null);
+      toast({
+        title: "Success",
+        description: "Refund request submitted successfully",
+      });
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process refund",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Use stats from API instead of calculating from transactions
+
+  // Authentication check
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
+      window.location.href = '/admin/login';
+    }
+  }, [authLoading, isAuthenticated, user?.role]);
+
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
@@ -547,6 +721,10 @@ export default function AdminPaymentsPage() {
         </div>
       </AdminLayout>
     );
+  }
+
+  if (!isAuthenticated || user?.role !== 'admin') {
+    return null;
   }
 
   return (
@@ -559,11 +737,38 @@ export default function AdminPaymentsPage() {
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExportTransactions}>
-              <Download className="h-4 w-4 mr-2" />
-              {t.exportTransactions}
-            </Button>
-            <Button variant="outline" size="sm">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  {t.exportTransactions}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExportTransactions('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportTransactions('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportTransactions('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <input
+              type="file"
+              accept=".csv,.json"
+              onChange={handleImport}
+              style={{ display: 'none' }}
+              id="payments-import"
+            />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => document.getElementById('payments-import')?.click()}
+              disabled={isSubmitting}
+            >
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
@@ -624,6 +829,88 @@ export default function AdminPaymentsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Payment Methods Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Payment Methods
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Provider</TableHead>
+                <TableHead>Processing Fee</TableHead>
+                <TableHead>Min/Max Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paymentMethods?.length > 0 ? (
+                paymentMethods.map((method) => (
+                  <TableRow key={method._id}>
+                    <TableCell className="font-medium">
+                      {getMethodName(method)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {method.type || 'Unknown'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{method.provider || 'Unknown'}</TableCell>
+                    <TableCell>{method.processingFee || 0}%</TableCell>
+                    <TableCell>
+                      {formatCurrency(method.minAmount || 0, language)} - {formatCurrency(method.maxAmount || 0, language)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={method.isActive ? "default" : "secondary"}>
+                        {method.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => {
+                            setEditingMethod(method);
+                            setIsEditMethodDialogOpen(true);
+                          }}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteMethod(method._id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No payment methods found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card>
@@ -748,6 +1035,10 @@ export default function AdminPaymentsPage() {
                             <Eye className="h-4 w-4 mr-2" />
                             {t.viewDetails}
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUpdateTransactionStatus(transaction)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Update Status
+                          </DropdownMenuItem>
                           {transaction.status === 'completed' && (
                             <DropdownMenuItem onClick={() => handleProcessRefund(transaction)}>
                               <TrendingDown className="h-4 w-4 mr-2" />
@@ -841,29 +1132,330 @@ export default function AdminPaymentsPage() {
                   type="number"
                   placeholder="Enter refund amount"
                   max={selectedTransaction.amount}
+                  onChange={(e) => setRefundData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t.refundReason}</label>
                 <Input
                   placeholder="Enter refund reason"
+                  onChange={(e) => setRefundData(prev => ({ ...prev, reason: e.target.value }))}
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsRefundDialogOpen(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsRefundDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
                   {t.cancel}
                 </Button>
-                <Button onClick={() => {
-                  toast({
-                    title: "Refund Processed",
-                    description: "Refund request has been submitted for approval.",
-                  });
-                  setIsRefundDialogOpen(false);
-                }}>
-                  {t.save}
+                <Button 
+                  onClick={() => handleProcessRefundSubmit(refundData)}
+                  disabled={isSubmitting || !refundData.amount || !refundData.reason}
+                >
+                  {isSubmitting ? "Processing..." : t.save}
                 </Button>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Transaction Status Dialog */}
+      <Dialog open={isUpdateTransactionDialogOpen} onOpenChange={setIsUpdateTransactionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Transaction Status</DialogTitle>
+          </DialogHeader>
+          {selectedTransaction && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <h3 className="font-medium">Transaction Details</h3>
+                <p className="text-sm text-muted-foreground">
+                  Order: {selectedTransaction.orderNumber}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Transaction ID: {selectedTransaction.transactionId}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Amount: {formatCurrency(selectedTransaction.amount, language)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Current Status: {selectedTransaction.status}
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">New Status</label>
+                  <Select 
+                    value={transactionUpdateData.status} 
+                    onValueChange={(value) => setTransactionUpdateData(prev => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="refunded">Refunded</SelectItem>
+                      <SelectItem value="partially_refunded">Partially Refunded</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Notes</label>
+                  <Input
+                    placeholder="Enter additional notes"
+                    value={transactionUpdateData.notes}
+                    onChange={(e) => setTransactionUpdateData(prev => ({ ...prev, notes: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsUpdateTransactionDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleTransactionStatusUpdateSubmit}
+                  disabled={isSubmitting || !transactionUpdateData.status}
+                >
+                  {isSubmitting ? "Updating..." : "Update Status"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Payment Method Dialog */}
+      <Dialog open={isCreateMethodDialogOpen} onOpenChange={setIsCreateMethodDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Payment Method</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const methodData = {
+              name: formData.get('name') as string,
+              nameEn: formData.get('nameEn') as string,
+              nameJa: formData.get('nameJa') as string,
+              description: formData.get('description') as string,
+              type: formData.get('type') as string,
+              provider: formData.get('provider') as string,
+              processingFee: parseFloat(formData.get('processingFee') as string),
+              minAmount: parseFloat(formData.get('minAmount') as string),
+              maxAmount: parseFloat(formData.get('maxAmount') as string),
+              supportedCurrencies: (formData.get('supportedCurrencies') as string).split(',').map(c => c.trim()),
+              isActive: formData.get('isActive') === 'on'
+            };
+            handleCreateMethod(methodData);
+          }}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name (VI)</label>
+                <Input name="name" placeholder="Enter payment method name" required />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name (EN)</label>
+                <Input name="nameEn" placeholder="Enter English name" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name (JA)</label>
+                <Input name="nameJa" placeholder="Enter Japanese name" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <Input name="description" placeholder="Enter description" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Type</label>
+                <Select name="type" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="credit_card">Credit Card</SelectItem>
+                    <SelectItem value="debit_card">Debit Card</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="digital_wallet">Digital Wallet</SelectItem>
+                    <SelectItem value="cryptocurrency">Cryptocurrency</SelectItem>
+                    <SelectItem value="cash_on_delivery">Cash on Delivery</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Provider</label>
+                <Input name="provider" placeholder="Enter provider name" required />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Processing Fee (%)</label>
+                <Input name="processingFee" type="number" step="0.01" placeholder="Enter processing fee" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Min Amount</label>
+                <Input name="minAmount" type="number" step="0.01" placeholder="Enter minimum amount" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Max Amount</label>
+                <Input name="maxAmount" type="number" step="0.01" placeholder="Enter maximum amount" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Supported Currencies</label>
+                <Input name="supportedCurrencies" placeholder="USD, VND, JPY" defaultValue="USD" />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input name="isActive" type="checkbox" defaultChecked />
+                <label className="text-sm font-medium">Active</label>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsCreateMethodDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Method"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Payment Method Dialog */}
+      <Dialog open={isEditMethodDialogOpen} onOpenChange={setIsEditMethodDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Payment Method</DialogTitle>
+          </DialogHeader>
+          {editingMethod && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const methodData = {
+                name: formData.get('name') as string,
+                nameEn: formData.get('nameEn') as string,
+                nameJa: formData.get('nameJa') as string,
+                description: formData.get('description') as string,
+                type: formData.get('type') as string,
+                provider: formData.get('provider') as string,
+                processingFee: parseFloat(formData.get('processingFee') as string),
+                minAmount: parseFloat(formData.get('minAmount') as string),
+                maxAmount: parseFloat(formData.get('maxAmount') as string),
+                supportedCurrencies: (formData.get('supportedCurrencies') as string).split(',').map(c => c.trim()),
+                isActive: formData.get('isActive') === 'on'
+              };
+              handleUpdateMethod(editingMethod._id, methodData);
+            }}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Name (VI)</label>
+                  <Input name="name" defaultValue={editingMethod.name} required />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Name (EN)</label>
+                  <Input name="nameEn" defaultValue={editingMethod.nameEn || ''} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Name (JA)</label>
+                  <Input name="nameJa" defaultValue={editingMethod.nameJa || ''} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <Input name="description" defaultValue={editingMethod.description} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Type</label>
+                  <Select name="type" defaultValue={editingMethod.type} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="credit_card">Credit Card</SelectItem>
+                      <SelectItem value="debit_card">Debit Card</SelectItem>
+                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                      <SelectItem value="digital_wallet">Digital Wallet</SelectItem>
+                      <SelectItem value="cryptocurrency">Cryptocurrency</SelectItem>
+                      <SelectItem value="cash_on_delivery">Cash on Delivery</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Provider</label>
+                  <Input name="provider" defaultValue={editingMethod.provider} required />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Processing Fee (%)</label>
+                  <Input name="processingFee" type="number" step="0.01" defaultValue={editingMethod.processingFee} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Min Amount</label>
+                  <Input name="minAmount" type="number" step="0.01" defaultValue={editingMethod.minAmount} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Max Amount</label>
+                  <Input name="maxAmount" type="number" step="0.01" defaultValue={editingMethod.maxAmount} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Supported Currencies</label>
+                  <Input name="supportedCurrencies" defaultValue={editingMethod.supportedCurrencies?.join(', ') || 'USD'} />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input name="isActive" type="checkbox" defaultChecked={editingMethod.isActive} />
+                  <label className="text-sm font-medium">Active</label>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 mt-6">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditMethodDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Updating..." : "Update Method"}
+                </Button>
+              </div>
+            </form>
           )}
         </DialogContent>
       </Dialog>

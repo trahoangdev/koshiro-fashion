@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { api, Product } from "@/lib/api";
+import { api, Product, type FlashSale } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,13 +23,10 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-interface FlashSaleSession {
-  id: string;
-  name: string;
-  startTime: Date;
-  endTime: Date;
-  discount: number;
-  products: string[]; // Product IDs
+interface FlashSaleProduct extends Product {
+  flashSalePrice: number;
+  flashSaleDiscount: number;
+  flashSaleDiscountType: string;
 }
 
 interface FlashSaleProps {
@@ -47,7 +44,9 @@ const FlashSale: React.FC<FlashSaleProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [flashSaleProducts, setFlashSaleProducts] = useState<Product[]>([]);
+  const [flashSaleProducts, setFlashSaleProducts] = useState<FlashSaleProduct[]>([]);
+  const [currentFlashSale, setCurrentFlashSale] = useState<FlashSale | null>(null);
+  const [nextFlashSale, setNextFlashSale] = useState<FlashSale | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -116,46 +115,60 @@ const FlashSale: React.FC<FlashSaleProps> = ({
     setIsDragging(false);
   };
 
-  // Enhanced flash sale sessions with better timing
-  const flashSaleSessions: FlashSaleSession[] = [
-    {
-      id: "1",
-      name: "Morning Sale",
-      startTime: new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 9, 0, 0),
-      endTime: new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 12, 0, 0),
-      discount: 50,
-      products: []
-    },
-    {
-      id: "2", 
-      name: "Afternoon Sale",
-      startTime: new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 14, 0, 0),
-      endTime: new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 17, 0, 0),
-      discount: 40,
-      products: []
-    },
-    {
-      id: "3",
-      name: "Evening Sale", 
-      startTime: new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 19, 0, 0),
-      endTime: new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 22, 0, 0),
-      discount: 60,
-      products: []
-    }
-  ];
+  // Load flash sale data from API
+  useEffect(() => {
+    const loadFlashSaleData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get current flash sale
+        const currentSaleResponse = await api.getCurrentFlashSale();
+        if (currentSaleResponse.success) {
+          setCurrentFlashSale(currentSaleResponse.flashSale);
+          setNextFlashSale(currentSaleResponse.nextFlashSale || null);
+          
+          // Load products for current flash sale
+          if (currentSaleResponse.flashSale) {
+            const productsResponse = await api.getFlashSaleProducts(currentSaleResponse.flashSale._id, { limit: 8 });
+            if (productsResponse.success) {
+              setFlashSaleProducts(productsResponse.products);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading flash sale data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadFlashSaleData();
+  }, []);
 
   // Find current active session
-  const currentSession = flashSaleSessions.find(session => 
-    currentTime >= session.startTime && currentTime <= session.endTime
-  );
+  const currentSession = currentFlashSale ? {
+    id: currentFlashSale._id,
+    name: language === 'vi' ? currentFlashSale.name : 
+          language === 'ja' ? currentFlashSale.nameJa || currentFlashSale.name :
+          currentFlashSale.nameEn || currentFlashSale.name,
+    startTime: new Date(currentFlashSale.startTime),
+    endTime: new Date(currentFlashSale.endTime),
+    discount: currentFlashSale.discountValue
+  } : null;
 
   // Find next upcoming session
-  const nextSession = flashSaleSessions.find(session => 
-    currentTime < session.startTime
-  );
+  const nextSession = nextFlashSale ? {
+    id: nextFlashSale._id,
+    name: language === 'vi' ? nextFlashSale.name : 
+          language === 'ja' ? nextFlashSale.nameJa || nextFlashSale.name :
+          nextFlashSale.nameEn || nextFlashSale.name,
+    startTime: new Date(nextFlashSale.startTime),
+    endTime: new Date(nextFlashSale.endTime),
+    discount: nextFlashSale.discountValue
+  } : null;
 
   // Calculate time remaining for current session
-  const getTimeRemaining = (session: FlashSaleSession) => {
+  const getTimeRemaining = (session: any) => {
     const now = currentTime.getTime();
     const end = session.endTime.getTime();
     const timeLeft = end - now;
@@ -170,7 +183,7 @@ const FlashSale: React.FC<FlashSaleProps> = ({
   };
 
   // Calculate time until next session
-  const getTimeUntilNext = (session: FlashSaleSession) => {
+  const getTimeUntilNext = (session: any) => {
     const now = currentTime.getTime();
     const start = session.startTime.getTime();
     const timeLeft = start - now;
@@ -185,7 +198,7 @@ const FlashSale: React.FC<FlashSaleProps> = ({
   };
 
   // Calculate progress percentage
-  const getProgressPercentage = (session: FlashSaleSession) => {
+  const getProgressPercentage = (session: any) => {
     const now = currentTime.getTime();
     const start = session.startTime.getTime();
     const end = session.endTime.getTime();
@@ -198,44 +211,6 @@ const FlashSale: React.FC<FlashSaleProps> = ({
     return (elapsed / total) * 100;
   };
 
-  // Load flash sale products with better filtering
-  useEffect(() => {
-    const loadFlashSaleProducts = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.getProducts({ 
-          isActive: true, 
-          limit: 100 
-        });
-        
-        // Enhanced filtering for flash sale products
-        const saleProducts = (response.products || []).filter(product => {
-          // Check if product is on sale
-          const isOnSale = product.onSale || product.salePrice || (product.originalPrice && product.originalPrice > product.price);
-          if (!isOnSale) return false;
-          
-          // Calculate discount percentage
-          let discountPercent = 0;
-          if (product.salePrice && product.salePrice < product.price) {
-            discountPercent = ((product.price - product.salePrice) / product.price) * 100;
-          } else if (product.originalPrice && product.originalPrice > product.price) {
-            discountPercent = ((product.originalPrice - product.price) / product.originalPrice) * 100;
-          }
-          
-          // Show products with 25%+ discount and good stock
-          return discountPercent >= 25 && product.stock > 0;
-        }).slice(0, 8); // Show max 8 products
-        
-        setFlashSaleProducts(saleProducts);
-      } catch (error) {
-        console.error('Error loading flash sale products:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadFlashSaleProducts();
-  }, []);
 
   // Update current time every second
   useEffect(() => {
@@ -382,6 +357,17 @@ const FlashSale: React.FC<FlashSaleProps> = ({
     </div>
   );
 
+  if (isLoading) {
+    return (
+      <Card className={`${className}`}>
+        <CardContent className="p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading flash sale...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (flashSaleProducts.length === 0 && !currentSession) {
     return (
       <Card className={`bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white ${className}`}>
@@ -404,7 +390,13 @@ const FlashSale: React.FC<FlashSaleProps> = ({
             <Flame className="h-12 w-12 mr-3 animate-pulse" />
             <h2 className="text-4xl font-bold">{t.title}</h2>
           </div>
-          <p className="text-xl text-center opacity-90 mb-8">{t.subtitle}</p>
+          <p className="text-xl text-center opacity-90 mb-8">
+            {currentFlashSale ? (
+              language === 'vi' ? currentFlashSale.description :
+              language === 'ja' ? currentFlashSale.descriptionJa || currentFlashSale.description :
+              currentFlashSale.descriptionEn || currentFlashSale.description
+            ) : t.subtitle}
+          </p>
           
           {/* Current Sale Session with Enhanced Countdown */}
           {currentSession ? (
@@ -526,11 +518,12 @@ const FlashSale: React.FC<FlashSaleProps> = ({
                 >
                   {/* Products */}
                   {flashSaleProducts.map((product, index) => {
-                    const discount = product.salePrice && product.salePrice < product.price
-                      ? Math.round(((product.price - product.salePrice) / product.price) * 100)
-                      : product.originalPrice && product.originalPrice > product.price
-                      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-                      : 0;
+                    const discount = product.flashSaleDiscount || 
+                      (product.salePrice && product.salePrice < product.price
+                        ? Math.round(((product.price - product.salePrice) / product.price) * 100)
+                        : product.originalPrice && product.originalPrice > product.price
+                        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                        : 0);
                     return (
                                              <div key={product._id} className="flex-shrink-0 px-2" style={{ width: `${100 / flashSaleProducts.length}%` }}>
                          <Card 
@@ -724,11 +717,11 @@ const FlashSale: React.FC<FlashSaleProps> = ({
                             {/* Price */}
                             <div className="flex items-center gap-2 mb-3">
                               <span className="text-lg font-bold text-red-600">
-                                {formatCurrency(product.salePrice || product.price, language)}
+                                {formatCurrency(product.flashSalePrice || product.salePrice || product.price, language)}
                               </span>
-                              {product.originalPrice && product.originalPrice > product.price && (
+                              {product.price && (product.flashSalePrice || product.salePrice) && (
                                 <span className="text-sm text-muted-foreground line-through">
-                                  {formatCurrency(product.originalPrice, language)}
+                                  {formatCurrency(product.price, language)}
                                 </span>
                               )}
                             </div>
@@ -769,52 +762,6 @@ const FlashSale: React.FC<FlashSaleProps> = ({
           </div>
         )}
 
-        {/* Sale Schedule - Now at the bottom */}
-        <div className="p-6">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Timer className="h-5 w-5" />
-            {language === 'vi' ? 'Lịch Trình Sale' : language === 'ja' ? 'セールスケジュール' : 'Sale Schedule'}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {flashSaleSessions.map((session) => {
-              const isActive = currentTime >= session.startTime && currentTime <= session.endTime;
-              const isUpcoming = currentTime < session.startTime;
-              const isPast = currentTime > session.endTime;
-              
-              return (
-                <div
-                  key={session.id}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    isActive 
-                      ? 'border-red-500 bg-red-50 dark:bg-red-950/20' 
-                      : isUpcoming 
-                      ? 'border-orange-300 bg-orange-50 dark:bg-orange-950/20'
-                      : 'border-gray-300 bg-gray-50 dark:bg-gray-950/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold">{session.name}</h3>
-                    <Badge variant={isActive ? "destructive" : isUpcoming ? "secondary" : "outline"}>
-                      {isActive ? t.currentSale : isUpcoming ? t.comingSoon : "Ended"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {session.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
-                    {session.endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                  <p className="text-lg font-bold text-red-600">
-                    {session.discount}% {t.discount}
-                  </p>
-                  {isActive && (
-                    <div className="mt-2">
-                      <Progress value={getProgressPercentage(session)} className="h-2" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
