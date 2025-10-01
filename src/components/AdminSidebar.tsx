@@ -41,7 +41,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, getUserRoleName } from "@/contexts";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { api } from "@/lib/api";
@@ -59,7 +59,6 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
   path: string;
   badge?: string;
-  isNew?: boolean;
 }
 
 interface MenuGroup {
@@ -136,6 +135,14 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           path: "/admin/users"
         },
         {
+          id: "roles",
+          label: "Vai trò & Quyền",
+          labelEn: "Roles & Permissions",
+          labelJa: "ロールと権限",
+          icon: Shield,
+          path: "/admin/roles"
+        },
+        {
           id: "reviews",
           label: "Đánh giá",
           labelEn: "Reviews",
@@ -149,8 +156,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           labelEn: "Promotions",
           labelJa: "プロモーション",
           icon: Percent,
-          path: "/admin/promotions",
-          isNew: true
+          path: "/admin/promotions"
         },
         {
           id: "inventory",
@@ -158,8 +164,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           labelEn: "Inventory",
           labelJa: "在庫",
           icon: Warehouse,
-          path: "/admin/inventory",
-          isNew: true
+          path: "/admin/inventory"
         },
         {
           id: "shipping",
@@ -167,8 +172,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           labelEn: "Shipping",
           labelJa: "配送",
           icon: Truck,
-          path: "/admin/shipping",
-          isNew: true
+          path: "/admin/shipping"
         },
         {
           id: "payments",
@@ -176,8 +180,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           labelEn: "Payments",
           labelJa: "支払い",
           icon: CreditCard,
-          path: "/admin/payments",
-          isNew: true
+          path: "/admin/payments"
         }
       ]
     },
@@ -224,8 +227,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           labelEn: "Roles & Permissions",
           labelJa: "ロール・権限",
           icon: Shield,
-          path: "/admin/roles",
-          isNew: true
+          path: "/admin/roles"
         },
         {
           id: "api",
@@ -233,8 +235,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
           labelEn: "API & Integration",
           labelJa: "API・統合",
           icon: Key,
-          path: "/admin/api",
-          isNew: true
+          path: "/admin/api"
         },
         {
           id: "settings",
@@ -376,7 +377,7 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                 <p className="text-xs text-muted-foreground truncate">{user?.email || 'admin@koshiro.com'}</p>
               </div>
               <Badge variant="secondary" className="text-xs">
-                {user?.role || 'admin'}
+                {getUserRoleName(user) || 'admin'}
               </Badge>
             </div>
           </div>
@@ -413,11 +414,6 @@ function AdminSidebar({ isOpen, onToggle }: AdminSidebarProps) {
                       {item.badge === "..." && (
                         <Badge variant="secondary" className="ml-auto text-xs">
                           ...
-                        </Badge>
-                      )}
-                      {item.isNew && (
-                        <Badge variant="default" className="ml-auto text-xs bg-green-500">
-                          New
                         </Badge>
                       )}
                     </Button>

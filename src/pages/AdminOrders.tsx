@@ -70,7 +70,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, isAdminUser } from "@/contexts";
 import { useNavigate } from "react-router-dom";
 import { Order, User as UserType, Product } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
@@ -278,7 +278,7 @@ export default function AdminOrders() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated || user?.role !== 'admin') {
+      if (!isAuthenticated || !isAdminUser(user)) {
         navigate("/admin/login");
       }
     }
@@ -776,7 +776,7 @@ export default function AdminOrders() {
             <head>
               <title>Order ${order.orderNumber}</title>
               <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
+                body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; margin: 20px; }
                 .header { text-align: center; margin-bottom: 30px; }
                 .order-info { margin-bottom: 20px; }
                 .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -981,7 +981,7 @@ export default function AdminOrders() {
   }
 
   // Don't render if not authenticated or not admin
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || !isAdminUser(user)) {
     return null;
   }
 

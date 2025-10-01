@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts";
+import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +71,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { exportImportService } from "@/lib/exportImportService";
 import AdminLayout from "@/components/AdminLayout";
 
 interface ShippingMethod {
@@ -132,6 +135,7 @@ interface TrackingEvent {
 export default function AdminShippingPage() {
   const { language } = useLanguage();
   const { toast } = useToast();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -144,9 +148,24 @@ export default function AdminShippingPage() {
   const [isEditMethodDialogOpen, setIsEditMethodDialogOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<ShippingMethod | null>(null);
   const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
+  const [isUpdateStatusDialogOpen, setIsUpdateStatusDialogOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusUpdateData, setStatusUpdateData] = useState({
+    status: '',
+    location: '',
+    description: '',
+    notes: ''
+  });
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    delivered: 0,
+    inTransit: 0,
+    failed: 0,
+    totalCost: 0
+  });
 
   const translations = {
     en: {
@@ -276,139 +295,41 @@ export default function AdminShippingPage() {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  // Mock data for demonstration
+  // Load data from API
   useEffect(() => {
-    const mockShippingMethods: ShippingMethod[] = [
-      {
-        _id: "1",
-        name: "Giao hàng tiêu chuẩn",
-        nameEn: "Standard Delivery",
-        nameJa: "標準配送",
-        description: "Giao hàng trong 3-5 ngày làm việc",
-        descriptionEn: "Delivery within 3-5 business days",
-        descriptionJa: "3-5営業日以内に配送",
-        type: "standard",
-        cost: 30000,
-        freeShippingThreshold: 500000,
-        estimatedDays: 4,
-        isActive: true,
-        supportedRegions: ["Hà Nội", "TP.HCM", "Đà Nẵng"],
-        weightLimit: 5,
-        dimensionsLimit: "60x40x40 cm",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "2",
-        name: "Giao hàng nhanh",
-        nameEn: "Express Delivery",
-        nameJa: "速達配送",
-        description: "Giao hàng trong 1-2 ngày làm việc",
-        descriptionEn: "Delivery within 1-2 business days",
-        descriptionJa: "1-2営業日以内に配送",
-        type: "express",
-        cost: 60000,
-        freeShippingThreshold: 1000000,
-        estimatedDays: 2,
-        isActive: true,
-        supportedRegions: ["Hà Nội", "TP.HCM"],
-        weightLimit: 3,
-        dimensionsLimit: "50x30x30 cm",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      }
-    ];
+    if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
+      return;
+    }
 
-    const mockShipments: Shipment[] = [
-      {
-        _id: "1",
-        orderId: "order1",
-        orderNumber: "ORD-2024-001",
-        trackingNumber: "VN123456789",
-        shippingMethod: "Giao hàng tiêu chuẩn",
-        status: "in_transit",
-        customerName: "Nguyễn Văn A",
-        customerPhone: "+84 123 456 789",
-        shippingAddress: {
-          name: "Nguyễn Văn A",
-          phone: "+84 123 456 789",
-          address: "123 Đường ABC",
-          city: "Hà Nội",
-          district: "Quận Cầu Giấy"
-        },
-        carrier: "Viettel Post",
-        carrierTrackingUrl: "https://tracking.viettelpost.vn/VN123456789",
-        estimatedDelivery: "2024-01-25T00:00:00Z",
-        shippingCost: 30000,
-        weight: 1.5,
-        dimensions: "30x20x10 cm",
-        createdAt: "2024-01-20T00:00:00Z",
-        updatedAt: "2024-01-22T00:00:00Z"
-      },
-      {
-        _id: "2",
-        orderId: "order2",
-        orderNumber: "ORD-2024-002",
-        trackingNumber: "VN987654321",
-        shippingMethod: "Giao hàng nhanh",
-        status: "delivered",
-        customerName: "Trần Thị B",
-        customerPhone: "+84 987 654 321",
-        shippingAddress: {
-          name: "Trần Thị B",
-          phone: "+84 987 654 321",
-          address: "456 Đường XYZ",
-          city: "TP.HCM",
-          district: "Quận 1"
-        },
-        carrier: "Giao Hàng Nhanh",
-        carrierTrackingUrl: "https://tracking.ghn.vn/VN987654321",
-        estimatedDelivery: "2024-01-22T00:00:00Z",
-        actualDelivery: "2024-01-21T14:30:00Z",
-        shippingCost: 60000,
-        weight: 0.8,
-        dimensions: "25x15x8 cm",
-        createdAt: "2024-01-19T00:00:00Z",
-        updatedAt: "2024-01-21T14:30:00Z"
-      }
-    ];
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load shipping methods, shipments, and stats in parallel
+        const [methodsResponse, shipmentsResponse, statsResponse] = await Promise.all([
+          api.getShippingMethods(),
+          api.getShipments({ page: 1, limit: 100 }),
+          api.getShippingStats()
+        ]);
 
-    const mockTrackingEvents: TrackingEvent[] = [
-      {
-        _id: "1",
-        shipmentId: "1",
-        status: "picked_up",
-        location: "Hà Nội",
-        description: "Package picked up from sender",
-        timestamp: "2024-01-20T09:00:00Z",
-        carrier: "Viettel Post"
-      },
-      {
-        _id: "2",
-        shipmentId: "1",
-        status: "in_transit",
-        location: "Hà Nội Sorting Center",
-        description: "Package arrived at sorting center",
-        timestamp: "2024-01-21T10:30:00Z",
-        carrier: "Viettel Post"
-      },
-      {
-        _id: "3",
-        shipmentId: "1",
-        status: "in_transit",
-        location: "TP.HCM Sorting Center",
-        description: "Package in transit to destination",
-        timestamp: "2024-01-22T15:45:00Z",
-        carrier: "Viettel Post"
+        setShippingMethods(methodsResponse);
+        setShipments(shipmentsResponse.shipments);
+        setFilteredShipments(shipmentsResponse.shipments);
+        setStats(statsResponse);
+      } catch (error) {
+        console.error('Error loading shipping data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load shipping data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    ];
+    };
 
-    setShippingMethods(mockShippingMethods);
-    setShipments(mockShipments);
-    setFilteredShipments(mockShipments);
-    setTrackingEvents(mockTrackingEvents);
-    setIsLoading(false);
-  }, []);
+    loadData();
+  }, [isAuthenticated, user?.role, toast]);
 
   // Filter shipments
   useEffect(() => {
@@ -434,11 +355,12 @@ export default function AdminShippingPage() {
     setFilteredShipments(filtered);
   }, [shipments, searchTerm, filterStatus, filterMethod]);
 
-  const getMethodName = (method: ShippingMethod) => {
+  const getMethodName = (method: ShippingMethod | undefined) => {
+    if (!method) return 'Unknown Method';
     switch (language) {
-      case 'vi': return method.name;
-      case 'ja': return method.nameJa || method.name;
-      default: return method.nameEn || method.name;
+      case 'vi': return method.name || 'Unknown';
+      case 'ja': return method.nameJa || method.name || 'Unknown';
+      default: return method.nameEn || method.name || 'Unknown';
     }
   };
 
@@ -473,27 +395,307 @@ export default function AdminShippingPage() {
     }
   };
 
-  const handleViewTracking = (shipment: Shipment) => {
+  const handleViewTracking = async (shipment: Shipment) => {
+    try {
+      setSelectedShipment(shipment);
+      const events = await api.getTrackingEvents(shipment._id);
+      setTrackingEvents(events);
+      setIsTrackingDialogOpen(true);
+    } catch (error) {
+      console.error('Error loading tracking events:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load tracking events",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateStatus = async (shipment: Shipment) => {
     setSelectedShipment(shipment);
-    setIsTrackingDialogOpen(true);
-  };
-
-  const handleUpdateStatus = (shipment: Shipment) => {
-    // Implementation for updating shipment status
-    toast({
-      title: "Status Updated",
-      description: `Status for ${shipment.orderNumber} has been updated.`,
+    setStatusUpdateData({
+      status: shipment.status,
+      location: '',
+      description: '',
+      notes: ''
     });
+    setIsUpdateStatusDialogOpen(true);
   };
 
-  const stats = {
-    total: shipments.length,
-    pending: shipments.filter(s => s.status === 'pending').length,
-    delivered: shipments.filter(s => s.status === 'delivered').length,
-    totalCost: shipments.reduce((sum, s) => sum + s.shippingCost, 0)
+  const handleStatusUpdateSubmit = async () => {
+    if (!selectedShipment) return;
+    
+    try {
+      setIsSubmitting(true);
+      const response = await api.updateShipmentStatus(selectedShipment._id, statusUpdateData);
+      
+      // Update local state
+      setShipments(prev => 
+        prev.map(shipment => 
+          shipment._id === selectedShipment._id 
+            ? { ...shipment, ...response.shipment }
+            : shipment
+        )
+      );
+      
+      setIsUpdateStatusDialogOpen(false);
+      setSelectedShipment(null);
+      toast({
+        title: "Status Updated",
+        description: `Shipment status updated successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating shipment status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update shipment status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (isLoading) {
+  interface CreateMethodData {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description: string;
+    type: 'standard' | 'express' | 'overnight' | 'pickup';
+    cost: number;
+    estimatedDays: number;
+    isActive: boolean;
+    supportedRegions: string[];
+  }
+
+  const handleCreateMethod = async (methodData: CreateMethodData) => {
+    try {
+      setIsSubmitting(true);
+      const response = await api.createShippingMethod(methodData);
+      
+      // Ensure the method object has all required properties
+      const newMethod: ShippingMethod = {
+        _id: response.method?._id || Date.now().toString(),
+        name: response.method?.name || methodData.name || 'Unknown',
+        nameEn: response.method?.nameEn || methodData.nameEn || '',
+        nameJa: response.method?.nameJa || methodData.nameJa || '',
+        description: (response.method as Record<string, unknown>)?.description as string || methodData.description || '',
+        descriptionEn: (response.method as Record<string, unknown>)?.descriptionEn as string || '',
+        descriptionJa: (response.method as Record<string, unknown>)?.descriptionJa as string || '',
+        type: (response.method?.type || methodData.type || 'standard') as 'standard' | 'express' | 'overnight' | 'pickup',
+        cost: response.method?.cost || methodData.cost || 0,
+        freeShippingThreshold: response.method?.freeShippingThreshold,
+        estimatedDays: response.method?.estimatedDays || methodData.estimatedDays || 3,
+        isActive: response.method?.isActive !== undefined ? response.method.isActive : (methodData.isActive !== undefined ? methodData.isActive : true),
+        supportedRegions: response.method?.supportedRegions || [],
+        weightLimit: response.method?.weightLimit,
+        dimensionsLimit: response.method?.dimensionsLimit,
+        createdAt: response.method?.createdAt || new Date().toISOString(),
+        updatedAt: response.method?.updatedAt || new Date().toISOString()
+      };
+      
+      setShippingMethods(prev => [newMethod, ...prev]);
+      setIsCreateMethodDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Shipping method created successfully",
+      });
+    } catch (error) {
+      console.error('Error creating shipping method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create shipping method",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateMethod = async (id: string, methodData: CreateMethodData) => {
+    try {
+      setIsSubmitting(true);
+      const response = await api.updateShippingMethod(id, methodData);
+      setShippingMethods(prev => 
+        prev.map(method => method._id === id ? { ...method, ...response.method } : method)
+      );
+      setIsEditMethodDialogOpen(false);
+      setEditingMethod(null);
+      toast({
+        title: "Success",
+        description: "Shipping method updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating shipping method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update shipping method",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteMethod = async (id: string) => {
+    try {
+      await api.deleteShippingMethod(id);
+      setShippingMethods(prev => prev.filter(method => method._id !== id));
+      toast({
+        title: "Success",
+        description: "Shipping method deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting shipping method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete shipping method",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['.csv', '.json'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    if (!allowedTypes.includes(fileExtension)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select a CSV or JSON file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const job = await exportImportService.startImportJob('shipping', file);
+      
+      toast({
+        title: "Import Started",
+        description: `Importing shipping methods from ${file.name}`,
+      });
+
+      // Wait for job completion
+      const checkJob = async () => {
+        const updatedJob = exportImportService.getImportJob(job.id);
+        if (updatedJob?.status === 'completed') {
+          const successMessage = updatedJob.error ? 
+            `Import completed with warnings: ${updatedJob.error}` :
+            `Successfully imported ${updatedJob.processedRows} shipping methods`;
+            
+          toast({
+            title: "Import Completed",
+            description: successMessage,
+            variant: updatedJob.error ? "default" : "default",
+          });
+          setIsSubmitting(false);
+          // Reload data to show new shipping methods
+          window.location.reload();
+        } else if (updatedJob?.status === 'failed') {
+          toast({
+            title: "Import Failed",
+            description: updatedJob.error || "Failed to import shipping methods",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+        } else {
+          setTimeout(checkJob, 500);
+        }
+      };
+      
+      checkJob();
+      
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Failed",
+        description: "Failed to import shipping methods",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleExportData = async (format: 'csv' | 'excel' | 'json') => {
+    try {
+      const exportData = filteredShipments.map(shipment => ({
+        orderNumber: shipment.orderNumber,
+        trackingNumber: shipment.trackingNumber,
+        customerName: shipment.customerName,
+        customerPhone: shipment.customerPhone,
+        shippingMethod: shipment.shippingMethod,
+        status: shipment.status,
+        carrier: shipment.carrier,
+        estimatedDelivery: shipment.estimatedDelivery,
+        actualDelivery: shipment.actualDelivery || '',
+        shippingCost: shipment.shippingCost,
+        weight: shipment.weight || '',
+        dimensions: shipment.dimensions || '',
+        createdAt: shipment.createdAt,
+        updatedAt: shipment.updatedAt
+      }));
+
+      const fileName = `shipments_${new Date().toISOString().split('T')[0]}`;
+      
+      if (format === 'excel') {
+        const blob = await exportImportService.exportToExcel(exportData);
+        const url = URL.createObjectURL(blob);
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', url);
+        linkElement.setAttribute('download', `${fileName}.xlsx`);
+        linkElement.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'csv') {
+        const csvContent = await exportImportService.exportToCSV(exportData);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', url);
+        linkElement.setAttribute('download', `${fileName}.csv`);
+        linkElement.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // JSON export
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', `${fileName}.json`);
+        linkElement.click();
+      }
+      
+      toast({
+        title: "Export Successful",
+        description: `Shipments exported as ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export shipments data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Use stats from API instead of calculating from shipments
+
+  // Authentication check
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin'))) {
+      window.location.href = '/admin/login';
+    }
+  }, [authLoading, isAuthenticated, user?.role]);
+
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
@@ -501,6 +703,10 @@ export default function AdminShippingPage() {
         </div>
       </AdminLayout>
     );
+  }
+
+  if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
+    return null;
   }
 
   return (
@@ -513,11 +719,38 @@ export default function AdminShippingPage() {
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-            <Button variant="outline" size="sm">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExportData('csv')}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportData('excel')}>
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportData('json')}>
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <input
+              type="file"
+              accept=".csv,.json"
+              onChange={handleImport}
+              style={{ display: 'none' }}
+              id="shipping-import"
+            />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => document.getElementById('shipping-import')?.click()}
+              disabled={isSubmitting}
+            >
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
@@ -578,6 +811,86 @@ export default function AdminShippingPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Shipping Methods Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="h-5 w-5" />
+            Shipping Methods
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>Estimated Days</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {shippingMethods?.length > 0 ? (
+                shippingMethods.map((method) => (
+                  <TableRow key={method._id}>
+                    <TableCell className="font-medium">
+                      {getMethodName(method)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {method.type || 'Unknown'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {formatCurrency(method.cost || 0, language)}
+                    </TableCell>
+                    <TableCell>{method.estimatedDays || 0} days</TableCell>
+                    <TableCell>
+                      <Badge variant={method.isActive ? "default" : "secondary"}>
+                        {method.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => {
+                            setEditingMethod(method);
+                            setIsEditMethodDialogOpen(true);
+                          }}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteMethod(method._id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No shipping methods found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card>
@@ -764,6 +1077,281 @@ export default function AdminShippingPage() {
                 </div>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Status Dialog */}
+      <Dialog open={isUpdateStatusDialogOpen} onOpenChange={setIsUpdateStatusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Shipment Status</DialogTitle>
+          </DialogHeader>
+          {selectedShipment && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <h3 className="font-medium">Shipment Details</h3>
+                <p className="text-sm text-muted-foreground">
+                  Order: {selectedShipment.orderNumber}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Tracking: {selectedShipment.trackingNumber}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Current Status: {selectedShipment.status}
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">New Status</label>
+                  <Select 
+                    value={statusUpdateData.status} 
+                    onValueChange={(value) => setStatusUpdateData(prev => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="in_transit">In Transit</SelectItem>
+                      <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                      <SelectItem value="returned">Returned</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Location</label>
+                  <Input
+                    placeholder="Enter current location"
+                    value={statusUpdateData.location}
+                    onChange={(e) => setStatusUpdateData(prev => ({ ...prev, location: e.target.value }))}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <Input
+                    placeholder="Enter status description"
+                    value={statusUpdateData.description}
+                    onChange={(e) => setStatusUpdateData(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Notes</label>
+                  <Input
+                    placeholder="Enter additional notes"
+                    value={statusUpdateData.notes}
+                    onChange={(e) => setStatusUpdateData(prev => ({ ...prev, notes: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsUpdateStatusDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleStatusUpdateSubmit}
+                  disabled={isSubmitting || !statusUpdateData.status}
+                >
+                  {isSubmitting ? "Updating..." : "Update Status"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Shipping Method Dialog */}
+      <Dialog open={isCreateMethodDialogOpen} onOpenChange={setIsCreateMethodDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Shipping Method</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const methodData: CreateMethodData = {
+              name: formData.get('name') as string,
+              nameEn: formData.get('nameEn') as string,
+              nameJa: formData.get('nameJa') as string,
+              description: formData.get('description') as string,
+              type: formData.get('type') as 'standard' | 'express' | 'overnight' | 'pickup',
+              cost: parseFloat(formData.get('cost') as string),
+              estimatedDays: parseInt(formData.get('estimatedDays') as string),
+              isActive: formData.get('isActive') === 'on',
+              supportedRegions: []
+            };
+            handleCreateMethod(methodData);
+          }}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name (VI)</label>
+                <Input name="name" placeholder="Enter shipping method name" required />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name (EN)</label>
+                <Input name="nameEn" placeholder="Enter English name" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name (JA)</label>
+                <Input name="nameJa" placeholder="Enter Japanese name" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <Input name="description" placeholder="Enter description" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Type</label>
+                <Select name="type" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="express">Express</SelectItem>
+                    <SelectItem value="overnight">Overnight</SelectItem>
+                    <SelectItem value="pickup">Pickup</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cost</label>
+                <Input name="cost" type="number" step="0.01" placeholder="Enter cost" required />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Estimated Days</label>
+                <Input name="estimatedDays" type="number" placeholder="Enter estimated days" required />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input name="isActive" type="checkbox" defaultChecked />
+                <label className="text-sm font-medium">Active</label>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsCreateMethodDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Method"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Shipping Method Dialog */}
+      <Dialog open={isEditMethodDialogOpen} onOpenChange={setIsEditMethodDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Shipping Method</DialogTitle>
+          </DialogHeader>
+          {editingMethod && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const methodData: CreateMethodData = {
+                name: formData.get('name') as string,
+                nameEn: formData.get('nameEn') as string,
+                nameJa: formData.get('nameJa') as string,
+                description: formData.get('description') as string,
+                type: formData.get('type') as 'standard' | 'express' | 'overnight' | 'pickup',
+                cost: parseFloat(formData.get('cost') as string),
+                estimatedDays: parseInt(formData.get('estimatedDays') as string),
+                isActive: formData.get('isActive') === 'on',
+                supportedRegions: []
+              };
+              handleUpdateMethod(editingMethod._id, methodData);
+            }}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Name (VI)</label>
+                  <Input name="name" defaultValue={editingMethod.name} required />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Name (EN)</label>
+                  <Input name="nameEn" defaultValue={editingMethod.nameEn || ''} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Name (JA)</label>
+                  <Input name="nameJa" defaultValue={editingMethod.nameJa || ''} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <Input name="description" defaultValue={editingMethod.description} />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Type</label>
+                  <Select name="type" defaultValue={editingMethod.type} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">Standard</SelectItem>
+                      <SelectItem value="express">Express</SelectItem>
+                      <SelectItem value="overnight">Overnight</SelectItem>
+                      <SelectItem value="pickup">Pickup</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Cost</label>
+                  <Input name="cost" type="number" step="0.01" defaultValue={editingMethod.cost} required />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Estimated Days</label>
+                  <Input name="estimatedDays" type="number" defaultValue={editingMethod.estimatedDays} required />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input name="isActive" type="checkbox" defaultChecked={editingMethod.isActive} />
+                  <label className="text-sm font-medium">Active</label>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 mt-6">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditMethodDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Updating..." : "Update Method"}
+                </Button>
+              </div>
+            </form>
           )}
         </DialogContent>
       </Dialog>

@@ -53,7 +53,7 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 
 
 
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated || user?.role !== 'admin') {
+      if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
         navigate("/admin/login");
       }
     }
@@ -447,7 +447,7 @@ export default function AdminDashboard() {
   }
 
   // Don't render if not authenticated or not admin
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
     return null;
   }
 

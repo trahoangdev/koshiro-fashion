@@ -65,6 +65,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts";
 import { useNavigate } from "react-router-dom";
 import { Category } from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
@@ -81,6 +82,7 @@ interface CategoryStats {
 export default function AdminCategories() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -244,11 +246,12 @@ export default function AdminCategories() {
   const t = translations[language as keyof typeof translations] || translations.en;
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isAdminLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/admin/login");
+    if (!authLoading) {
+      if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
+        navigate("/admin/login");
+      }
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
   useEffect(() => {
     loadData();
@@ -454,7 +457,7 @@ export default function AdminCategories() {
     );
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -465,6 +468,11 @@ export default function AdminCategories() {
         </div>
       </AdminLayout>
     );
+  }
+
+  // Don't render if not authenticated or not admin
+  if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
+    return null;
   }
 
   return (

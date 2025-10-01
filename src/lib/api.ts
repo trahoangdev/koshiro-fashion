@@ -70,6 +70,9 @@ export interface Product {
   isActive: boolean;
   isFeatured: boolean;
   onSale: boolean;
+  isNew: boolean;
+  isLimitedEdition: boolean;
+  isBestSeller: boolean;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -118,13 +121,56 @@ export interface User {
   email: string;
   phone?: string;
   address?: string;
-  role: 'customer' | 'admin';
+  role: string | {
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    level: number;
+    isActive: boolean;
+  }; // Reference to Role model or populated role object
   status: 'active' | 'inactive' | 'blocked';
   isActive: boolean;
   totalOrders: number;
   orderCount: number;
   totalSpent: number;
   lastActive?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Role types
+export interface Permission {
+  _id: string;
+  name: string;
+  nameEn?: string;
+  nameJa?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionJa?: string;
+  resource: string;
+  action: string;
+  conditions?: string;
+  isActive: boolean;
+  isSystem: boolean;
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Role {
+  _id: string;
+  name: string;
+  nameEn?: string;
+  nameJa?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionJa?: string;
+  permissions: Permission[];
+  isActive: boolean;
+  isSystem: boolean;
+  level: number;
+  userCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -445,17 +491,17 @@ class ApiClient {
     return this.request<Order[]>(`/orders/track-email/${email}`);
   }
 
-  // Payment Methods
-  async getPaymentMethods(): Promise<PaymentMethod[]> {
+  // Customer Payment Methods (for user's saved payment methods)
+  async getCustomerPaymentMethods(): Promise<PaymentMethod[]> {
     try {
       return await this.request<PaymentMethod[]>('/payment-methods');
     } catch (error) {
-      console.error('Get payment methods API error:', error);
+      console.error('Get customer payment methods API error:', error);
       throw error;
     }
   }
 
-  async addPaymentMethod(paymentData: {
+  async addCustomerPaymentMethod(paymentData: {
     type: 'credit_card' | 'debit_card' | 'paypal';
     name: string;
     cardNumber?: string;
@@ -470,12 +516,12 @@ class ApiClient {
         body: JSON.stringify(paymentData),
       });
     } catch (error) {
-      console.error('Add payment method API error:', error);
+      console.error('Add customer payment method API error:', error);
       throw error;
     }
   }
 
-  async updatePaymentMethod(id: string, paymentData: {
+  async updateCustomerPaymentMethod(id: string, paymentData: {
     type: 'credit_card' | 'debit_card' | 'paypal';
     name: string;
     cardNumber?: string;
@@ -490,18 +536,18 @@ class ApiClient {
         body: JSON.stringify(paymentData),
       });
     } catch (error) {
-      console.error('Update payment method API error:', error);
+      console.error('Update customer payment method API error:', error);
       throw error;
     }
   }
 
-  async deletePaymentMethod(id: string): Promise<{ message: string }> {
+  async deleteCustomerPaymentMethod(id: string): Promise<{ message: string }> {
     try {
       return await this.request<{ message: string }>(`/payment-methods/${id}`, {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error('Delete payment method API error:', error);
+      console.error('Delete customer payment method API error:', error);
       throw error;
     }
   }
@@ -1475,6 +1521,777 @@ class ApiClient {
 
     return this.request(`/notifications/stats?${searchParams}`);
   }
+
+  // Admin Shipping APIs
+  async getShippingMethods(): Promise<Array<{
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    type: 'standard' | 'express' | 'overnight' | 'pickup';
+    cost: number;
+    freeShippingThreshold?: number;
+    estimatedDays: number;
+    isActive: boolean;
+    supportedRegions: string[];
+    weightLimit?: number;
+    dimensionsLimit?: string;
+    createdAt: string;
+    updatedAt: string;
+  }>> {
+    return this.request('/admin/shipping/methods');
+  }
+
+  async createShippingMethod(methodData: {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    type: 'standard' | 'express' | 'overnight' | 'pickup';
+    cost: number;
+    freeShippingThreshold?: number;
+    estimatedDays: number;
+    isActive?: boolean;
+    supportedRegions: string[];
+    weightLimit?: number;
+    dimensionsLimit?: string;
+  }): Promise<{ message: string; method: {
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    type: 'standard' | 'express' | 'overnight' | 'pickup';
+    cost: number;
+    freeShippingThreshold?: number;
+    estimatedDays: number;
+    isActive: boolean;
+    supportedRegions: string[];
+    weightLimit?: number;
+    dimensionsLimit?: string;
+    createdAt: string;
+    updatedAt: string;
+  } }> {
+    return this.request('/admin/shipping/methods', {
+      method: 'POST',
+      body: JSON.stringify(methodData),
+    });
+  }
+
+  async updateShippingMethod(id: string, methodData: {
+    name?: string;
+    nameEn?: string;
+    nameJa?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    type?: 'standard' | 'express' | 'overnight' | 'pickup';
+    cost?: number;
+    freeShippingThreshold?: number;
+    estimatedDays?: number;
+    isActive?: boolean;
+    supportedRegions?: string[];
+    weightLimit?: number;
+    dimensionsLimit?: string;
+  }): Promise<{ message: string; method: {
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    type: 'standard' | 'express' | 'overnight' | 'pickup';
+    cost: number;
+    freeShippingThreshold?: number;
+    estimatedDays: number;
+    isActive: boolean;
+    supportedRegions: string[];
+    weightLimit?: number;
+    dimensionsLimit?: string;
+    createdAt: string;
+    updatedAt: string;
+  } }> {
+    return this.request(`/admin/shipping/methods/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(methodData),
+    });
+  }
+
+  async deleteShippingMethod(id: string): Promise<{ message: string }> {
+    return this.request(`/admin/shipping/methods/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getShipments(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    method?: string;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{
+    shipments: Array<{
+      _id: string;
+      orderId: string;
+      orderNumber: string;
+      trackingNumber: string;
+      shippingMethod: string;
+      status: 'pending' | 'picked_up' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | 'returned';
+      customerName: string;
+      customerPhone: string;
+      shippingAddress: {
+        name: string;
+        phone: string;
+        address: string;
+        city: string;
+        district: string;
+      };
+      carrier: string;
+      carrierTrackingUrl?: string;
+      estimatedDelivery: string;
+      actualDelivery?: string;
+      notes?: string;
+      weight?: number;
+      dimensions?: string;
+      shippingCost: number;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    totalPages: number;
+    currentPage: number;
+    total: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.method) searchParams.append('method', params.method);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params?.sortOrder) searchParams.append('sortOrder', params.sortOrder);
+
+    return this.request(`/admin/shipping/shipments?${searchParams}`);
+  }
+
+  async getShipment(id: string): Promise<{ shipment: {
+    _id: string;
+    orderId: string;
+    orderNumber: string;
+    trackingNumber: string;
+    shippingMethod: string;
+    status: 'pending' | 'picked_up' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | 'returned';
+    customerName: string;
+    customerPhone: string;
+    shippingAddress: {
+      name: string;
+      phone: string;
+      address: string;
+      city: string;
+      district: string;
+    };
+    carrier: string;
+    carrierTrackingUrl?: string;
+    estimatedDelivery: string;
+    actualDelivery?: string;
+    notes?: string;
+    weight?: number;
+    dimensions?: string;
+    shippingCost: number;
+    createdAt: string;
+    updatedAt: string;
+  } }> {
+    return this.request(`/admin/shipping/shipments/${id}`);
+  }
+
+  async updateShipmentStatus(id: string, statusData: {
+    status: string;
+    notes?: string;
+    location?: string;
+    description?: string;
+  }): Promise<{ message: string; shipment: {
+    _id: string;
+    orderId: string;
+    orderNumber: string;
+    trackingNumber: string;
+    shippingMethod: string;
+    status: 'pending' | 'picked_up' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | 'returned';
+    customerName: string;
+    customerPhone: string;
+    shippingAddress: {
+      name: string;
+      phone: string;
+      address: string;
+      city: string;
+      district: string;
+    };
+    carrier: string;
+    carrierTrackingUrl?: string;
+    estimatedDelivery: string;
+    actualDelivery?: string;
+    notes?: string;
+    weight?: number;
+    dimensions?: string;
+    shippingCost: number;
+    createdAt: string;
+    updatedAt: string;
+  } }> {
+    return this.request(`/admin/shipping/shipments/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(statusData),
+    });
+  }
+
+  async getTrackingEvents(shipmentId: string): Promise<Array<{
+    _id: string;
+    shipmentId: string;
+    status: string;
+    location: string;
+    description: string;
+    timestamp: string;
+    carrier?: string;
+  }>> {
+    return this.request(`/admin/shipping/shipments/${shipmentId}/tracking`);
+  }
+
+  async addTrackingEvent(shipmentId: string, eventData: {
+    status: string;
+    location: string;
+    description: string;
+    carrier?: string;
+  }): Promise<{ message: string; event: {
+    _id: string;
+    shipmentId: string;
+    status: string;
+    location: string;
+    description: string;
+    timestamp: string;
+    carrier?: string;
+  } }> {
+    return this.request(`/admin/shipping/shipments/${shipmentId}/tracking`, {
+      method: 'POST',
+      body: JSON.stringify(eventData),
+    });
+  }
+
+  async getShippingStats(): Promise<{
+    total: number;
+    pending: number;
+    delivered: number;
+    inTransit: number;
+    failed: number;
+    totalCost: number;
+  }> {
+    return this.request('/admin/shipping/stats');
+  }
+
+  // Admin Payment APIs
+  async getPaymentMethods(): Promise<Array<{
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    type: 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto';
+    provider: string;
+    isActive: boolean;
+    processingFee: number;
+    minAmount?: number;
+    maxAmount?: number;
+    supportedCurrencies: string[];
+    icon?: string;
+    description: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    createdAt: string;
+    updatedAt: string;
+  }>> {
+    return this.request('/admin/payments/methods');
+  }
+
+  async createPaymentMethod(methodData: {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    type: 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto';
+    provider: string;
+    isActive?: boolean;
+    processingFee: number;
+    minAmount?: number;
+    maxAmount?: number;
+    supportedCurrencies: string[];
+    icon?: string;
+    description: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+  }): Promise<{ message: string; method: {
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    type: 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto';
+    provider: string;
+    isActive: boolean;
+    processingFee: number;
+    minAmount?: number;
+    maxAmount?: number;
+    supportedCurrencies: string[];
+    icon?: string;
+    description: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    createdAt: string;
+    updatedAt: string;
+  } }> {
+    return this.request('/admin/payments/methods', {
+      method: 'POST',
+      body: JSON.stringify(methodData),
+    });
+  }
+
+  async updatePaymentMethod(id: string, methodData: {
+    name?: string;
+    nameEn?: string;
+    nameJa?: string;
+    type?: 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto';
+    provider?: string;
+    isActive?: boolean;
+    processingFee?: number;
+    minAmount?: number;
+    maxAmount?: number;
+    supportedCurrencies?: string[];
+    icon?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+  }): Promise<{ message: string; method: {
+    _id: string;
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    type: 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto';
+    provider: string;
+    isActive: boolean;
+    processingFee: number;
+    minAmount?: number;
+    maxAmount?: number;
+    supportedCurrencies: string[];
+    icon?: string;
+    description: string;
+    descriptionEn?: string;
+    descriptionJa?: string;
+    createdAt: string;
+    updatedAt: string;
+  } }> {
+    return this.request(`/admin/payments/methods/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(methodData),
+    });
+  }
+
+  async deletePaymentMethod(id: string): Promise<{ message: string }> {
+    return this.request(`/admin/payments/methods/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getTransactions(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    method?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{
+    transactions: Array<{
+      _id: string;
+      orderId: string;
+      orderNumber: string;
+      transactionId: string;
+      paymentMethod: string;
+      paymentProvider: string;
+      amount: number;
+      currency: string;
+      status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded' | 'partially_refunded';
+      customerName: string;
+      customerEmail: string;
+      customerPhone?: string;
+      gatewayResponse?: Record<string, unknown>;
+      gatewayTransactionId?: string;
+      refundAmount?: number;
+      refundReason?: string;
+      processedAt?: string;
+      failedAt?: string;
+      refundedAt?: string;
+      notes?: string;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    totalPages: number;
+    currentPage: number;
+    total: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.method) searchParams.append('method', params.method);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.dateFrom) searchParams.append('dateFrom', params.dateFrom);
+    if (params?.dateTo) searchParams.append('dateTo', params.dateTo);
+    if (params?.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params?.sortOrder) searchParams.append('sortOrder', params.sortOrder);
+
+    return this.request(`/admin/payments/transactions?${searchParams}`);
+  }
+
+  async getTransaction(id: string): Promise<{ transaction: {
+    _id: string;
+    orderId: string;
+    orderNumber: string;
+    transactionId: string;
+    paymentMethod: string;
+    paymentProvider: string;
+    amount: number;
+    currency: string;
+    status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded' | 'partially_refunded';
+    customerName: string;
+    customerEmail: string;
+    customerPhone?: string;
+    gatewayResponse?: Record<string, unknown>;
+    gatewayTransactionId?: string;
+    refundAmount?: number;
+    refundReason?: string;
+    processedAt?: string;
+    failedAt?: string;
+    refundedAt?: string;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+  } }> {
+    return this.request(`/admin/payments/transactions/${id}`);
+  }
+
+  async updateTransactionStatus(id: string, statusData: {
+    status: string;
+    notes?: string;
+  }): Promise<{ message: string; transaction: {
+    _id: string;
+    orderId: string;
+    orderNumber: string;
+    transactionId: string;
+    paymentMethod: string;
+    paymentProvider: string;
+    amount: number;
+    currency: string;
+    status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded' | 'partially_refunded';
+    customerName: string;
+    customerEmail: string;
+    customerPhone?: string;
+    gatewayResponse?: Record<string, unknown>;
+    gatewayTransactionId?: string;
+    refundAmount?: number;
+    refundReason?: string;
+    processedAt?: string;
+    failedAt?: string;
+    refundedAt?: string;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+  } }> {
+    return this.request(`/admin/payments/transactions/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(statusData),
+    });
+  }
+
+  async processRefund(transactionId: string, refundData: {
+    amount: number;
+    reason: string;
+  }): Promise<{ message: string; refund: {
+    _id: string;
+    transactionId: string;
+    orderId: string;
+    amount: number;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected' | 'processed';
+    requestedBy: string;
+    approvedBy?: string;
+    processedAt?: string;
+    createdAt: string;
+  } }> {
+    return this.request(`/admin/payments/transactions/${transactionId}/refund`, {
+      method: 'POST',
+      body: JSON.stringify(refundData),
+    });
+  }
+
+  async getRefunds(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{
+    refunds: Array<{
+      _id: string;
+      transactionId: string;
+      orderId: string;
+      amount: number;
+      reason: string;
+      status: 'pending' | 'approved' | 'rejected' | 'processed';
+      requestedBy: string;
+      approvedBy?: string;
+      processedAt?: string;
+      createdAt: string;
+    }>;
+    totalPages: number;
+    currentPage: number;
+    total: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params?.sortOrder) searchParams.append('sortOrder', params.sortOrder);
+
+    return this.request(`/admin/payments/refunds?${searchParams}`);
+  }
+
+  async updateRefundStatus(id: string, status: string): Promise<{ message: string; refund: {
+    _id: string;
+    transactionId: string;
+    orderId: string;
+    amount: number;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected' | 'processed';
+    requestedBy: string;
+    approvedBy?: string;
+    processedAt?: string;
+    createdAt: string;
+  } }> {
+    return this.request(`/admin/payments/refunds/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async getPaymentStats(): Promise<{
+    total: number;
+    completed: number;
+    failed: number;
+    pending: number;
+    refunded: number;
+    totalAmount: number;
+    refundStats: Array<{ _id: string; count: number; total: number }>;
+  }> {
+    return this.request('/admin/payments/stats');
+  }
+
+  // FlashSale methods
+  async getActiveFlashSales(): Promise<{ success: boolean; flashSales: FlashSale[] }> {
+    return this.request<{ success: boolean; flashSales: FlashSale[] }>('/flash-sales/active');
+  }
+
+  async getCurrentFlashSale(): Promise<{ 
+    success: boolean; 
+    flashSale: FlashSale | null; 
+    nextFlashSale?: FlashSale;
+    message?: string;
+  }> {
+    return this.request<{ 
+      success: boolean; 
+      flashSale: FlashSale | null; 
+      nextFlashSale?: FlashSale;
+      message?: string;
+    }>('/flash-sales/current');
+  }
+
+  async getFlashSaleById(id: string): Promise<{ success: boolean; flashSale: FlashSale }> {
+    return this.request<{ success: boolean; flashSale: FlashSale }>(`/flash-sales/${id}`);
+  }
+
+  async getFlashSaleProducts(id: string, params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    success: boolean;
+    products: Array<Product & {
+      flashSalePrice: number;
+      flashSaleDiscount: number;
+      flashSaleDiscountType: string;
+    }>;
+    flashSale: {
+      id: string;
+      name: string;
+      nameEn?: string;
+      nameJa?: string;
+      discountType: string;
+      discountValue: number;
+      startTime: string;
+      endTime: string;
+      maxQuantity?: number;
+      soldQuantity: number;
+    };
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = `/flash-sales/${id}/products${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(endpoint);
+  }
+
+  // Role Management API
+  async getRoles(params?: { isActive?: boolean; isSystem?: boolean; level?: number }): Promise<{ success: boolean; roles: Role[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.isActive !== undefined) searchParams.append('isActive', params.isActive.toString());
+    if (params?.isSystem !== undefined) searchParams.append('isSystem', params.isSystem.toString());
+    if (params?.level !== undefined) searchParams.append('level', params.level.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = `/roles${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(endpoint);
+  }
+
+  async getRole(id: string): Promise<{ success: boolean; role: Role }> {
+    return this.request(`/roles/${id}`);
+  }
+
+  async createRole(data: Partial<Role>): Promise<{ success: boolean; role: Role }> {
+    return this.request('/roles', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateRole(id: string, data: Partial<Role>): Promise<{ success: boolean; role: Role }> {
+    return this.request(`/roles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteRole(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request(`/roles/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getRoleStats(): Promise<{ success: boolean; stats: Record<string, unknown> }> {
+    return this.request('/roles/stats');
+  }
+
+  async cloneRole(id: string, data: { name: string; nameEn?: string; nameJa?: string; level: number }): Promise<{ success: boolean; role: Role }> {
+    return this.request(`/roles/${id}/clone`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Permission Management API
+  async getPermissions(params?: { isActive?: boolean; isSystem?: boolean; category?: string; resource?: string; action?: string }): Promise<{ success: boolean; permissions: Permission[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.isActive !== undefined) searchParams.append('isActive', params.isActive.toString());
+    if (params?.isSystem !== undefined) searchParams.append('isSystem', params.isSystem.toString());
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.resource) searchParams.append('resource', params.resource);
+    if (params?.action) searchParams.append('action', params.action);
+
+    const queryString = searchParams.toString();
+    const endpoint = `/permissions${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(endpoint);
+  }
+
+  async getPermission(id: string): Promise<{ success: boolean; permission: Permission }> {
+    return this.request(`/permissions/${id}`);
+  }
+
+  async createPermission(data: Partial<Permission>): Promise<{ success: boolean; permission: Permission }> {
+    return this.request('/permissions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePermission(id: string, data: Partial<Permission>): Promise<{ success: boolean; permission: Permission }> {
+    return this.request(`/permissions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePermission(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request(`/permissions/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getPermissionStats(): Promise<{ success: boolean; stats: Record<string, unknown> }> {
+    return this.request('/permissions/stats');
+  }
+
+  async getPermissionsByCategory(params?: { isActive?: boolean }): Promise<{ success: boolean; permissions: Record<string, Permission[]> }> {
+    const searchParams = new URLSearchParams();
+    if (params?.isActive !== undefined) searchParams.append('isActive', params.isActive.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = `/permissions/by-category${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(endpoint);
+  }
+
+  async bulkCreatePermissions(permissions: Partial<Permission>[]): Promise<{ success: boolean; permissions: Permission[]; errors?: string[] }> {
+    return this.request('/permissions/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ permissions }),
+    });
+  }
+}
+
+// FlashSale types
+export interface FlashSale {
+  _id: string;
+  name: string;
+  nameEn?: string;
+  nameJa?: string;
+  description: string;
+  descriptionEn?: string;
+  descriptionJa?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  maxQuantity?: number;
+  soldQuantity: number;
+  applicableProducts: string[];
+  applicableCategories: string[];
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  usageLimit?: number;
+  usedCount: number;
+  image?: string;
+  bannerColor?: string;
+  textColor?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Create and export API client instance

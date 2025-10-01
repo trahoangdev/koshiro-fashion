@@ -47,7 +47,7 @@ const NotFound = () => {
       {/* Banner Background */}
       <div className="absolute inset-0">
         <img 
-          src="/images/categories/haori.jpg" 
+          src="/images/banners/banner-04.png" 
           alt="404 Banner"
           className="w-full h-full object-cover"
         />

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -270,6 +270,24 @@ export default function RegisterPage() {
           <div className="flex justify-center">
             <Card className="w-full max-w-md">
               <CardHeader className="text-center">
+                {/* Logo */}
+                <div className="mb-6 flex justify-center">
+                  <div className="relative">
+                    {/* Light mode: dark logo, Dark mode: light logo */}
+                    <img
+                      src="/koshino_logo_dark.png"
+                      alt="Koshino Fashion Logo"
+                      className="h-12 w-auto opacity-90 hover:opacity-100 transition-all duration-300 dark:hidden"
+                      loading="lazy"
+                    />
+                    <img
+                      src="/koshino_logo.png"
+                      alt="Koshino Fashion Logo"
+                      className="h-12 w-auto opacity-90 hover:opacity-100 transition-all duration-300 hidden dark:block"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
                 <CardTitle className="text-2xl font-bold">{t.title}</CardTitle>
                 <p className="text-muted-foreground">{t.subtitle}</p>
               </CardHeader>

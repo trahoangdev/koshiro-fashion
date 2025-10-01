@@ -15,7 +15,7 @@ export interface ExportJob {
 
 export interface ImportJob {
   id: string;
-  type: 'products' | 'orders' | 'customers' | 'categories';
+  type: 'products' | 'orders' | 'customers' | 'categories' | 'inventory' | 'promotions' | 'shipping' | 'payments';
   filename: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress: number;
@@ -317,6 +317,26 @@ class ExportImportService {
             case 'categories':
               await api.createCategory(transformedData as any);
               break;
+            case 'inventory':
+              // For inventory, we might need to create or update inventory items
+              console.log('Inventory import:', transformedData);
+              // TODO: Implement inventory import API call
+              break;
+            case 'promotions':
+              // For promotions, create new promotion
+              console.log('Promotion import:', transformedData);
+              // TODO: Implement promotion import API call
+              break;
+            case 'shipping':
+              // For shipping methods, create new shipping method
+              console.log('Shipping method import:', transformedData);
+              // TODO: Implement shipping method import API call
+              break;
+            case 'payments':
+              // For payment methods, create new payment method
+              console.log('Payment method import:', transformedData);
+              // TODO: Implement payment method import API call
+              break;
           }
           
           successCount++;
@@ -546,6 +566,14 @@ class ExportImportService {
         return ['name', 'email'];
       case 'orders':
         return ['orderNumber', 'totalAmount'];
+      case 'inventory':
+        return ['sku', 'productName', 'currentStock'];
+      case 'promotions':
+        return ['code', 'name', 'discountType', 'discountValue'];
+      case 'shipping':
+        return ['name', 'type', 'cost'];
+      case 'payments':
+        return ['name', 'type', 'provider'];
       default:
         return [];
     }
@@ -591,6 +619,69 @@ class ExportImportService {
           email: data.email,
           phone: data.phone || '',
           role: data.role || 'customer',
+          isActive: data.isActive === 'true' || data.isActive === true
+        };
+      case 'inventory':
+        return {
+          sku: data.sku,
+          productName: data.productName,
+          productNameEn: data.productNameEn || data.productName,
+          productNameJa: data.productNameJa || data.productName,
+          category: data.category || '',
+          size: data.size || '',
+          color: data.color || '',
+          currentStock: parseInt(data.currentStock as string) || 0,
+          minStock: parseInt(data.minStock as string) || 0,
+          maxStock: parseInt(data.maxStock as string) || 0,
+          costPrice: parseFloat(data.costPrice as string) || 0,
+          sellingPrice: parseFloat(data.sellingPrice as string) || 0,
+          location: data.location || '',
+          supplier: data.supplier || '',
+          status: data.status || 'in_stock'
+        };
+      case 'promotions':
+        return {
+          code: data.code,
+          name: data.name,
+          nameEn: data.nameEn || data.name,
+          nameJa: data.nameJa || data.name,
+          description: data.description || '',
+          descriptionEn: data.descriptionEn || data.description || '',
+          descriptionJa: data.descriptionJa || data.description || '',
+          discountType: data.discountType,
+          discountValue: parseFloat(data.discountValue as string) || 0,
+          minOrderAmount: parseFloat(data.minOrderAmount as string) || 0,
+          maxDiscountAmount: parseFloat(data.maxDiscountAmount as string) || 0,
+          usageLimit: parseInt(data.usageLimit as string) || 0,
+          usedCount: parseInt(data.usedCount as string) || 0,
+          startDate: data.startDate ? new Date(data.startDate as string) : new Date(),
+          endDate: data.endDate ? new Date(data.endDate as string) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          isActive: data.isActive === 'true' || data.isActive === true
+        };
+      case 'shipping':
+        return {
+          name: data.name,
+          nameEn: data.nameEn || data.name,
+          nameJa: data.nameJa || data.name,
+          description: data.description || '',
+          descriptionEn: data.descriptionEn || data.description || '',
+          descriptionJa: data.descriptionJa || data.description || '',
+          type: data.type || 'standard',
+          cost: parseFloat(data.cost as string) || 0,
+          estimatedDays: parseInt(data.estimatedDays as string) || 3,
+          isActive: data.isActive === 'true' || data.isActive === true
+        };
+      case 'payments':
+        return {
+          name: data.name,
+          nameEn: data.nameEn || data.name,
+          nameJa: data.nameJa || data.name,
+          type: data.type || 'credit_card',
+          provider: data.provider || '',
+          processingFee: parseFloat(data.processingFee as string) || 0,
+          minAmount: parseFloat(data.minAmount as string) || 0,
+          maxAmount: parseFloat(data.maxAmount as string) || 0,
+          supportedCurrencies: data.supportedCurrencies ? (data.supportedCurrencies as string).split(',').map(c => c.trim()) : ['USD'],
           isActive: data.isActive === 'true' || data.isActive === true
         };
       default:

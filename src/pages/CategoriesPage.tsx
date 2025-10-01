@@ -194,7 +194,7 @@ const CategoriesPage = () => {
               {/* Banner Background */}
               <div className="absolute inset-0">
                 <img 
-                  src="/images/categories/banner-02-newarrivals.jpg" 
+                  src="/images/banners/banner-04.png" 
                   alt="Categories Banner"
                   className="w-full h-full object-cover"
                 />

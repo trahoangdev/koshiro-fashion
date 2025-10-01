@@ -18,12 +18,15 @@ export interface IProduct extends Document {
   isActive: boolean;
   isFeatured: boolean;
   onSale: boolean;
+  isNew: boolean;
+  isLimitedEdition: boolean;
+  isBestSeller: boolean;
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-const productSchema = new Schema<IProduct>({
+const productSchema = new Schema({
   name: {
     type: String,
     required: true,
@@ -96,18 +99,34 @@ const productSchema = new Schema<IProduct>({
     type: Boolean,
     default: false
   },
+  isNew: {
+    type: Boolean,
+    default: false
+  },
+  isLimitedEdition: {
+    type: Boolean,
+    default: false
+  },
+  isBestSeller: {
+    type: Boolean,
+    default: false
+  },
   tags: [{
     type: String,
     trim: true
   }]
 }, {
-  timestamps: true
+  timestamps: true,
+  suppressReservedKeysWarning: true
 });
 
 // Indexes for better performance
 productSchema.index({ categoryId: 1 });
 productSchema.index({ isActive: 1 });
 productSchema.index({ isFeatured: 1 });
+productSchema.index({ isNew: 1 });
+productSchema.index({ isLimitedEdition: 1 });
+productSchema.index({ isBestSeller: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ tags: 1 });
 

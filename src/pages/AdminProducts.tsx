@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Plus, 
   Edit, 
@@ -29,13 +29,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -65,34 +58,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, getUserRoleName } from "@/contexts";
 import { useNavigate } from "react-router-dom";
 import { Product, Category } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
-import ProductForm from "@/components/ProductForm";
 import { api } from "@/lib/api";
 import { exportImportService } from "@/lib/exportImportService";
 
-interface ProductFormData {
-  name: string;
-  nameEn: string;
-  nameJa: string;
-  description: string;
-  descriptionEn: string;
-  descriptionJa: string;
-  price: number;
-  originalPrice: number;
-  categoryId: string;
-  images: string[];
-  sizes: string[];
-  colors: string[];
-  stock: number;
-  tags: string[];
-  isActive: boolean;
-  isFeatured: boolean;
-  onSale: boolean;
-}
 
 export default function AdminProducts() {
   const { toast } = useToast();
@@ -108,9 +81,6 @@ export default function AdminProducts() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
@@ -290,31 +260,7 @@ export default function AdminProducts() {
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated || user?.role !== 'admin') {
-        navigate("/admin/login");
-      }
-    }
-  }, [authLoading, isAuthenticated, user, navigate]);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    filterProducts();
-    resetPagination(); // Reset to first page when filters change
-  }, [products, searchTerm, selectedCategory, statusFilter]);
-
-  // Pagination effect
-  useEffect(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    setPaginatedProducts(filteredProducts.slice(startIndex, endIndex));
-  }, [filteredProducts, currentPage, itemsPerPage]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       const [productsResponse, categoriesResponse] = await Promise.all([
@@ -333,9 +279,9 @@ export default function AdminProducts() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t.loadError, toast]);
 
-  const filterProducts = () => {
+  const filterProducts = useCallback(() => {
     let filtered = products;
     
     // Filter by search term
@@ -377,110 +323,38 @@ export default function AdminProducts() {
     }
     
     setFilteredProducts(filtered);
-  };
+  }, [products, searchTerm, selectedCategory, statusFilter]);
 
-  const handleCreateProduct = async (formData: {
-    name: string;
-    nameEn: string;
-    nameJa: string;
-    description: string;
-    descriptionEn: string;
-    descriptionJa: string;
-    price: number;
-    originalPrice: number;
-    categoryId: string;
-    images: string[];
-    sizes: string[];
-    colors: Array<string | { name: string; value: string }>;
-    stock: number;
-    tags: string[];
-    isActive: boolean;
-    isFeatured: boolean;
-    onSale: boolean;
-    metaTitle: string;
-    metaDescription: string;
-    weight: number;
-    dimensions: { length: number; width: number; height: number };
-    sku: string;
-    barcode: string;
-  }) => {
-    try {
-      setIsSubmitting(true);
-      // Convert form data to API format
-      const apiData = {
-        ...formData,
-        colors: formData.colors.map((color) => typeof color === 'string' ? color : color.name)
-      };
-      await api.createProduct(apiData);
-      toast({
-        title: t.createSuccess,
-      });
-      setIsCreateDialogOpen(false);
-      await loadData(); // Ensure data is refreshed
-    } catch (error) {
-      console.error('Error creating product:', error);
-      toast({
-        title: t.createError,
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate("/admin/login");
+      } else {
+        const userRole = getUserRoleName(user);
+        if (userRole !== 'Admin' && userRole !== 'Super Admin') {
+          navigate("/admin/login");
+        }
+      }
     }
-  };
+  }, [authLoading, isAuthenticated, user, navigate]);
 
-  const handleUpdateProduct = async (formData: {
-    name: string;
-    nameEn: string;
-    nameJa: string;
-    description: string;
-    descriptionEn: string;
-    descriptionJa: string;
-    price: number;
-    originalPrice: number;
-    categoryId: string;
-    images: string[];
-    sizes: string[];
-    colors: Array<string | { name: string; value: string }>;
-    stock: number;
-    tags: string[];
-    isActive: boolean;
-    isFeatured: boolean;
-    onSale: boolean;
-    metaTitle: string;
-    metaDescription: string;
-    weight: number;
-    dimensions: { length: number; width: number; height: number };
-    sku: string;
-    barcode: string;
-  }) => {
-    if (!editingProduct) return;
-    
-    try {
-      setIsSubmitting(true);
-      // Convert form data to API format
-      const apiData = {
-        ...formData,
-        colors: formData.colors.map((color) => typeof color === 'string' ? color : color.name)
-      };
-      await api.updateProduct(editingProduct._id, apiData);
-      toast({
-        title: t.updateSuccess,
-      });
-      setIsEditDialogOpen(false);
-      setEditingProduct(null);
-      await loadData(); // Ensure data is refreshed
-    } catch (error) {
-      console.error('Error updating product:', error);
-      toast({
-        title: t.updateError,
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    filterProducts();
+    resetPagination(); // Reset to first page when filters change
+  }, [products, searchTerm, selectedCategory, statusFilter, filterProducts]);
+
+  // Pagination effect
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setPaginatedProducts(filteredProducts.slice(startIndex, endIndex));
+  }, [filteredProducts, currentPage, itemsPerPage]);
+
+
 
   const handleDeleteProduct = async (productId: string) => {
     try {
@@ -518,8 +392,7 @@ export default function AdminProducts() {
   };
 
   const openEditDialog = (product: Product) => {
-    setEditingProduct(product);
-    setIsEditDialogOpen(true);
+    navigate(`/admin/products/${product._id}/edit`);
   };
 
   const formatCurrencyForDisplay = (amount: number) => {
@@ -817,26 +690,10 @@ export default function AdminProducts() {
               </Button>
             )}
 
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t.addProduct}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{t.addProduct}</DialogTitle>
-                </DialogHeader>
-                <ProductForm
-                  categories={categories}
-                  onSubmit={handleCreateProduct}
-                  isSubmitting={isSubmitting}
-                  mode="create"
-                  onCancel={() => setIsCreateDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => navigate('/admin/products/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t.addProduct}
+            </Button>
           </div>
         </div>
 
@@ -1294,40 +1151,14 @@ export default function AdminProducts() {
                   ? "Try adjusting your filters"
                   : "Get started by adding your first product"}
               </p>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t.addProduct}
-              </Button>
+            <Button onClick={() => navigate('/admin/products/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t.addProduct}
+            </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Edit Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t.editProduct}</DialogTitle>
-            </DialogHeader>
-            {editingProduct && (
-              <ProductForm
-                categories={categories}
-                initialData={editingProduct ? {
-                  ...editingProduct,
-                  categoryId: typeof editingProduct.categoryId === 'string' 
-                    ? editingProduct.categoryId 
-                    : editingProduct.categoryId._id
-                } : undefined}
-                onSubmit={handleUpdateProduct}
-                isSubmitting={isSubmitting}
-                mode="edit"
-                onCancel={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingProduct(null);
-                }}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </AdminLayout>
   );

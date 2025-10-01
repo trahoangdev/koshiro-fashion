@@ -1,43 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api, AuthResponse } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { User, normalizeUser, getUserRoleName, isAdminUser } from './authHelpers';
+import type { AuthContextType } from './AuthContextType';
+import { AuthContext } from './AuthContextInstance';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  phone?: string;
-  address?: string;
-  avatar?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  adminLogin: (email: string, password: string) => Promise<void>;
-  register: (userData: {
-    email: string;
-    password: string;
-    name: string;
-    phone?: string;
-    address?: string;
-  }) => Promise<void>;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// Helper functions are imported from authHelpers.ts
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -49,20 +17,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { toast } = useToast();
 
   const isAuthenticated = !!user;
+  const isAdmin = isAdminUser(user);
 
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       const response: AuthResponse = await api.login({ email, password });
       
+      // Store token in localStorage
+      localStorage.setItem('token', response.token);
+      
       // Update API client token
       api.updateToken(response.token);
       
-      setUser(response.user);
+      // Normalize user data
+      const normalizedUser = normalizeUser(response.user);
+      setUser(normalizedUser);
       
       toast({
         title: "Đăng nhập thành công",
-        description: `Chào mừng bạn trở lại, ${response.user.name}!`,
+        description: `Chào mừng bạn trở lại, ${normalizedUser.name}!`,
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -83,14 +57,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response: AuthResponse = await api.adminLogin({ email, password });
       
+      // Store token in localStorage
+      localStorage.setItem('token', response.token);
+      
       // Update API client token
       api.updateToken(response.token);
       
-      setUser(response.user);
+      // Normalize user data
+      const normalizedUser = normalizeUser(response.user);
+      setUser(normalizedUser);
       
       toast({
         title: "Đăng nhập Admin thành công",
-        description: `Chào mừng Admin ${response.user.name}!`,
+        description: `Chào mừng Admin ${normalizedUser.name}!`,
       });
       
       // Auto-navigate to admin dashboard after successful login
@@ -123,14 +102,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response: AuthResponse = await api.register(userData);
       
+      // Store token in localStorage
+      localStorage.setItem('token', response.token);
+      
       // Update API client token
       api.updateToken(response.token);
       
-      setUser(response.user);
+      // Normalize user data
+      const normalizedUser = normalizeUser(response.user);
+      setUser(normalizedUser);
       
       toast({
         title: "Đăng ký thành công",
-        description: `Chào mừng bạn đến với Koshiro Fashion, ${response.user.name}!`,
+        description: `Chào mừng bạn đến với Koshiro Fashion, ${normalizedUser.name}!`,
       });
     } catch (error) {
       console.error('Register error:', error);
@@ -147,12 +131,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    api.logout();
-    setUser(null);
-    toast({
-      title: "Đăng xuất thành công",
-      description: "Hẹn gặp lại bạn!",
-    });
+    try {
+      // Remove token from localStorage
+      localStorage.removeItem('token');
+      
+      // Clear API client token
+      api.updateToken(null);
+      
+      // Clear user state
+      setUser(null);
+      
+      toast({
+        title: "Đăng xuất thành công",
+        description: "Hẹn gặp lại bạn!",
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force clear state even if there's an error
+      localStorage.removeItem('token');
+      api.updateToken(null);
+      setUser(null);
+    }
   };
 
   const refreshUser = async () => {
@@ -167,7 +166,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       api.updateToken(token);
       
       const response = await api.getProfile();
-      setUser(response.user);
+      
+      // Normalize user data
+      const normalizedUser = normalizeUser(response.user);
+      setUser(normalizedUser);
     } catch (error) {
       console.error('Refresh user error:', error);
       // If token is invalid, clear it
@@ -180,9 +182,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        await refreshUser();
+        const token = localStorage.getItem('token');
+        if (token) {
+          // Validate token format (basic check)
+          const tokenParts = token.split('.');
+          if (tokenParts.length === 3) {
+            await refreshUser();
+          } else {
+            // Invalid token format, clear it
+            localStorage.removeItem('token');
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        // Clear invalid token
+        localStorage.removeItem('token');
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -195,11 +213,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isLoading,
     isAuthenticated,
+    isAdmin,
     login,
     adminLogin,
     register,
     logout,
     refreshUser,
+    getUserRoleName: () => getUserRoleName(user),
+    isAdminUser: () => isAdminUser(user),
   };
 
   return (
@@ -207,4 +228,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-}; 
+};
+
+// useAuth is exported from useAuth.ts 

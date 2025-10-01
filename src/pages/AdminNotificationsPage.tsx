@@ -45,7 +45,7 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import { Notification } from "@/lib/api";
 
 interface NotificationSettings {
@@ -113,7 +113,7 @@ export default function AdminNotificationsPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated || user?.role !== 'admin') {
+      if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
         navigate("/admin/login");
       }
     }
@@ -523,7 +523,7 @@ export default function AdminNotificationsPage() {
   }
 
   // Don't render if not authenticated or not admin
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
     return null;
   }
 

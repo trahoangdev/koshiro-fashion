@@ -14,7 +14,7 @@ const Footer = () => {
       try {
         const response = await api.getCategories();
         const categoriesData = response.categories || [];
-        setCategories(categoriesData.slice(0, 4)); // Show only first 6 categories
+        setCategories(categoriesData.slice(0, 4)); // Show only first 4 categories
       } catch (error) {
         console.error('Error loading categories:', error);
       }
@@ -50,33 +50,33 @@ const Footer = () => {
       support: "Hỗ Trợ",
       contact: "Liên Hệ",
       about: "Về Chúng Tôi",
-      shipping: "Thông Tin Vận Chuyển",
+      shipping: "Thông Tin Giao Hàng",
       returns: "Đổi Trả",
       faq: "Câu Hỏi Thường Gặp",
       privacy: "Chính Sách Bảo Mật",
       terms: "Điều Khoản Dịch Vụ",
       sizeGuide: "Hướng Dẫn Kích Thước",
       rights: "Tất cả quyền được bảo lưu.",
-      newsletter: "Đăng ký nhận bản tin để cập nhật tin tức mới nhất",
+      newsletter: "Đăng ký nhận bản tin để cập nhật mới nhất",
       subscribe: "Đăng Ký"
     },
     ja: {
       brand: "KOSHIRO",
-      description: "現代の魂のための本格的な日本のファッション",
+      description: "現代の魂のための本格的な日本ファッション",
       quickLinks: "クイックリンク",
       categories: "カテゴリー",
       support: "サポート",
       contact: "お問い合わせ",
-      about: "会社概要",
+      about: "私たちについて",
       shipping: "配送情報",
       returns: "返品",
       faq: "よくある質問",
       privacy: "プライバシーポリシー",
       terms: "利用規約",
       sizeGuide: "サイズガイド",
-      rights: "すべての権利が保護されています。",
-      newsletter: "最新情報をお届けするニュースレターに登録",
-      subscribe: "登録"
+      rights: "全著作権所有。",
+      newsletter: "最新の更新情報をニュースレターで購読",
+      subscribe: "購読"
     }
   };
 
@@ -85,9 +85,12 @@ const Footer = () => {
   // Helper function to get category name based on language
   const getCategoryName = (category: Category) => {
     switch (language) {
-      case 'vi': return category.nameEn || category.name; // Use nameEn for Vietnamese as fallback
-      case 'ja': return category.nameJa || category.name;
-      default: return category.nameEn || category.name;
+      case 'vi':
+        return category.name; // Vietnamese uses default name
+      case 'ja':
+        return category.nameJa || category.name;
+      default:
+        return category.nameEn || category.name;
     }
   };
 
@@ -96,17 +99,35 @@ const Footer = () => {
       <div className="container py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand Section */}
-          <div className="space-y-6">
+          <div className="space-y-6 pt-7">
             <div>
-              <h3 className="text-2xl font-bold text-primary mb-2">{t.brand}</h3>
-              <p className="text-muted-foreground leading-relaxed">
+              {/* Logo with Brand Text */}
+              <div className="mb-4 flex justify-center lg:justify-start items-center gap-3">
+                <div className="relative">
+                  {/* Light mode: dark logo, Dark mode: light logo */}
+                  <img
+                    src="/koshino_logo_dark.png"
+                    alt="Koshino Fashion Logo"
+                    className="h-10 w-auto opacity-90 hover:opacity-100 transition-all duration-300 dark:hidden"
+                    loading="lazy"
+                  />
+                  <img
+                    src="/koshino_logo.png"
+                    alt="Koshino Fashion Logo"
+                    className="h-10 w-auto opacity-90 hover:opacity-100 transition-all duration-300 hidden dark:block"
+                    loading="lazy"
+                  />
+                </div>
+                <h3 className="text-2xl font-bold text-primary">{t.brand}</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed text-center lg:text-left">
                 {t.description}
               </p>
             </div>
           </div>
 
           {/* Quick Links */}
-          <div className="space-y-6">
+          <div className="space-y-6 pt-7">
             <h4 className="text-lg font-semibold">{t.quickLinks}</h4>
             <nav className="space-y-3">
               <Link to="/about" className="block text-muted-foreground hover:text-primary transition-colors">
@@ -131,7 +152,7 @@ const Footer = () => {
           </div>
 
           {/* Categories */}
-          <div className="space-y-6">
+          <div className="space-y-6 pt-7">
             <h4 className="text-lg font-semibold">{t.categories}</h4>
             <nav className="space-y-3">
               {categories.map((category) => (
@@ -150,22 +171,16 @@ const Footer = () => {
           </div>
 
           {/* Support */}
-          <div className="space-y-6">
+          <div className="space-y-6 pt-7">
             <h4 className="text-lg font-semibold">{t.support}</h4>
             <nav className="space-y-3">
-              <Link to="/order-tracking" className="block text-muted-foreground hover:text-primary transition-colors">
-                {language === 'vi' ? 'Theo Dõi Đơn Hàng' : language === 'ja' ? '注文追跡' : 'Order Tracking'}
-              </Link>
-              <Link to="/reviews" className="block text-muted-foreground hover:text-primary transition-colors">
-                {language === 'vi' ? 'Đánh Giá Khách Hàng' : language === 'ja' ? 'お客様のレビュー' : 'Customer Reviews'}
-              </Link>
-              <Link to="/info/faq" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/faq" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.faq}
               </Link>
               <Link to="/privacy-policy" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.privacy}
               </Link>
-              <Link to="/info/terms-of-service" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/terms-of-service" className="block text-muted-foreground hover:text-primary transition-colors">
                 {t.terms}
               </Link>
             </nav>
@@ -174,16 +189,9 @@ const Footer = () => {
 
         <Separator className="my-12" />
 
-        {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-sm text-muted-foreground">
-            © 2024 {t.brand}. {t.rights}
-          </p>
-          
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">🇯🇵</span>
-            <span className="text-sm text-muted-foreground">Authentic Japanese Fashion</span>
-          </div>
+        {/* Copyright */}
+        <div className="text-center text-muted-foreground">
+          <p>&copy; 2025 KOSHIRO Fashion. {t.rights}</p>
         </div>
       </div>
     </footer>

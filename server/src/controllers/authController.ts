@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { User } from '../models/User';
+import { IRole } from '../models/Role';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -78,8 +79,8 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    // Find user by email and populate role
+    const user = await User.findOne({ email }).populate('role');
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -99,9 +100,12 @@ export const login = async (req: Request, res: Response) => {
     user.lastActive = new Date();
     await user.save();
 
+    // Get user role name
+    const userRole = typeof user.role === 'string' ? user.role : (user.role as unknown as IRole)?.name || 'Customer';
+
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
+      { userId: user._id, email: user.email, role: userRole, name: user.name },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -113,7 +117,7 @@ export const login = async (req: Request, res: Response) => {
         id: user._id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: userRole
       }
     });
   } catch (error) {
@@ -126,10 +130,16 @@ export const adminLogin = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // Find admin user by email
-    const user = await User.findOne({ email, role: 'admin' });
+    // Find admin user by email and populate role
+    const user = await User.findOne({ email }).populate('role');
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if user has admin role
+    const userRole = typeof user.role === 'string' ? user.role : (user.role as unknown as IRole)?.name;
+    if (userRole !== 'Admin' && userRole !== 'Super Admin') {
+      return res.status(401).json({ message: 'Admin access required' });
     }
 
     // Check password
@@ -149,7 +159,7 @@ export const adminLogin = async (req: Request, res: Response) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
+      { userId: user._id, email: user.email, role: userRole, name: user.name },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -161,7 +171,7 @@ export const adminLogin = async (req: Request, res: Response) => {
         id: user._id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: userRole
       }
     });
   } catch (error) {
@@ -172,14 +182,22 @@ export const adminLogin = async (req: Request, res: Response) => {
 
 export const getProfile = async (req: Request, res: Response) => {
   try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
-    const user = await User.findById(userId).select('-password');
+    const userId = (req as Request & { user: { id: string } }).user.id;
+    const user = await User.findById(userId).select('-password').populate('role');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ user });
+    // Get user role name
+    const userRole = typeof user.role === 'string' ? user.role : (user.role as unknown as IRole)?.name || 'Customer';
+
+    res.json({ 
+      user: {
+        ...user.toObject(),
+        role: userRole
+      }
+    });
   } catch (error) {
     console.error('Get profile error:', error);
     return res.status(500).json({ message: 'Internal server error' });
@@ -188,7 +206,7 @@ export const getProfile = async (req: Request, res: Response) => {
 
 export const updateProfile = async (req: Request, res: Response) => {
   try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     const { name, phone, address } = req.body;
 
     // Find user and update allowed fields

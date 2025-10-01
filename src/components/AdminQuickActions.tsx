@@ -130,7 +130,7 @@ export default function AdminQuickActions({ stats, onRefresh }: AdminQuickAction
       title: tl.addProduct,
       description: 'Create a new product',
       icon: <Plus className="h-4 w-4" />,
-      action: () => navigate('/admin/products'),
+      action: () => navigate('/admin/products/new'),
       variant: 'default'
     },
     {

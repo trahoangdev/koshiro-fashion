@@ -29,7 +29,7 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import { exportImportService } from "@/lib/exportImportService";
 import {
   LineChart,
@@ -119,7 +119,7 @@ export default function AdminAnalyticsPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated || user?.role !== 'admin') {
+      if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
         navigate("/admin/login");
       }
     }
@@ -486,12 +486,22 @@ export default function AdminAnalyticsPage() {
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{
+      name: string;
+      value: number;
+      color: string;
+    }>;
+    label?: string;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border border-border p-3 rounded-lg shadow-lg">
           <p className="font-medium">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} style={{ color: entry.color }}>
               {entry.name}: {entry.value.toLocaleString()}
             </p>
@@ -674,7 +684,7 @@ export default function AdminAnalyticsPage() {
   }
 
   // Don't render if not authenticated or not admin
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
     return null;
   }
 
@@ -818,7 +828,7 @@ export default function AdminAnalyticsPage() {
                       />
                       <Tooltip 
                         content={<CustomTooltip />}
-                        formatter={(value: any) => [formatCurrency(value, language), 'Revenue']}
+                        formatter={(value: number) => [formatCurrency(value, language), 'Revenue']}
                       />
                       <Area 
                         type="monotone" 
@@ -863,7 +873,7 @@ export default function AdminAnalyticsPage() {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value: any, name: any) => [
+                        formatter={(value: number, name: string) => [
                           value.toLocaleString(), 
                           name === 'count' ? 'Orders' : name
                         ]}
@@ -897,7 +907,7 @@ export default function AdminAnalyticsPage() {
                       />
                       <Tooltip 
                         content={<CustomTooltip />}
-                        formatter={(value: any) => [value.toLocaleString(), 'Products']}
+                        formatter={(value: number) => [value.toLocaleString(), 'Products']}
                       />
                       <Bar 
                         dataKey="count" 
@@ -961,7 +971,7 @@ export default function AdminAnalyticsPage() {
                       />
                       <Tooltip 
                         content={<CustomTooltip />}
-                        formatter={(value: any) => [formatCurrency(value, language), 'Revenue']}
+                        formatter={(value: number) => [formatCurrency(value, language), 'Revenue']}
                       />
                       <Bar 
                         dataKey="revenue" 
@@ -995,7 +1005,7 @@ export default function AdminAnalyticsPage() {
                       />
                       <Tooltip 
                         content={<CustomTooltip />}
-                        formatter={(value: any) => [value.toLocaleString(), 'Orders']}
+                        formatter={(value: number) => [value.toLocaleString(), 'Orders']}
                       />
                       <Line 
                         type="monotone" 
@@ -1030,7 +1040,7 @@ export default function AdminAnalyticsPage() {
                       />
                       <Tooltip 
                         content={<CustomTooltip />}
-                        formatter={(value: any, name: any) => [
+                        formatter={(value: number, name: string) => [
                           value.toLocaleString(), 
                           name === 'newCustomers' ? 'New Customers' : 'Active Customers'
                         ]}
@@ -1080,7 +1090,7 @@ export default function AdminAnalyticsPage() {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value: any, name: any) => [
+                        formatter={(value: number, name: string) => [
                           formatCurrency(value, language), 
                           name === 'amount' ? 'Amount' : name
                         ]}

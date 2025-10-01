@@ -3,11 +3,16 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { User } from '../models/User';
 import { Category } from '../models/Category';
-import { Product } from '../models/Product';
+import { Product, IProduct } from '../models/Product';
 import { Order } from '../models/Order';
 import Inventory from '../models/Inventory';
 import StockMovement from '../models/StockMovement';
 import Promotion from '../models/Promotion';
+import FlashSale from '../models/FlashSale';
+import { ShippingMethod } from '../models/Shipping';
+import { AdminPaymentMethod } from '../models/Payment';
+import Role from '../models/Role';
+import Permission from '../models/Permission';
 
 dotenv.config();
 
@@ -53,7 +58,7 @@ const seedData = async () => {
     await mongoose.connect(MONGODB_URI!);
     console.log('✅ Connected to MongoDB');
 
-    // Clear existing data
+    // Clear existing data (but keep roles and permissions)
     await User.deleteMany({});
     await Category.deleteMany({});
     await Product.deleteMany({});
@@ -61,7 +66,67 @@ const seedData = async () => {
     await Inventory.deleteMany({});
     await StockMovement.deleteMany({});
     await Promotion.deleteMany({});
-    console.log('✅ Cleared existing data');
+    await FlashSale.deleteMany({});
+    await ShippingMethod.deleteMany({});
+    await AdminPaymentMethod.deleteMany({});
+    console.log('✅ Cleared existing data (keeping roles and permissions)');
+
+    // Get or create admin role
+    let adminRole = await Role.findOne({ name: 'Admin' });
+    if (!adminRole) {
+      // If no admin role exists, create a basic one
+      adminRole = new Role({
+        name: 'Admin',
+        nameEn: 'Admin',
+        nameJa: '管理者',
+        description: 'Administrative access to most system features',
+        descriptionEn: 'Administrative access to most system features',
+        descriptionJa: 'ほとんどのシステム機能への管理アクセス',
+        level: 90,
+        isSystem: true,
+        isActive: true,
+        permissions: [] // Will be populated by roles seeding script
+      });
+      await adminRole.save();
+      console.log('✅ Created basic admin role');
+    }
+
+    // Get or create customer role
+    let customerRole = await Role.findOne({ name: 'Customer' });
+    if (!customerRole) {
+      customerRole = new Role({
+        name: 'Customer',
+        nameEn: 'Customer',
+        nameJa: '顧客',
+        description: 'Standard customer access',
+        descriptionEn: 'Standard customer access',
+        descriptionJa: '標準的な顧客アクセス',
+        level: 10,
+        isSystem: true,
+        isActive: true,
+        permissions: []
+      });
+      await customerRole.save();
+      console.log('✅ Created basic customer role');
+    }
+
+    // Check if we need to seed roles and permissions
+    const existingPermissions = await Permission.countDocuments();
+    if (existingPermissions === 0) {
+      console.log('🔄 No permissions found, running roles and permissions seeding...');
+      try {
+        // Import and run the roles seeding script
+        const { default: seedRolesAndPermissions } = await import('./seedRolesAndPermissions');
+        await seedRolesAndPermissions();
+        console.log('✅ Roles and permissions seeded successfully');
+        
+        // Refresh role references after seeding
+        adminRole = await Role.findOne({ name: 'Admin' });
+        customerRole = await Role.findOne({ name: 'Customer' });
+      } catch (error) {
+        console.log('⚠️  Could not seed roles and permissions, using basic roles:', error);
+      }
+    }
 
     // Create admin user
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@koshiro.com';
@@ -70,7 +135,7 @@ const seedData = async () => {
       email: adminEmail,
       password: adminPassword, // Don't hash here, User model will hash it
       name: 'Admin Koshiro',
-      role: 'admin',
+      role: adminRole!._id, // Use role reference instead of string
       status: 'active',
       totalOrders: 0,
       totalSpent: 0,
@@ -96,7 +161,7 @@ const seedData = async () => {
       }
     });
     await adminUser.save();
-    console.log('✅ Created admin user');
+    console.log('✅ Created admin user with role');
 
     // Create sample users
     const sampleUsers = [
@@ -105,7 +170,7 @@ const seedData = async () => {
         password: 'password123', // Don't hash here, User model will hash it
         name: 'Nguyễn Văn A',
         phone: '0123456789',
-        role: 'customer',
+        role: customerRole!._id, // Use role reference instead of string
         status: 'active',
         totalOrders: 0,
         totalSpent: 0,
@@ -135,7 +200,7 @@ const seedData = async () => {
         password: 'password123', // Don't hash here, User model will hash it
         name: 'John Smith',
         phone: '+1-555-0123',
-        role: 'customer',
+        role: customerRole!._id, // Use role reference instead of string
         status: 'active',
         totalOrders: 0,
         totalSpent: 0,
@@ -165,7 +230,7 @@ const seedData = async () => {
         password: 'password123', // Don't hash here, User model will hash it
         name: 'Tanaka Hiroshi',
         phone: '+81-3-9876-5432',
-        role: 'customer',
+        role: customerRole!._id, // Use role reference instead of string
         status: 'active',
         totalOrders: 0,
         totalSpent: 0,
@@ -323,6 +388,9 @@ const seedData = async () => {
         isActive: true,
         isFeatured: true,
         onSale: true,
+        isNew: true, // New product
+        isLimitedEdition: false,
+        isBestSeller: false,
         tags: ['kimono', 'truyền thống', 'hoa anh đào', 'thêu tay']
       },
       {
@@ -346,7 +414,10 @@ const seedData = async () => {
         isActive: true,
         isFeatured: true,
         onSale: true,
-        tags: ['furisode', 'kimono', 'nữ trẻ', 'hoa cúc']
+        isNew: false,
+        isLimitedEdition: true, // Limited edition
+        isBestSeller: false,
+        tags: ['furisode', 'kimono', 'nữ trẻ', 'hoa cúc', 'limited']
       },
       
       // ===== YUKATA =====
@@ -371,7 +442,10 @@ const seedData = async () => {
         isActive: true,
         isFeatured: true,
         onSale: true,
-        tags: ['yukata', 'mùa hè', 'hoa cúc', 'cotton']
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: true, // Best seller
+        tags: ['yukata', 'mùa hè', 'hoa cúc', 'cotton', 'bestseller']
       },
       {
         name: 'Yukata Nam',
@@ -394,6 +468,9 @@ const seedData = async () => {
         isActive: true,
         isFeatured: false,
         onSale: true,
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: false,
         tags: ['yukata', 'nam', 'rồng', 'truyền thống']
       },
       
@@ -419,6 +496,9 @@ const seedData = async () => {
         isActive: true,
         isFeatured: false,
         onSale: true,
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: false,
         tags: ['haori', 'áo khoác', 'truyền thống', 'silk']
       },
       
@@ -444,7 +524,10 @@ const seedData = async () => {
         isActive: true,
         isFeatured: true,
         onSale: true,
-        tags: ['hakama', 'nam', 'truyền thống', 'silk']
+        isNew: false,
+        isLimitedEdition: true, // Limited edition
+        isBestSeller: false,
+        tags: ['hakama', 'nam', 'truyền thống', 'silk', 'limited']
       },
       
       // ===== ACCESSORIES =====
@@ -469,6 +552,9 @@ const seedData = async () => {
         isActive: true,
         isFeatured: false,
         onSale: true,
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: false,
         tags: ['geta', 'dép', 'truyền thống', 'gỗ']
       },
       {
@@ -492,7 +578,10 @@ const seedData = async () => {
         isActive: true,
         isFeatured: false,
         onSale: true,
-        tags: ['obi', 'thắt lưng', 'kimono', 'thổ cẩm']
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: true, // Best seller
+        tags: ['obi', 'thắt lưng', 'kimono', 'thổ cẩm', 'bestseller']
       }
     ];
 
@@ -504,7 +593,7 @@ const seedData = async () => {
     const stockMovements = [];
     
     for (let i = 0; i < createdProducts.length; i++) {
-      const product = createdProducts[i];
+      const product = createdProducts[i] as unknown as unknown as IProduct;
       
       // Create inventory for each color and size combination
       for (const color of product.colors) {
@@ -533,7 +622,7 @@ const seedData = async () => {
             lastRestocked: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date within last 30 days
             lastSold: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date within last 7 days
             status: currentStock === 0 ? 'out_of_stock' : currentStock <= minStock ? 'low_stock' : 'in_stock',
-            category: (product.categoryId as any).toString(),
+            category: (product.categoryId as mongoose.Types.ObjectId).toString(),
             size: size,
             color: color,
             notes: `Inventory for ${product.name} - ${color} - ${size}`,
@@ -547,7 +636,7 @@ const seedData = async () => {
           const restockQuantity = Math.floor(currentStock * 1.5); // Initial restock was 150% of current
           stockMovements.push({
             productId: product._id,
-            inventoryId: null as any, // Will be set after inventory is created
+            inventoryId: null as unknown as mongoose.Types.ObjectId, // Will be set after inventory is created
             type: 'in',
             quantity: restockQuantity,
             reason: 'Initial stock setup',
@@ -567,7 +656,7 @@ const seedData = async () => {
 
     // Update stock movements with inventory IDs
     for (let i = 0; i < stockMovements.length; i++) {
-      stockMovements[i].inventoryId = createdInventory[i]._id;
+      stockMovements[i].inventoryId = createdInventory[i]._id as mongoose.Types.ObjectId;
     }
 
     await StockMovement.insertMany(stockMovements);
@@ -581,16 +670,16 @@ const seedData = async () => {
         status: 'completed',
         items: [
           {
-            productId: createdProducts[0]._id,
-            name: createdProducts[0].name,
-            nameVi: createdProducts[0].name,
+            productId: (createdProducts[0] as unknown as unknown as IProduct)._id,
+            name: (createdProducts[0] as unknown as unknown as IProduct).name,
+            nameVi: (createdProducts[0] as unknown as unknown as IProduct).name,
             quantity: 1,
-            price: createdProducts[0].salePrice || createdProducts[0].price,
+            price: (createdProducts[0] as unknown as unknown as IProduct).salePrice || (createdProducts[0] as unknown as unknown as IProduct).price,
             size: 'M',
             color: 'Đỏ'
           }
         ],
-        totalAmount: createdProducts[0].salePrice || createdProducts[0].price,
+        totalAmount: (createdProducts[0] as unknown as IProduct).salePrice || (createdProducts[0] as unknown as IProduct).price,
         shippingAddress: {
           name: 'Nguyễn Văn A',
           phone: '0123456789',
@@ -611,16 +700,16 @@ const seedData = async () => {
         status: 'processing',
         items: [
           {
-            productId: createdProducts[1]._id,
-            name: createdProducts[1].name,
-            nameVi: createdProducts[1].name,
+            productId: (createdProducts[1] as unknown as IProduct)._id,
+            name: (createdProducts[1] as unknown as IProduct).name,
+            nameVi: (createdProducts[1] as unknown as IProduct).name,
             quantity: 1,
-            price: createdProducts[1].salePrice || createdProducts[1].price,
+            price: (createdProducts[1] as unknown as IProduct).salePrice || (createdProducts[1] as unknown as IProduct).price,
             size: 'L',
             color: 'Xanh lá'
           }
         ],
-        totalAmount: createdProducts[1].salePrice || createdProducts[1].price,
+        totalAmount: (createdProducts[1] as unknown as IProduct).salePrice || (createdProducts[1] as unknown as IProduct).price,
         shippingAddress: {
           name: 'John Smith',
           phone: '+1-555-0123',
@@ -641,16 +730,16 @@ const seedData = async () => {
         status: 'pending',
         items: [
           {
-            productId: createdProducts[2]._id,
-            name: createdProducts[2].name,
-            nameVi: createdProducts[2].name,
+            productId: (createdProducts[2] as unknown as IProduct)._id,
+            name: (createdProducts[2] as unknown as IProduct).name,
+            nameVi: (createdProducts[2] as unknown as IProduct).name,
             quantity: 1,
-            price: createdProducts[2].salePrice || createdProducts[2].price,
+            price: (createdProducts[2] as unknown as IProduct).salePrice || (createdProducts[2] as unknown as IProduct).price,
             size: 'M',
             color: 'Đen'
           }
         ],
-        totalAmount: createdProducts[2].salePrice || createdProducts[2].price,
+        totalAmount: (createdProducts[2] as unknown as IProduct).salePrice || (createdProducts[2] as unknown as IProduct).price,
         shippingAddress: {
           name: 'Tanaka Hiroshi',
           phone: '+81-3-9876-5432',
@@ -790,6 +879,281 @@ const seedData = async () => {
     await Promotion.insertMany(promotions);
     console.log('✅ Created promotions');
 
+    // Create FlashSale data
+    const flashSales = [
+      {
+        name: 'Flash Sale Kimono - Giảm 50%',
+        nameEn: 'Flash Sale Kimono - 50% Off',
+        nameJa: 'フラッシュセール着物 - 50%オフ',
+        description: 'Cơ hội duy nhất để sở hữu kimono cao cấp với giá ưu đãi',
+        descriptionEn: 'One-time opportunity to own premium kimono at discounted price',
+        descriptionJa: 'プレミアム着物を割引価格で手に入れる一度きりの機会',
+        discountType: 'percentage',
+        discountValue: 50,
+        startTime: new Date('2024-12-01T00:00:00Z'),
+        endTime: new Date('2024-12-01T23:59:59Z'),
+        isActive: true,
+        maxQuantity: 10,
+        soldQuantity: 3,
+        applicableProducts: [(createdProducts[0] as unknown as IProduct)._id, (createdProducts[1] as unknown as IProduct)._id], // Kimono products
+        applicableCategories: [createdCategories[0]._id], // Kimono category
+        minOrderAmount: 0,
+        maxDiscountAmount: 500000,
+        usageLimit: 100,
+        usedCount: 3,
+        image: '/images/flash-sales/kimono-flash-sale.jpg',
+        bannerColor: '#FF6B6B',
+        textColor: '#FFFFFF',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Flash Sale Yukata - Chỉ 299k',
+        nameEn: 'Flash Sale Yukata - Only 299k',
+        nameJa: 'フラッシュセール浴衣 - 299kのみ',
+        description: 'Yukata mùa hè với giá siêu ưu đãi - chỉ còn 299k',
+        descriptionEn: 'Summer yukata at super discounted price - only 299k',
+        descriptionJa: '夏の浴衣が超割引価格 - 299kのみ',
+        discountType: 'fixed',
+        discountValue: 299000,
+        startTime: new Date('2024-12-02T00:00:00Z'),
+        endTime: new Date('2024-12-02T23:59:59Z'),
+        isActive: true,
+        maxQuantity: 20,
+        soldQuantity: 8,
+        applicableProducts: [(createdProducts[2] as unknown as IProduct)._id, (createdProducts[3] as unknown as IProduct)._id], // Yukata products
+        applicableCategories: [createdCategories[1]._id], // Yukata category
+        minOrderAmount: 0,
+        maxDiscountAmount: 0,
+        usageLimit: 50,
+        usedCount: 8,
+        image: '/images/flash-sales/yukata-flash-sale.jpg',
+        bannerColor: '#4ECDC4',
+        textColor: '#FFFFFF',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Flash Sale Phụ Kiện - Giảm 70%',
+        nameEn: 'Flash Sale Accessories - 70% Off',
+        nameJa: 'フラッシュセールアクセサリー - 70%オフ',
+        description: 'Tất cả phụ kiện truyền thống Nhật Bản giảm giá 70%',
+        descriptionEn: 'All traditional Japanese accessories 70% off',
+        descriptionJa: 'すべての伝統的な日本のアクセサリー70%オフ',
+        discountType: 'percentage',
+        discountValue: 70,
+        startTime: new Date('2024-12-03T00:00:00Z'),
+        endTime: new Date('2024-12-03T23:59:59Z'),
+        isActive: true,
+        maxQuantity: 50,
+        soldQuantity: 15,
+        applicableProducts: [(createdProducts[6] as unknown as IProduct)._id, (createdProducts[7] as unknown as IProduct)._id], // Accessories
+        applicableCategories: [createdCategories[7]._id], // Accessories category
+        minOrderAmount: 0,
+        maxDiscountAmount: 100000,
+        usageLimit: 200,
+        usedCount: 15,
+        image: '/images/flash-sales/accessories-flash-sale.jpg',
+        bannerColor: '#45B7D1',
+        textColor: '#FFFFFF',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+
+    await FlashSale.insertMany(flashSales);
+    console.log('✅ Created flash sales');
+
+    // Create Shipping data
+    const shippingMethods = [
+      {
+        name: 'Giao hàng tiêu chuẩn',
+        nameEn: 'Standard Shipping',
+        nameJa: '標準配送',
+        description: 'Giao hàng trong 3-5 ngày làm việc',
+        descriptionEn: 'Delivery within 3-5 business days',
+        descriptionJa: '3-5営業日以内の配送',
+        type: 'standard',
+        cost: 30000,
+        freeShippingThreshold: 500000,
+        estimatedDays: 4,
+        isActive: true,
+        supportedRegions: ['Vietnam', 'Japan', 'USA'],
+        weightLimit: 5000, // 5kg
+        dimensions: {
+          maxLength: 100,
+          maxWidth: 80,
+          maxHeight: 60
+        },
+        trackingAvailable: true,
+        insuranceIncluded: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Giao hàng nhanh',
+        nameEn: 'Express Shipping',
+        nameJa: '速達配送',
+        description: 'Giao hàng trong 1-2 ngày làm việc',
+        descriptionEn: 'Delivery within 1-2 business days',
+        descriptionJa: '1-2営業日以内の配送',
+        type: 'express',
+        cost: 80000,
+        freeShippingThreshold: 1000000,
+        estimatedDays: 2,
+        isActive: true,
+        supportedRegions: ['Vietnam', 'Japan'],
+        weightLimit: 3000, // 3kg
+        dimensions: {
+          maxLength: 80,
+          maxWidth: 60,
+          maxHeight: 40
+        },
+        trackingAvailable: true,
+        insuranceIncluded: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Giao hàng quốc tế',
+        nameEn: 'International Shipping',
+        nameJa: '国際配送',
+        description: 'Giao hàng quốc tế trong 7-14 ngày',
+        descriptionEn: 'International delivery within 7-14 days',
+        descriptionJa: '7-14日以内の国際配送',
+        type: 'overnight',
+        cost: 200000,
+        freeShippingThreshold: 2000000,
+        estimatedDays: 10,
+        isActive: true,
+        supportedRegions: ['USA', 'Canada', 'Australia', 'Singapore'],
+        weightLimit: 10000, // 10kg
+        dimensions: {
+          maxLength: 120,
+          maxWidth: 100,
+          maxHeight: 80
+        },
+        trackingAvailable: true,
+        insuranceIncluded: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        name: 'Giao hàng miễn phí',
+        nameEn: 'Free Shipping',
+        nameJa: '送料無料',
+        description: 'Miễn phí vận chuyển cho đơn hàng từ 1 triệu',
+        descriptionEn: 'Free shipping for orders over 1M VND',
+        descriptionJa: '100万円以上の注文で送料無料',
+        type: 'pickup',
+        cost: 0,
+        freeShippingThreshold: 1000000,
+        estimatedDays: 1,
+        isActive: true,
+        supportedRegions: ['Vietnam'],
+        weightLimit: 5000,
+        dimensions: {
+          maxLength: 100,
+          maxWidth: 80,
+          maxHeight: 60
+        },
+        trackingAvailable: true,
+        insuranceIncluded: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+
+    await ShippingMethod.insertMany(shippingMethods);
+    console.log('✅ Created shipping methods');
+
+    // Create Payment data
+    const paymentMethods = [
+      {
+        name: 'Thanh toán khi nhận hàng',
+        nameEn: 'Cash on Delivery',
+        nameJa: '代金引換',
+        description: 'Thanh toán bằng tiền mặt khi nhận hàng',
+        descriptionEn: 'Pay with cash when receiving the order',
+        descriptionJa: '注文受取時に現金で支払い',
+        type: 'cod',
+        provider: 'Koshiro Fashion',
+        isActive: true,
+        processingFee: 0,
+        minAmount: 0,
+        maxAmount: 5000000,
+        supportedCurrencies: ['VND'],
+        icon: '/images/payment-icons/cod.png'
+      },
+      {
+        name: 'Chuyển khoản ngân hàng',
+        nameEn: 'Bank Transfer',
+        nameJa: '銀行振込',
+        description: 'Chuyển khoản qua ngân hàng',
+        descriptionEn: 'Transfer via bank',
+        descriptionJa: '銀行振込',
+        type: 'bank_transfer',
+        provider: 'Vietcombank',
+        isActive: true,
+        processingFee: 0,
+        minAmount: 0,
+        maxAmount: 50000000,
+        supportedCurrencies: ['VND', 'JPY', 'USD'],
+        icon: '/images/payment-icons/bank-transfer.png'
+      },
+      {
+        name: 'Thẻ tín dụng',
+        nameEn: 'Credit Card',
+        nameJa: 'クレジットカード',
+        description: 'Thanh toán bằng thẻ tín dụng Visa, Mastercard',
+        descriptionEn: 'Pay with Visa, Mastercard credit card',
+        descriptionJa: 'Visa、Mastercardクレジットカードで支払い',
+        type: 'credit_card',
+        provider: 'VNPay',
+        isActive: true,
+        processingFee: 3000,
+        minAmount: 10000,
+        maxAmount: 10000000,
+        supportedCurrencies: ['VND', 'JPY', 'USD'],
+        icon: '/images/payment-icons/credit-card.png'
+      },
+      {
+        name: 'Ví điện tử',
+        nameEn: 'E-Wallet',
+        nameJa: '電子財布',
+        description: 'Thanh toán qua ví điện tử MoMo, ZaloPay',
+        descriptionEn: 'Pay via MoMo, ZaloPay e-wallet',
+        descriptionJa: 'MoMo、ZaloPay電子財布で支払い',
+        type: 'e_wallet',
+        provider: 'MoMo',
+        isActive: true,
+        processingFee: 0,
+        minAmount: 1000,
+        maxAmount: 5000000,
+        supportedCurrencies: ['VND'],
+        icon: '/images/payment-icons/e-wallet.png'
+      },
+      {
+        name: 'PayPal',
+        nameEn: 'PayPal',
+        nameJa: 'PayPal',
+        description: 'Thanh toán qua PayPal',
+        descriptionEn: 'Pay via PayPal',
+        descriptionJa: 'PayPalで支払い',
+        type: 'crypto',
+        provider: 'PayPal',
+        isActive: true,
+        processingFee: 5000,
+        minAmount: 10000,
+        maxAmount: 20000000,
+        supportedCurrencies: ['USD', 'JPY'],
+        icon: '/images/payment-icons/paypal.png'
+      }
+    ];
+
+    await AdminPaymentMethod.insertMany(paymentMethods);
+    console.log('✅ Created payment methods');
+
     // Update category product counts
     for (const category of createdCategories) {
       const count = await Product.countDocuments({ categoryId: category._id });
@@ -800,16 +1164,26 @@ const seedData = async () => {
     console.log('🎉 Database seeded successfully!');
     console.log('📊 Summary:');
     console.log(`   - Users: ${await User.countDocuments()}`);
+    console.log(`   - Roles: ${await Role.countDocuments()}`);
+    console.log(`   - Permissions: ${await Permission.countDocuments()}`);
     console.log(`   - Categories: ${await Category.countDocuments()}`);
     console.log(`   - Products: ${await Product.countDocuments()}`);
     console.log(`   - Orders: ${await Order.countDocuments()}`);
     console.log(`   - Inventory Items: ${await Inventory.countDocuments()}`);
     console.log(`   - Stock Movements: ${await StockMovement.countDocuments()}`);
     console.log(`   - Promotions: ${await Promotion.countDocuments()}`);
+    console.log(`   - Flash Sales: ${await FlashSale.countDocuments()}`);
+    console.log(`   - Shipping Methods: ${await ShippingMethod.countDocuments()}`);
+    console.log(`   - Payment Methods: ${await AdminPaymentMethod.countDocuments()}`);
     console.log('🔑 Admin credentials: admin@koshiro.com / admin123');
     console.log('👥 Customer credentials: customer1@example.com / password123');
+    console.log('👑 Role & Permission System: Ready with RBAC');
     console.log('📦 Inventory Management: Ready with stock tracking and movements');
     console.log('🎯 Promotions: Ready with discount codes and campaigns');
+    console.log('⚡ Flash Sales: Ready with time-limited offers');
+    console.log('🚚 Shipping: Ready with multiple delivery options');
+    console.log('💳 Payments: Ready with various payment methods');
+    console.log('🏷️  Product Badges: NEW, Limited Edition, Best Seller support');
 
   } catch (error) {
     console.error('❌ Error seeding data:', error);

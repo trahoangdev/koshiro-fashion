@@ -29,7 +29,7 @@
 .w-md-editor-text {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family: 'Inter', ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -235,7 +235,7 @@
   padding: 0.125em 0.25em;
   border-radius: 0.25rem;
   font-size: 0.875em;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family: 'Inter', ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 .markdown-content pre {

@@ -2,9 +2,92 @@ import { Request, Response } from 'express';
 import { Product } from '../models/Product';
 import { Category } from '../models/Category';
 
+// Helper function to update badge statuses based on creation date and tags
+const updateBadgeStatuses = async () => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    // Update isNew status based on creation date
+    await Product.updateMany(
+      { 
+        createdAt: { $lt: thirtyDaysAgo },
+        isNew: true 
+      },
+      { isNew: false }
+    );
+    
+    await Product.updateMany(
+      { 
+        createdAt: { $gte: thirtyDaysAgo },
+        isNew: false 
+      },
+      { isNew: true }
+    );
+    
+    // Update isLimitedEdition based on tags
+    await Product.updateMany(
+      { 
+        tags: { 
+          $in: [
+            /limited/i, /giới hạn/i, /限定/i, /limited edition/i, 
+            /phiên bản giới hạn/i, /限定版/i
+          ] 
+        },
+        isLimitedEdition: false 
+      },
+      { isLimitedEdition: true }
+    );
+    
+    await Product.updateMany(
+      { 
+        tags: { 
+          $nin: [
+            /limited/i, /giới hạn/i, /限定/i, /limited edition/i, 
+            /phiên bản giới hạn/i, /限定版/i
+          ] 
+        },
+        isLimitedEdition: true 
+      },
+      { isLimitedEdition: false }
+    );
+    
+    // Update isBestSeller based on tags
+    await Product.updateMany(
+      { 
+        tags: { 
+          $in: [
+            /bestseller/i, /bán chạy/i, /ベストセラー/i, /best seller/i,
+            /top seller/i, /bán nhiều/i, /人気/i
+          ] 
+        },
+        isBestSeller: false 
+      },
+      { isBestSeller: true }
+    );
+    
+    await Product.updateMany(
+      { 
+        tags: { 
+          $nin: [
+            /bestseller/i, /bán chạy/i, /ベストセラー/i, /best seller/i,
+            /top seller/i, /bán nhiều/i, /人気/i
+          ] 
+        },
+        isBestSeller: true 
+      },
+      { isBestSeller: false }
+    );
+  } catch (error) {
+    console.error('Error updating badge statuses:', error);
+  }
+};
+
 // Get all products with pagination and filters
 export const getProducts = async (req: Request, res: Response) => {
   try {
+    // Update badge statuses before fetching products
+    await updateBadgeStatuses();
     const {
       page = 1,
       limit = 10,
@@ -14,6 +97,9 @@ export const getProducts = async (req: Request, res: Response) => {
       maxPrice,
       isActive,
       isFeatured,
+      isNew,
+      isLimitedEdition,
+      isBestSeller,
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
@@ -23,7 +109,7 @@ export const getProducts = async (req: Request, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Build filter object
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
     
     if (category) {
       filter.categoryId = category;
@@ -37,10 +123,22 @@ export const getProducts = async (req: Request, res: Response) => {
       filter.isFeatured = isFeatured === 'true';
     }
     
+    if (isNew !== undefined) {
+      filter.isNew = isNew === 'true';
+    }
+    
+    if (isLimitedEdition !== undefined) {
+      filter.isLimitedEdition = isLimitedEdition === 'true';
+    }
+    
+    if (isBestSeller !== undefined) {
+      filter.isBestSeller = isBestSeller === 'true';
+    }
+    
     if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = parseFloat(minPrice as string);
-      if (maxPrice) filter.price.$lte = parseFloat(maxPrice as string);
+      filter.price = {} as Record<string, number>;
+      if (minPrice) (filter.price as Record<string, number>).$gte = parseFloat(minPrice as string);
+      if (maxPrice) (filter.price as Record<string, number>).$lte = parseFloat(maxPrice as string);
     }
 
     // Build search query - improved search logic
@@ -59,7 +157,7 @@ export const getProducts = async (req: Request, res: Response) => {
     }
 
     // Build sort object
-    const sort: any = {};
+    const sort: Record<string, 1 | -1> = {};
     sort[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
 
     const products = await Product.find(filter)
@@ -132,6 +230,15 @@ export const createProduct = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Category not found' });
     }
 
+    // Auto-detect badge statuses from tags
+    const productTags = tags || [];
+    const isLimitedEdition = productTags.some((tag: string) => 
+      /limited|giới hạn|限定|limited edition|phiên bản giới hạn|限定版/i.test(tag)
+    );
+    const isBestSeller = productTags.some((tag: string) => 
+      /bestseller|bán chạy|ベストセラー|best seller|top seller|bán nhiều|人気/i.test(tag)
+    );
+
     const product = new Product({
       name,
       nameEn,
@@ -148,7 +255,10 @@ export const createProduct = async (req: Request, res: Response) => {
       stock: stock || 0,
       isActive: isActive !== undefined ? isActive : true,
       isFeatured: isFeatured !== undefined ? isFeatured : false,
-      tags: tags || []
+      isNew: true, // Automatically set new products as new
+      isLimitedEdition,
+      isBestSeller,
+      tags: productTags
     });
 
     await product.save();
@@ -180,6 +290,17 @@ export const updateProduct = async (req: Request, res: Response) => {
       if (!category) {
         return res.status(400).json({ message: 'Category not found' });
       }
+    }
+
+    // Auto-detect badge statuses from tags if tags are being updated
+    if (updateData.tags) {
+      const productTags = updateData.tags;
+      updateData.isLimitedEdition = productTags.some((tag: string) => 
+        /limited|giới hạn|限定|limited edition|phiên bản giới hạn|限定版/i.test(tag)
+      );
+      updateData.isBestSeller = productTags.some((tag: string) => 
+        /bestseller|bán chạy|ベストセラー|best seller|top seller|bán nhiều|人気/i.test(tag)
+      );
     }
 
     const product = await Product.findByIdAndUpdate(

@@ -8,9 +8,11 @@ if (!JWT_SECRET) {
 
 interface AuthRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
+    name: string;
     role: string;
+    permissions?: string[];
   };
 }
 
@@ -28,12 +30,18 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      userId: string;
+      email: string;
+      role: string;
+      name?: string;
+    };
     console.log('Auth middleware - Decoded token:', { userId: decoded.userId, email: decoded.email, role: decoded.role });
     
     req.user = {
-      userId: decoded.userId,
+      id: decoded.userId,
       email: decoded.email,
+      name: decoded.name || '',
       role: decoded.role
     };
     next();
@@ -48,7 +56,8 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  if (req.user.role !== 'admin') {
+  // Check if user has admin role (Admin or Super Admin)
+  if (req.user.role !== 'Admin' && req.user.role !== 'Super Admin') {
     return res.status(403).json({ message: 'Admin access required' });
   }
 
@@ -60,7 +69,7 @@ export const requireCustomer = (req: AuthRequest, res: Response, next: NextFunct
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  if (req.user.role !== 'customer') {
+  if (req.user.role !== 'Customer') {
     return res.status(403).json({ message: 'Customer access required' });
   }
 
@@ -72,14 +81,26 @@ export const requireCustomerOrAdmin = (req: AuthRequest, res: Response, next: Ne
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  if (req.user.role !== 'customer' && req.user.role !== 'admin') {
+  if (req.user.role !== 'Customer' && req.user.role !== 'Admin' && req.user.role !== 'Super Admin') {
     return res.status(403).json({ message: 'Customer or admin access required' });
   }
 
   next();
 };
 
+export const authorizeRoles = (roles: string[]) => (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  if (!roles.includes(req.user.role)) {
+    return res.status(403).json({ message: 'Insufficient permissions' });
+  }
+
+  next();
+};
+
 // Async handler wrapper to catch errors
-export const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
+export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 }; 

@@ -19,7 +19,7 @@ import {
   Send,
   Loader2
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 
 const ReviewsPage = () => {
   const { language } = useLanguage();
@@ -261,7 +261,7 @@ const ReviewsPage = () => {
             {/* Banner Background */}
             <div className="absolute inset-0">
               <img 
-                src="/images/categories/yukata.jpg" 
+                src="/images/banners/banner-04.png" 
                 alt="Reviews Banner"
                 className="w-full h-full object-cover"
               />

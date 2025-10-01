@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -47,7 +47,8 @@ export default function LoginPage() {
       passwordRequired: "Password is required",
       invalidEmail: "Please enter a valid email",
       loginSuccess: "Login successful!",
-      loginError: "Invalid email or password"
+      loginError: "Invalid email or password",
+      error: "Error"
     },
     vi: {
       title: "Chào Mừng Trở Lại",
@@ -65,7 +66,8 @@ export default function LoginPage() {
       passwordRequired: "Mật khẩu là bắt buộc",
       invalidEmail: "Vui lòng nhập email hợp lệ",
       loginSuccess: "Đăng nhập thành công!",
-      loginError: "Email hoặc mật khẩu không đúng"
+      loginError: "Email hoặc mật khẩu không đúng",
+      error: "Lỗi"
     },
     ja: {
       title: "おかえりなさい",
@@ -83,7 +85,8 @@ export default function LoginPage() {
       passwordRequired: "パスワードは必須です",
       invalidEmail: "有効なメールを入力してください",
       loginSuccess: "ログインに成功しました！",
-      loginError: "メールまたはパスワードが無効です"
+      loginError: "メールまたはパスワードが無効です",
+      error: "エラー"
     }
   };
 
@@ -99,7 +102,7 @@ export default function LoginPage() {
   const validateForm = () => {
     if (!formData.email) {
       toast({
-        title: t('error'),
+        title: t.error,
         description: t.emailRequired,
         variant: "destructive"
       });
@@ -107,7 +110,7 @@ export default function LoginPage() {
     }
     if (!formData.password) {
       toast({
-        title: t('error'),
+        title: t.error,
         description: t.passwordRequired,
         variant: "destructive"
       });
@@ -116,7 +119,7 @@ export default function LoginPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       toast({
-        title: t('error'),
+        title: t.error,
         description: t.invalidEmail,
         variant: "destructive"
       });
@@ -155,6 +158,24 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <Card className="w-full max-w-md">
               <CardHeader className="text-center">
+                {/* Logo */}
+                <div className="mb-6 flex justify-center">
+                  <div className="relative">
+                    {/* Light mode: dark logo, Dark mode: light logo */}
+                    <img
+                      src="/koshino_logo_dark.png"
+                      alt="Koshino Fashion Logo"
+                      className="h-12 w-auto opacity-90 hover:opacity-100 transition-all duration-300 dark:hidden"
+                      loading="lazy"
+                    />
+                    <img
+                      src="/koshino_logo.png"
+                      alt="Koshino Fashion Logo"
+                      className="h-12 w-auto opacity-90 hover:opacity-100 transition-all duration-300 hidden dark:block"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
                 <CardTitle className="text-2xl font-bold">{t.title}</CardTitle>
                 <p className="text-muted-foreground">{t.subtitle}</p>
               </CardHeader>

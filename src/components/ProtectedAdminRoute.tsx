@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getUserRoleName, isAdminUser } from '@/contexts';
 
 interface ProtectedAdminRouteProps {
   children: React.ReactNode;
@@ -11,21 +11,13 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('ProtectedAdminRoute - Current state:', {
-      isLoading,
-      isAuthenticated,
-      user: user ? { id: user.id, email: user.email, name: user.name, role: user.role } : null
-    });
-    
     if (!isLoading) {
       if (!isAuthenticated) {
-        console.log('User not authenticated, redirecting to login');
         navigate('/admin/login');
-      } else if (user?.role !== 'admin') {
-        console.log('User is not admin, redirecting to home. User role:', user?.role);
-        navigate('/');
       } else {
-        console.log('User is authenticated and is admin, allowing access');
+        if (!isAdminUser(user)) {
+          navigate('/');
+        }
       }
     }
   }, [user, isAuthenticated, isLoading, navigate]);
@@ -33,11 +25,11 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
   // Add a check to prevent redirect loop
   useEffect(() => {
     const currentPath = window.location.pathname;
-    console.log('Current path:', currentPath);
     
-    if (currentPath === '/admin/login' && isAuthenticated && user?.role === 'admin') {
-      console.log('User is already logged in, redirecting to admin dashboard');
-      navigate('/admin');
+    if (currentPath === '/admin/login' && isAuthenticated) {
+      if (isAdminUser(user)) {
+        navigate('/admin');
+      }
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -52,7 +44,11 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
     );
   }
 
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated) {
+    return null;
+  }
+  
+  if (!isAdminUser(user)) {
     return null;
   }
 
