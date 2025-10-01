@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import FlashSale from "@/components/FlashSale";
 import EnhancedProductGrid from "@/components/EnhancedProductGrid";
+import ProductCard from "@/components/ProductCard";
 import FilterBar from "@/components/FilterBar";
 import Cart from "@/components/Cart";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -11,8 +11,9 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { api, Product, Category } from "@/lib/api";
+import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ShoppingBag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -427,60 +428,189 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-zen">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-900">
       <Header
         cartItemsCount={cartItemsCount}
         onSearch={setSearchQuery}
       />
 
-      <Hero />
-      
-      <main className="py-16">
-        <div className="container space-y-12">
-                                {/* Flash Sale Section with Banner */}
-           <section className="relative overflow-hidden rounded-2xl">
-             {/* Banner Background */}
-             <div className="absolute inset-0">
-               <img 
-                 src="/images/categories/banner-01-flashsale.jpg" 
-                 alt="Flash Sale Banner"
-                 className="w-full h-full object-cover"
-               />
-               <div className="absolute inset-0 bg-gradient-to-r from-red-900/80 to-red-600/60"></div>
-             </div>
-             
-             {/* Content */}
-             <div className="relative z-10 p-8 md:p-12">
-               <FlashSale 
-                 onAddToWishlist={addToWishlist}
-                 onAddToCompare={addToCompare}
-               />
-             </div>
-           </section>
-
-          {/* New Arrivals Section */}
-          <section className="relative overflow-hidden rounded-2xl">
-            {/* Banner Background */}
-            <div className="absolute inset-0">
-              <img 
-                src="/images/categories/banner-02-newarrivals.jpg" 
-                alt="New Arrivals Banner"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40"></div>
+      {/* Zen Hero Section */}
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-stone-900">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src="/images/banners/banner-01.png"
+            alt="Koshiro Fashion Background"
+            className="w-full h-full object-cover object-center"
+            loading="eager"
+            fetchPriority="high"
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-stone-900/70 via-stone-800/50 to-stone-900/70"></div>
+          {/* Subtle Pattern Overlay */}
+          <div className="absolute inset-0 opacity-[0.02]">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, rgb(255 255 255) 1px, transparent 0)`,
+              backgroundSize: '40px 40px'
+            }} />
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="container relative z-10 text-center">
+          <div className="max-w-4xl mx-auto px-6">
+            {/* Logo */}
+            <div className="mb-8 flex justify-center">
+              <div className="relative animate-logo-float">
+                <img
+                  src="/koshino_logo.png"
+                  alt="Koshino Fashion Logo"
+                  className="h-16 md:h-20 lg:h-24 w-auto opacity-90 hover:opacity-100 transition-all duration-300 animate-logo-glow"
+                  loading="eager"
+                  fetchPriority="high"
+                />
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 bg-white/10 rounded-full blur-xl scale-110 opacity-50 animate-pulse"></div>
+              </div>
             </div>
             
-            {/* Content */}
-            <div className="relative z-10 p-8 md:p-12">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-                   {language === 'vi' ? 'Sản Phẩm Mới' : language === 'ja' ? '新着商品' : 'New Arrivals'}
+            {/* Japanese-inspired Typography with Modern Touch */}
+            <div className="mb-8">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-light tracking-tight text-white mb-6">
+                <span className="block font-extralight">
+                  {language === 'vi' ? 'KOSHIRO' : language === 'ja' ? 'コシロ' : 'KOSHIRO'}
+                </span>
+                <span className="block text-2xl md:text-3xl lg:text-4xl font-light text-stone-200 mt-4 tracking-widest">
+                  {language === 'vi' ? 'THỜI TRANG NHẬT BẢN' : 
+                   language === 'ja' ? '日本ファッション' : 
+                   'JAPANESE FASHION'}
+                </span>
+              </h1>
+            </div>
+            
+            {/* Minimalist Description */}
+            <p className="text-lg md:text-xl text-stone-200 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
+              {language === 'vi' ? 'Tìm kiếm sự cân bằng hoàn hảo giữa truyền thống và hiện đại' :
+               language === 'ja' ? '伝統と現代の完璧なバランスを探す' :
+               'Finding the perfect balance between tradition and modernity'}
+            </p>
+            
+            {/* Modern Zen CTA Button */}
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="border-white/30 text-white hover:bg-white hover:text-stone-900 px-8 py-3 rounded-lg font-light tracking-wide transition-all duration-300 backdrop-blur-sm bg-white/10"
+              onClick={() => {
+                const collectionSection = document.querySelector('[data-section="collection"]');
+                if (collectionSection) {
+                  collectionSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+            >
+              {language === 'vi' ? 'KHÁM PHÁ' : language === 'ja' ? '探す' : 'EXPLORE'}
+            </Button>
+          </div>
+        </div>
+        
+        {/* Custom Scroll Wheel Indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+          <div className="relative">
+            {/* Mouse Body */}
+            <div className="w-6 h-10 border-2 border-white/40 rounded-full bg-white/10 backdrop-blur-sm animate-scroll-wheel">
+              {/* Scroll Wheel */}
+              <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-2 bg-white/80 rounded-full"></div>
+              {/* Scroll Wheel Lines */}
+              <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-0.5 h-1 bg-white/60 rounded-full"></div>
+              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-0.5 h-0.5 bg-white/40 rounded-full"></div>
+            </div>
+            {/* Scroll Animation Lines */}
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-white/30 animate-scroll-indicator"></div>
+            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-0.5 h-3 bg-white/20 animate-scroll-indicator" style={{animationDelay: '0.3s'}}></div>
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-0.5 h-2 bg-white/10 animate-scroll-indicator" style={{animationDelay: '0.6s'}}></div>
+          </div>
+        </div>
+      </section>
+      
+      <main className="py-24">
+        <div className="container space-y-32">
+
+          {/* Philosophy Section - Zen Style */}
+          <section className="relative py-20">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="mb-12">
+                <h2 className="text-3xl md:text-4xl font-light text-stone-900 dark:text-stone-100 mb-6 tracking-wide">
+                  {language === 'vi' ? 'Triết Lý Thiết Kế' : 
+                   language === 'ja' ? 'デザイン哲学' : 
+                   'Design Philosophy'}
                 </h2>
-                <p className="text-lg text-white/90">
-                  {language === 'vi' ? 'Khám phá những sản phẩm mới nhất trong bộ sưu tập của chúng tôi' :
-                   language === 'ja' ? '最新コレクションの新商品をご覧ください' : 'Discover the latest additions to our collection'}
-                </p>
+                <div className="w-20 h-px bg-stone-300 dark:bg-stone-700 mx-auto mb-8"></div>
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                {/* Zen */}
+                <div className="group">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white dark:glassmorphism-dark border border-stone-200 dark:border-stone-700 flex items-center justify-center transition-all duration-500 group-hover:scale-110 modern-shadow">
+                    <div className="w-8 h-8 border-2 border-stone-400 dark:border-stone-500 rounded-full"></div>
+                  </div>
+                  <h3 className="text-xl font-light text-stone-900 dark:text-stone-100 mb-4">
+                    {language === 'vi' ? 'Zen' : language === 'ja' ? '禅' : 'Zen'}
+                  </h3>
+                  <p className="text-stone-600 dark:text-stone-400 font-light leading-relaxed">
+                    {language === 'vi' ? 'Tìm kiếm sự cân bằng và hài hòa trong mọi thiết kế' :
+                     language === 'ja' ? 'すべてのデザインでバランスと調和を求める' :
+                     'Seeking balance and harmony in every design'}
+                  </p>
+                </div>
+
+                {/* Wabi-sabi */}
+                <div className="group">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white dark:glassmorphism-dark border border-stone-200 dark:border-stone-700 flex items-center justify-center transition-all duration-500 group-hover:scale-110 modern-shadow">
+                    <div className="w-6 h-6 bg-stone-400 dark:bg-stone-500 rounded-full opacity-60"></div>
+                  </div>
+                  <h3 className="text-xl font-light text-stone-900 dark:text-stone-100 mb-4">
+                    {language === 'vi' ? 'Wabi-sabi' : language === 'ja' ? '侘寂' : 'Wabi-sabi'}
+                  </h3>
+                  <p className="text-stone-600 dark:text-stone-400 font-light leading-relaxed">
+                    {language === 'vi' ? 'Vẻ đẹp trong sự không hoàn hảo và tính tự nhiên' :
+                     language === 'ja' ? '不完全さと自然さの中の美しさ' :
+                     'Beauty in imperfection and naturalness'}
+                  </p>
+                </div>
+
+                {/* Minimalism */}
+                <div className="group">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white dark:glassmorphism-dark border border-stone-200 dark:border-stone-700 flex items-center justify-center transition-all duration-500 group-hover:scale-110 modern-shadow">
+                    <div className="w-8 h-1 bg-stone-400 dark:bg-stone-500"></div>
+                  </div>
+                  <h3 className="text-xl font-light text-stone-900 dark:text-stone-100 mb-4">
+                    {language === 'vi' ? 'Tối Giản' : language === 'ja' ? 'ミニマリズム' : 'Minimalism'}
+                  </h3>
+                  <p className="text-stone-600 dark:text-stone-400 font-light leading-relaxed">
+                    {language === 'vi' ? 'Loại bỏ những gì không cần thiết, giữ lại bản chất' :
+                     language === 'ja' ? '不要なものを取り除き、本質を保つ' :
+                     'Removing the unnecessary, keeping the essential'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* New Arrivals - Zen Style */}
+          <section className="relative">
+            <div className="text-center mb-16">
+              <div className="inline-block">
+                <h2 className="text-3xl md:text-4xl font-light text-stone-900 dark:text-stone-100 mb-4 tracking-wide">
+                  {language === 'vi' ? 'Sản Phẩm Mới' : language === 'ja' ? '新着商品' : 'New Arrivals'}
+                </h2>
+                <div className="w-16 h-px bg-stone-300 dark:bg-stone-700 mx-auto"></div>
+              </div>
+              <p className="text-stone-600 dark:text-stone-400 mt-6 max-w-xl mx-auto font-light">
+                {language === 'vi' ? 'Những thiết kế mới nhất được tạo ra với tinh thần Wabi-sabi' :
+                 language === 'ja' ? '侘寂の精神で作られた最新デザイン' :
+                 'Latest designs created with the spirit of Wabi-sabi'}
+              </p>
+            </div>
+            
             {(() => {
               const newProducts = products.filter(product => {
                 const createdDate = new Date(product.createdAt || '');
@@ -490,104 +620,255 @@ const Index = () => {
                 return diffDays <= 30;
               }).slice(0, 4);
               
+              if (isLoading) {
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {[...Array(4)].map((_, index) => (
+                      <div key={index} className="animate-pulse">
+                        <div className="bg-stone-200 dark:bg-stone-700 aspect-square rounded-lg mb-4"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-stone-200 dark:bg-stone-700 rounded w-3/4"></div>
+                          <div className="h-3 bg-stone-200 dark:bg-stone-700 rounded w-1/2"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+              
               return newProducts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {newProducts.map((product, index) => (
+                    <div 
+                      key={product._id}
+                      style={{
+                        animationDelay: `${index * 100}ms`,
+                        animation: 'fadeInUp 0.6s ease-out forwards',
+                        opacity: 0,
+                        transform: 'translateY(20px)'
+                      }}
+                    >
+                      <ProductCard
+                        product={product}
+                        viewMode="grid"
+                        onAddToCart={addToCart}
+                        onAddToWishlist={addToWishlist}
+                        onAddToCompare={addToCompare}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <p className="text-stone-500 dark:text-stone-500 font-light">
+                    {language === 'vi' ? 'Hiện tại không có sản phẩm mới' :
+                     language === 'ja' ? '現在新着商品はありません' : 'No new arrivals currently available'}
+                  </p>
+                </div>
+              );
+            })()}
+          </section>
+
+          {/* Featured Categories - Zen Style */}
+          <section className="relative py-20">
+            <div className="text-center mb-16">
+              <div className="inline-block">
+                <h2 className="text-3xl md:text-4xl font-light text-stone-900 dark:text-stone-100 mb-4 tracking-wide">
+                  {language === 'vi' ? 'Danh Mục Nổi Bật' : 
+                   language === 'ja' ? '注目のカテゴリー' : 
+                   'Featured Categories'}
+                </h2>
+                <div className="w-16 h-px bg-stone-300 dark:bg-stone-700 mx-auto"></div>
+              </div>
+              <p className="text-stone-600 dark:text-stone-400 mt-6 max-w-xl mx-auto font-light">
+                {language === 'vi' ? 'Khám phá các bộ sưu tập được tuyển chọn cẩn thận' :
+                 language === 'ja' ? '厳選されたコレクションをご覧ください' :
+                 'Discover our carefully curated collections'}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {isLoading ? (
+                [...Array(6)].map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="bg-stone-200 dark:bg-stone-700 aspect-[4/3] rounded-lg"></div>
+                  </div>
+                ))
+              ) : (
+                categories.slice(0, 6).map((category, index) => (
+                <div 
+                  key={category._id}
+                  className="group cursor-pointer"
+                  style={{
+                    animationDelay: `${index * 150}ms`,
+                    animation: 'fadeInUp 0.6s ease-out forwards',
+                    opacity: 0,
+                    transform: 'translateY(20px)'
+                  }}
+                  onClick={() => navigate(`/category/${category.slug}`)}
+                >
+                  <div className="relative overflow-hidden bg-white dark:glassmorphism-dark border border-stone-200 dark:border-stone-700 transition-all duration-500 modern-hover modern-shadow">
+                    <div className="aspect-[4/3] relative">
+                      <img
+                        src={category.image || '/placeholder.svg'}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                      <div className="absolute bottom-6 left-6 right-6">
+                        <h3 className="text-white text-xl font-light mb-2">
+                          {language === 'vi' ? category.name : 
+                           language === 'ja' ? category.nameJa || category.name : 
+                           category.nameEn || category.name}
+                        </h3>
+                        <p className="text-white/80 text-sm font-light">
+                          {language === 'vi' ? 'Khám phá bộ sưu tập' :
+                           language === 'ja' ? 'コレクションを見る' :
+                           'Explore collection'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                ))
+              )}
+            </div>
+            
+            <div className="text-center mt-12">
+              <button
+                onClick={() => navigate('/categories')}
+                className="px-8 py-3 border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-300 font-light tracking-wide"
+              >
+                {language === 'vi' ? 'Xem Tất Cả Danh Mục' : 
+                 language === 'ja' ? 'すべてのカテゴリーを見る' : 
+                 'View All Categories'}
+              </button>
+            </div>
+          </section>
+
+          {/* Collection Section - Wabi-sabi Style */}
+          <section data-section="collection" className="relative">
+            <div className="text-center mb-16">
+              <div className="inline-block">
+                <h2 className="text-3xl md:text-4xl font-light text-stone-900 dark:text-stone-100 mb-4 tracking-wide">
+                  {language === 'vi' ? 'Bộ Sưu Tập' : language === 'ja' ? 'コレクション' : 'Collection'}
+                </h2>
+                <div className="w-16 h-px bg-stone-300 dark:bg-stone-700 mx-auto"></div>
+              </div>
+              <p className="text-stone-600 dark:text-stone-400 mt-6 max-w-2xl mx-auto font-light">
+                {language === 'vi' ? 'Mỗi sản phẩm đều kể một câu chuyện về vẻ đẹp không hoàn hảo' :
+                 language === 'ja' ? '各商品は不完全な美しさについての物語を語る' :
+                 'Each product tells a story about imperfect beauty'}
+              </p>
+            </div>
+
+            {/* Minimalist Filter Bar */}
+            <div className="mb-12">
+              <FilterBar
+                selectedCategory={selectedCategory}
+                selectedPriceRange={selectedPriceRange}
+                selectedColor={selectedColor}
+                onCategoryChange={setSelectedCategory}
+                onPriceRangeChange={setSelectedPriceRange}
+                onColorChange={setSelectedColor}
+                onClearFilters={clearFilters}
+              />
+            </div>
+
+            {/* Products Grid */}
+            <div>
+            {isLoading ? (
+              <div className="text-center py-20">
+                <div className="relative">
+                  <div className="w-12 h-12 border-2 border-stone-200 dark:border-stone-700 rounded-full mx-auto mb-6"></div>
+                  <div className="w-12 h-12 border-2 border-stone-400 dark:border-stone-500 border-t-transparent rounded-full animate-spin absolute top-0 left-1/2 transform -translate-x-1/2"></div>
+                </div>
+                <p className="text-stone-500 dark:text-stone-500 font-light animate-pulse">
+                  {language === 'vi' ? 'Đang tải sản phẩm...' :
+                   language === 'ja' ? '商品を読み込み中...' : 'Loading products...'}
+                </p>
+              </div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-stone-500 dark:text-stone-500 font-light">
+                    {language === 'vi' ? 'Không tìm thấy sản phẩm nào.' :
+                     language === 'ja' ? '商品が見つかりません。' : 'No products found.'}
+                  </p>
+                </div>
+              ) : (
                 <EnhancedProductGrid
-                  products={newProducts}
+                  products={filteredProducts}
                   onAddToCart={addToCart}
                   onAddToWishlist={addToWishlist}
                   onAddToCompare={addToCompare}
                   loading={isLoading}
                 />
-              ) : (
-                <div className="text-center py-8 text-white/90">
-                  {language === 'vi' ? 'Hiện tại không có sản phẩm mới' :
-                   language === 'ja' ? '現在新着商品はありません' : 'No new arrivals currently available'}
-                </div>
-              );
-            })()}
+              )}
             </div>
           </section>
-                                <section data-section="collection" className="relative overflow-hidden rounded-2xl">
-             {/* Banner Background */}
-             <div className="absolute inset-0">
-               <img 
-                 src="/images/categories/banner-03-collection.jpg" 
-                 alt="Collection Banner"
-                 className="w-full h-full object-cover"
-               />
-               <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-blue-600/60"></div>
-             </div>
-             
-             {/* Content */}
-             <div className="relative z-10 p-8 md:p-12">
-               {/* Collection Header */}
-               <div className="text-center mb-8">
-                 <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-                   {language === 'vi' ? 'Bộ Sưu Tập' :
-                    language === 'ja' ? 'コレクション' : 'Collection'}
-                 </h2>
-                 <p className="text-lg text-white/90 max-w-2xl mx-auto">
-                   {language === 'vi' ? 'Khám phá bộ sưu tập thời trang Nhật Bản được tuyển chọn cẩn thận' :
-                    language === 'ja' ? '厳選された日本のファッションコレクションをご覧ください' :
-                    'Discover our carefully curated collection of Japanese fashion'}
-                 </p>
-               </div>
 
-                {/* Filter Bar */}
-                <div className="mb-8">
-                  <FilterBar
-                    selectedCategory={selectedCategory}
-                    selectedPriceRange={selectedPriceRange}
-                    selectedColor={selectedColor}
-                    onCategoryChange={setSelectedCategory}
-                    onPriceRangeChange={setSelectedPriceRange}
-                    onColorChange={setSelectedColor}
-                    onClearFilters={clearFilters}
+          {/* Newsletter Section - Modern Zen Style */}
+          <section className="relative py-20 bg-stone-100 dark:modern-gradient-subtle">
+            <div className="max-w-2xl mx-auto text-center">
+              {/* Logo */}
+              <div className="mb-8 flex justify-center">
+                <div className="relative animate-newsletter-logo-float">
+                  {/* Light mode: dark logo, Dark mode: light logo */}
+                  <img
+                    src="/koshino_logo_dark.png"
+                    alt="Koshino Fashion Logo"
+                    className="h-12 md:h-14 lg:h-16 w-auto opacity-80 hover:opacity-100 transition-all duration-300 animate-newsletter-logo-glow dark:hidden"
+                    loading="lazy"
                   />
-                </div>
-
-                {/* Products Grid */}
-                <div>
-                  {isLoading ? (
-                    <div className="text-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                      <p className="text-white/90">
-                        {language === 'vi' ? 'Đang tải sản phẩm...' :
-                         language === 'ja' ? '商品を読み込み中...' : 'Loading products...'}
-                      </p>
-                    </div>
-                  ) : filteredProducts.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-white/90">
-                        {language === 'vi' ? 'Không tìm thấy sản phẩm nào.' :
-                         language === 'ja' ? '商品が見つかりません。' : 'No products found.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <EnhancedProductGrid
-                      products={filteredProducts}
-                      onAddToCart={addToCart}
-                      onAddToWishlist={addToWishlist}
-                      onAddToCompare={addToCompare}
-                      loading={isLoading}
-                    />
-                  )}
+                  <img
+                    src="/koshino_logo.png"
+                    alt="Koshino Fashion Logo"
+                    className="h-12 md:h-14 lg:h-16 w-auto opacity-80 hover:opacity-100 transition-all duration-300 animate-newsletter-logo-glow hidden dark:block"
+                    loading="lazy"
+                  />
+                  {/* Subtle glow effect for both light and dark mode */}
+                  <div className="absolute inset-0 bg-stone-900/10 dark:bg-white/10 rounded-full blur-lg scale-110 opacity-30 dark:opacity-50 animate-pulse"></div>
                 </div>
               </div>
-            </section>
+              
+              <div className="mb-12">
+                <h2 className="text-3xl md:text-4xl font-light text-stone-900 dark:text-stone-100 mb-6 tracking-wide">
+                  {language === 'vi' ? 'Kết Nối Với Chúng Tôi' : 
+                   language === 'ja' ? '私たちとつながる' : 
+                   'Connect With Us'}
+                </h2>
+                <div className="w-20 h-px bg-stone-300 dark:bg-stone-700 mx-auto mb-8"></div>
+                <p className="text-stone-600 dark:text-stone-400 font-light leading-relaxed">
+                  {language === 'vi' ? 'Nhận thông tin về những thiết kế mới và câu chuyện đằng sau mỗi sản phẩm' :
+                   language === 'ja' ? '新しいデザインと各商品の背景ストーリーについての情報を受け取る' :
+                   'Receive updates on new designs and the stories behind each product'}
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                <input
+                  type="email"
+                  placeholder={language === 'vi' ? 'Email của bạn' : language === 'ja' ? 'あなたのメール' : 'Your email'}
+                  className="flex-1 px-4 py-3 bg-white dark:glassmorphism-dark border border-stone-300 dark:border-stone-600 text-stone-900 dark:text-stone-100 placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:border-stone-500 dark:focus:border-stone-400 transition-colors duration-300 font-light rounded-lg"
+                />
+                <button className="px-6 py-3 modern-gradient text-white hover:opacity-90 transition-all duration-300 font-light tracking-wide rounded-lg modern-hover">
+                  {language === 'vi' ? 'Đăng Ký' : language === 'ja' ? '登録' : 'Subscribe'}
+                </button>
+              </div>
+            </div>
+          </section>
 
-          {/* Cart Toggle Button */}
+          {/* Cart Toggle Button - Modern Zen Style */}
           {cartItemsCount > 0 && (
-            <div className="fixed bottom-6 right-6 z-50">
+            <div className="fixed bottom-8 right-8 z-50">
               <Button
                 onClick={() => setShowCart(!showCart)}
                 size="lg"
-                className="rounded-full shadow-lg"
+                className="rounded-full modern-gradient text-white hover:opacity-90 modern-shadow-lg border-0 modern-hover"
               >
                 <ShoppingBag className="h-5 w-5 mr-2" />
-                {language === 'vi' ? 'Xem Giỏ Hàng' :
-                 language === 'ja' ? 'カートを見る' : 'View Cart'}
-                <Badge variant="secondary" className="ml-2">
+                {language === 'vi' ? 'Giỏ Hàng' : language === 'ja' ? 'カート' : 'Cart'}
+                <Badge variant="secondary" className="ml-2 bg-white/20 text-white border-white/30">
                   {cartItemsCount}
                 </Badge>
               </Button>
@@ -601,12 +882,12 @@ const Index = () => {
         <div className="fixed inset-0 z-50 overflow-hidden">
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
             onClick={() => setShowCart(false)}
           />
           
           {/* Sidebar */}
-          <div className="absolute right-0 top-0 h-full w-full sm:max-w-md bg-background shadow-xl overflow-hidden transform transition-transform duration-300 ease-out">
+          <div className="absolute right-0 top-0 h-full w-full sm:max-w-md bg-white dark:glassmorphism-dark modern-shadow-lg overflow-hidden transform transition-transform duration-300 ease-out border-l border-stone-200 dark:border-stone-700">
             <div className="h-full">
               <Cart
                 cartItems={cartItems}

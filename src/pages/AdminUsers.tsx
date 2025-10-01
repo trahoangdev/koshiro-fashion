@@ -71,7 +71,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import { useNavigate } from "react-router-dom";
 import { User as UserType } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
@@ -305,7 +305,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated || user?.role !== 'admin') {
+      if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
         navigate("/admin/login");
       }
     }
@@ -776,7 +776,7 @@ export default function AdminUsers() {
   }
 
   // Don't render if not authenticated or not admin
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
     return null;
   }
 

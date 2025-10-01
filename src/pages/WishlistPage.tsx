@@ -10,7 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { api, Product } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 
 interface CartItem {
   id: string;
@@ -312,7 +312,7 @@ const WishlistPage = () => {
             {/* Banner Background */}
             <div className="absolute inset-0">
               <img 
-                src="/images/categories/accessories.jpg" 
+                src="/images/banners/banner-04.png" 
                 alt="Wishlist Banner"
                 className="w-full h-full object-cover"
               />

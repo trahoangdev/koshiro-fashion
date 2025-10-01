@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -297,7 +297,7 @@ export default function AdminShippingPage() {
 
   // Load data from API
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'admin') {
+    if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
       return;
     }
 
@@ -456,7 +456,19 @@ export default function AdminShippingPage() {
     }
   };
 
-  const handleCreateMethod = async (methodData: any) => {
+  interface CreateMethodData {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description: string;
+    type: 'standard' | 'express' | 'overnight' | 'pickup';
+    cost: number;
+    estimatedDays: number;
+    isActive: boolean;
+    supportedRegions: string[];
+  }
+
+  const handleCreateMethod = async (methodData: CreateMethodData) => {
     try {
       setIsSubmitting(true);
       const response = await api.createShippingMethod(methodData);
@@ -467,12 +479,17 @@ export default function AdminShippingPage() {
         name: response.method?.name || methodData.name || 'Unknown',
         nameEn: response.method?.nameEn || methodData.nameEn || '',
         nameJa: response.method?.nameJa || methodData.nameJa || '',
-        description: response.method?.description || methodData.description || '',
-        type: response.method?.type || methodData.type || 'standard',
+        description: (response.method as Record<string, unknown>)?.description as string || methodData.description || '',
+        descriptionEn: (response.method as Record<string, unknown>)?.descriptionEn as string || '',
+        descriptionJa: (response.method as Record<string, unknown>)?.descriptionJa as string || '',
+        type: (response.method?.type || methodData.type || 'standard') as 'standard' | 'express' | 'overnight' | 'pickup',
         cost: response.method?.cost || methodData.cost || 0,
+        freeShippingThreshold: response.method?.freeShippingThreshold,
         estimatedDays: response.method?.estimatedDays || methodData.estimatedDays || 3,
         isActive: response.method?.isActive !== undefined ? response.method.isActive : (methodData.isActive !== undefined ? methodData.isActive : true),
         supportedRegions: response.method?.supportedRegions || [],
+        weightLimit: response.method?.weightLimit,
+        dimensionsLimit: response.method?.dimensionsLimit,
         createdAt: response.method?.createdAt || new Date().toISOString(),
         updatedAt: response.method?.updatedAt || new Date().toISOString()
       };
@@ -495,12 +512,12 @@ export default function AdminShippingPage() {
     }
   };
 
-  const handleUpdateMethod = async (id: string, methodData: any) => {
+  const handleUpdateMethod = async (id: string, methodData: CreateMethodData) => {
     try {
       setIsSubmitting(true);
       const response = await api.updateShippingMethod(id, methodData);
       setShippingMethods(prev => 
-        prev.map(method => method._id === id ? response.method : method)
+        prev.map(method => method._id === id ? { ...method, ...response.method } : method)
       );
       setIsEditMethodDialogOpen(false);
       setEditingMethod(null);
@@ -625,16 +642,35 @@ export default function AdminShippingPage() {
         updatedAt: shipment.updatedAt
       }));
 
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      const fileName = `shipments_${new Date().toISOString().split('T')[0]}`;
       
-      const extension = format === 'excel' ? 'xlsx' : format;
-      const exportFileDefaultName = `shipments_${new Date().toISOString().split('T')[0]}.${extension}`;
-      
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
+      if (format === 'excel') {
+        const blob = await exportImportService.exportToExcel(exportData);
+        const url = URL.createObjectURL(blob);
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', url);
+        linkElement.setAttribute('download', `${fileName}.xlsx`);
+        linkElement.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'csv') {
+        const csvContent = await exportImportService.exportToCSV(exportData);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', url);
+        linkElement.setAttribute('download', `${fileName}.csv`);
+        linkElement.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // JSON export
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', `${fileName}.json`);
+        linkElement.click();
+      }
       
       toast({
         title: "Export Successful",
@@ -654,7 +690,7 @@ export default function AdminShippingPage() {
 
   // Authentication check
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
+    if (!authLoading && (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin'))) {
       window.location.href = '/admin/login';
     }
   }, [authLoading, isAuthenticated, user?.role]);
@@ -669,7 +705,7 @@ export default function AdminShippingPage() {
     );
   }
 
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
     return null;
   }
 
@@ -1145,15 +1181,16 @@ export default function AdminShippingPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             const formData = new FormData(e.currentTarget);
-            const methodData = {
+            const methodData: CreateMethodData = {
               name: formData.get('name') as string,
               nameEn: formData.get('nameEn') as string,
               nameJa: formData.get('nameJa') as string,
               description: formData.get('description') as string,
-              type: formData.get('type') as string,
+              type: formData.get('type') as 'standard' | 'express' | 'overnight' | 'pickup',
               cost: parseFloat(formData.get('cost') as string),
               estimatedDays: parseInt(formData.get('estimatedDays') as string),
-              isActive: formData.get('isActive') === 'on'
+              isActive: formData.get('isActive') === 'on',
+              supportedRegions: []
             };
             handleCreateMethod(methodData);
           }}>
@@ -1236,15 +1273,16 @@ export default function AdminShippingPage() {
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              const methodData = {
+              const methodData: CreateMethodData = {
                 name: formData.get('name') as string,
                 nameEn: formData.get('nameEn') as string,
                 nameJa: formData.get('nameJa') as string,
                 description: formData.get('description') as string,
-                type: formData.get('type') as string,
+                type: formData.get('type') as 'standard' | 'express' | 'overnight' | 'pickup',
                 cost: parseFloat(formData.get('cost') as string),
                 estimatedDays: parseInt(formData.get('estimatedDays') as string),
-                isActive: formData.get('isActive') === 'on'
+                isActive: formData.get('isActive') === 'on',
+                supportedRegions: []
               };
               handleUpdateMethod(editingMethod._id, methodData);
             }}>

@@ -156,7 +156,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
 
   if (viewMode === 'list') {
     return (
-      <Card className="group overflow-hidden border-border/40 hover:shadow-lg hover:border-border/60 transition-all duration-300 cursor-pointer rounded-md" onClick={handleCardClick}>
+      <Card className="group overflow-hidden border-stone-200/60 dark:border-stone-700/60 hover:shadow-lg hover:border-stone-300/80 dark:hover:border-stone-600/80 transition-all duration-500 cursor-pointer rounded-xl bg-white/80 dark:bg-stone-800/80 backdrop-blur-sm" onClick={handleCardClick}>
         <div className="flex">
           <div className="relative w-48 h-48 flex-shrink-0 rounded-l-md overflow-hidden">
             {/* Primary Image - Default */}
@@ -185,56 +185,70 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
             )}
             {/* Stock Status - Higher priority */}
             {product.stock <= 0 && (
-              <Badge variant="secondary" className="absolute top-3 left-3 z-10">
+              <Badge variant="secondary" className="absolute top-3 left-3 z-10 bg-stone-500/90 text-white border-0 backdrop-blur-sm">
                 {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
               </Badge>
             )}
             
             {/* Sale Badge - Show when on sale and in stock */}
             {product.stock > 0 && isOnSale && discountPercentage > 0 && (
-              <Badge variant="destructive" className="absolute top-3 left-3 z-10">
+              <Badge variant="destructive" className="absolute top-3 left-3 z-10 bg-red-500/90 text-white border-0 backdrop-blur-sm font-medium">
                 -{discountPercentage}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
               </Badge>
             )}
             
             {/* Featured Badge - Show when not on sale and in stock */}
             {product.stock > 0 && !isOnSale && product.isFeatured && (
-              <Badge variant="default" className="absolute top-3 right-3">
+              <Badge variant="default" className="absolute top-3 right-3 bg-stone-800/90 dark:bg-stone-200/90 text-white dark:text-stone-800 border-0 backdrop-blur-sm font-medium">
                 {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
               </Badge>
             )}
             
-            {/* Action Icons - Same design as Flash Sale */}
-            <div className="absolute top-2 right-2 flex flex-col gap-2">
+            {/* New Badge - Show for new products */}
+            {product.stock > 0 && !isOnSale && product.isNew && (
+              <Badge className={`absolute ${product.isFeatured ? 'top-12' : 'top-3'} right-3 bg-green-500/90 text-white border-0 backdrop-blur-sm font-medium`}>
+                {language === 'vi' ? 'MỚI' : language === 'ja' ? '新着' : 'NEW'}
+              </Badge>
+            )}
+            
+            {/* Limited Edition Badge */}
+            {product.stock > 0 && product.isLimitedEdition && (
+              <Badge className="absolute top-3 left-3 z-10 bg-purple-500/90 text-white border-0 backdrop-blur-sm font-medium">
+                {language === 'vi' ? 'Phiên bản giới hạn' : language === 'ja' ? '限定版' : 'Limited Edition'}
+              </Badge>
+            )}
+            
+            {/* Action Icons - Zen Style */}
+            <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
               {onAddToWishlist && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 bg-white/90 hover:bg-white rounded-full shadow-md"
+                  className="h-8 w-8 p-0 bg-white/90 dark:bg-stone-800/90 hover:bg-white dark:hover:bg-stone-800 rounded-full shadow-lg backdrop-blur-sm border border-stone-200/50 dark:border-stone-600/50"
                   onClick={handleAddToWishlist}
                   title={language === 'vi' ? 'Thêm vào yêu thích' : language === 'ja' ? 'お気に入りに追加' : 'Add to Wishlist'}
                 >
-                  <Heart className="h-4 w-4 text-gray-700" />
+                  <Heart className="h-4 w-4 text-stone-600 dark:text-stone-400" />
                 </Button>
               )}
               {onAddToCompare && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 bg-white/90 hover:bg-white rounded-full shadow-md"
+                  className="h-8 w-8 p-0 bg-white/90 dark:bg-stone-800/90 hover:bg-white dark:hover:bg-stone-800 rounded-full shadow-lg backdrop-blur-sm border border-stone-200/50 dark:border-stone-600/50"
                   onClick={handleAddToCompare}
                   title={language === 'vi' ? 'Thêm vào so sánh' : language === 'ja' ? '比較リストに追加' : 'Add to Compare'}
                 >
-                  <LinkIcon className="h-4 w-4 text-gray-700" />
+                  <LinkIcon className="h-4 w-4 text-stone-600 dark:text-stone-400" />
                 </Button>
               )}
             </div>
           </div>
           
-          <CardContent className="flex-1 p-4">
+          <CardContent className="flex-1 p-6">
             <div className="flex flex-col h-full">
-              <div className="space-y-3 flex-1">
-                <h3 className="font-semibold text-lg leading-tight mb-2">{getName()}</h3>
+              <div className="space-y-4 flex-1">
+                <h3 className="font-light text-lg leading-tight mb-2 text-stone-900 dark:text-stone-100 group-hover:text-stone-700 dark:group-hover:text-stone-300 transition-colors duration-300">{getName()}</h3>
                 <div className="text-muted-foreground text-sm line-clamp-3">
                   <MarkdownRenderer 
                     content={getDescription() || 'Premium Japanese fashion item with authentic design and quality materials.'}
@@ -325,10 +339,11 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
                 </div>
                   
                   <Button
-                    variant={product.stock <= 0 ? "secondary" : "default"}
+                    variant={product.stock <= 0 ? "secondary" : "outline"}
                     size="sm"
                     disabled={product.stock <= 0}
                     onClick={handleAddToCart}
+                    className="border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-300 font-light"
                   >
                     <ShoppingBag className="mr-2 h-4 w-4" />
                   {language === 'vi' ? 'Thêm vào giỏ' : language === 'ja' ? 'カートに追加' : 'Add to Cart'}
@@ -342,7 +357,7 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
   }
 
   return (
-    <Card className="group overflow-hidden border-border/40 hover:shadow-lg hover:border-border/60 transition-all duration-300 cursor-pointer rounded-md h-[520px] flex flex-col" onClick={handleCardClick}>
+    <Card className="group overflow-hidden border-stone-200/60 dark:border-stone-700/60 hover:shadow-lg hover:border-stone-300/80 dark:hover:border-stone-600/80 transition-all duration-500 cursor-pointer rounded-xl h-[520px] flex flex-col bg-white/80 dark:bg-stone-800/80 backdrop-blur-sm" onClick={handleCardClick}>
       {/* Image Section - Fixed height for consistency */}
       <div className="relative overflow-hidden rounded-t-md h-[280px] flex-shrink-0">
         {/* Primary Image - Default */}
@@ -372,56 +387,77 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
         
         {/* Stock Status - Higher priority */}
         {product.stock <= 0 && (
-          <Badge variant="secondary" className="absolute top-3 left-3 z-10">
+          <Badge variant="secondary" className="absolute top-3 left-3 z-10 bg-stone-500/90 text-white border-0 backdrop-blur-sm">
             {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
           </Badge>
         )}
         
         {/* Sale Badge - Show when on sale and in stock */}
         {product.stock > 0 && isOnSale && discountPercentage > 0 && (
-          <Badge variant="destructive" className="absolute top-3 left-3 z-10">
+          <Badge variant="destructive" className="absolute top-3 left-3 z-10 bg-red-500/90 text-white border-0 backdrop-blur-sm font-medium">
             -{discountPercentage}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
           </Badge>
         )}
         
         {/* Featured Badge - Show when not on sale and in stock */}
         {product.stock > 0 && !isOnSale && product.isFeatured && (
-          <Badge variant="default" className="absolute top-3 right-3">
+          <Badge variant="default" className="absolute top-3 right-3 bg-stone-800/90 dark:bg-stone-200/90 text-white dark:text-stone-800 border-0 backdrop-blur-sm font-medium">
             {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
           </Badge>
         )}
         
-        {/* Action Icons - Same design as Flash Sale */}
-        <div className="absolute top-2 right-2 flex flex-col gap-2">
+        {/* New Badge - Show for new products */}
+        {product.stock > 0 && !isOnSale && product.isNew && (
+          <Badge className={`absolute ${product.isFeatured ? 'top-12' : 'top-3'} right-3 bg-green-500/90 text-white border-0 backdrop-blur-sm font-medium`}>
+            {language === 'vi' ? 'MỚI' : language === 'ja' ? '新着' : 'NEW'}
+          </Badge>
+        )}
+        
+        {/* Limited Edition Badge */}
+        {product.stock > 0 && product.isLimitedEdition && (
+          <Badge className="absolute top-3 left-3 z-10 bg-purple-500/90 text-white border-0 backdrop-blur-sm font-medium">
+            {language === 'vi' ? 'Phiên bản giới hạn' : language === 'ja' ? '限定版' : 'Limited Edition'}
+          </Badge>
+        )}
+        
+        {/* Best Seller Badge */}
+        {product.stock > 0 && product.isBestSeller && (
+          <Badge className="absolute top-3 right-3 bg-orange-500/90 text-white border-0 backdrop-blur-sm font-medium">
+            {language === 'vi' ? 'Bán chạy' : language === 'ja' ? 'ベストセラー' : 'Best Seller'}
+          </Badge>
+        )}
+        
+        {/* Action Icons - Zen Style */}
+        <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
           {onAddToWishlist && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 bg-white/90 hover:bg-white rounded-full shadow-md"
+              className="h-8 w-8 p-0 bg-white/90 dark:bg-stone-800/90 hover:bg-white dark:hover:bg-stone-800 rounded-full shadow-lg backdrop-blur-sm border border-stone-200/50 dark:border-stone-600/50"
               onClick={handleAddToWishlist}
               title={language === 'vi' ? 'Thêm vào yêu thích' : language === 'ja' ? 'お気に入りに追加' : 'Add to Wishlist'}
             >
-              <Heart className="h-4 w-4 text-gray-700" />
+              <Heart className="h-4 w-4 text-stone-600 dark:text-stone-400" />
             </Button>
           )}
           {onAddToCompare && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 bg-white/90 hover:bg-white rounded-full shadow-md"
+              className="h-8 w-8 p-0 bg-white/90 dark:bg-stone-800/90 hover:bg-white dark:hover:bg-stone-800 rounded-full shadow-lg backdrop-blur-sm border border-stone-200/50 dark:border-stone-600/50"
               onClick={handleAddToCompare}
               title={language === 'vi' ? 'Thêm vào so sánh' : language === 'ja' ? '比較リストに追加' : 'Add to Compare'}
             >
-              <LinkIcon className="h-4 w-4 text-gray-700" />
+              <LinkIcon className="h-4 w-4 text-stone-600 dark:text-stone-400" />
             </Button>
           )}
         </div>
       </div>
       
       {/* Content Section - Fixed height to ensure price/button visibility */}
-      <CardContent className="p-4 h-[240px] flex flex-col">
+      <CardContent className="p-6 h-[240px] flex flex-col">
         {/* Product Name */}
-        <h3 className="font-semibold text-base leading-tight mb-2">
+        <h3 className="font-light text-base leading-tight mb-2 text-stone-900 dark:text-stone-100 group-hover:text-stone-700 dark:group-hover:text-stone-300 transition-colors duration-300">
           {getName()}
         </h3>
           
@@ -509,8 +545,9 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
           <Button
             onClick={handleAddToCart}
             disabled={product.stock <= 0}
-            className="w-full"
+            className="w-full border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-300 font-light"
             size="sm"
+            variant="outline"
           >
             <ShoppingBag className="h-4 w-4 mr-2" />
             {language === 'vi' ? 'Thêm vào giỏ' : language === 'ja' ? 'カートに追加' : 'Add to Cart'}

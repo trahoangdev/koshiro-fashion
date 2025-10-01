@@ -61,7 +61,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, isAdminUser } from "@/contexts";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 
@@ -170,7 +170,7 @@ export default function AdminSettings() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated || user?.role !== 'admin') {
+      if (!isAuthenticated || !isAdminUser(user)) {
         navigate("/admin/login");
       }
     }
@@ -178,7 +178,7 @@ export default function AdminSettings() {
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadSettings = async () => {
     try {
@@ -418,7 +418,7 @@ export default function AdminSettings() {
   }
 
   // Don't render if not authenticated or not admin
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || !isAdminUser(user)) {
     return null;
   }
 

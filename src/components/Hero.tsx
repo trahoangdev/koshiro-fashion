@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import heroImage from "@/assets/hero-image.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 
@@ -39,34 +38,59 @@ const Hero = () => {
     }
   };
   const t = translations[language as keyof typeof translations] || translations.en;
-  return <section className="relative min-h-[70vh] flex items-center">
-      {/* Background Image */}
-      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
-      backgroundImage: `url(${heroImage})`
-    }}>
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-background/20" />
+  
+  return (
+    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05]">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgb(0 0 0) 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
       </div>
-
+      
       {/* Content */}
-      <div className="container relative z-10">
-        <div className="max-w-2xl">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            {t.title}
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed">
-            {t.subtitle}
+      <div className="container relative z-10 text-center">
+        <div className="max-w-4xl mx-auto px-6">
+          {/* Japanese-inspired Typography */}
+          <div className="mb-8">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-light tracking-tight text-stone-900 dark:text-stone-100 mb-6">
+              <span className="block font-extralight">
+                {language === 'vi' ? 'KOSHIRO' : language === 'ja' ? 'コシロ' : 'KOSHIRO'}
+              </span>
+              <span className="block text-2xl md:text-3xl lg:text-4xl font-light text-stone-600 dark:text-stone-400 mt-4 tracking-widest">
+                {language === 'vi' ? 'THỜI TRANG NHẬT BẢN' : 
+                 language === 'ja' ? '日本ファッション' : 
+                 'JAPANESE FASHION'}
+              </span>
+            </h1>
+          </div>
+          
+          {/* Minimalist Description */}
+          <p className="text-lg md:text-xl text-stone-600 dark:text-stone-400 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
+            {language === 'vi' ? 'Tìm kiếm sự cân bằng hoàn hảo giữa truyền thống và hiện đại' :
+             language === 'ja' ? '伝統と現代の完璧なバランスを探す' :
+             'Finding the perfect balance between tradition and modernity'}
           </p>
+          
+          {/* Zen CTA Button */}
           <Button 
-            variant="ink" 
-            size="xl" 
-            className="shadow-strong text-slate-50 hover:scale-105 transition-transform duration-200"
+            variant="outline" 
+            size="lg" 
+            className="border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 px-8 py-3 rounded-none font-light tracking-wide transition-all duration-500 hover:scale-105"
             onClick={handleExplore}
           >
-            {t.cta}
+            {language === 'vi' ? 'KHÁM PHÁ' : language === 'ja' ? '探す' : 'EXPLORE'}
           </Button>
         </div>
       </div>
-    </section>;
+      
+      {/* Subtle Scroll Indicator */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <div className="w-px h-12 bg-stone-300 dark:bg-stone-700"></div>
+      </div>
+    </section>
+  );
 };
 
 export default Hero;

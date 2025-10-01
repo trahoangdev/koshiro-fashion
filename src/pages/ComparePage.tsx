@@ -197,7 +197,7 @@ const ComparePage = () => {
             {/* Banner Background */}
             <div className="absolute inset-0">
               <img 
-                src="/images/categories/tops.jpg" 
+                src="/images/banners/banner-02.png" 
                 alt="Compare Products Banner"
                 className="w-full h-full object-cover"
               />

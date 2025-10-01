@@ -261,7 +261,7 @@ const SalePage = () => {
               {/* Banner Background */}
               <div className="absolute inset-0">
                 <img 
-                  src="/images/categories/banner-01-flashsale.jpg" 
+                  src="/images/banners/banner-04.png" 
                   alt="Sale Banner"
                   className="w-full h-full object-cover"
                 />

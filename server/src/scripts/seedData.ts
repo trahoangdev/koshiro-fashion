@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { User } from '../models/User';
 import { Category } from '../models/Category';
-import { Product } from '../models/Product';
+import { Product, IProduct } from '../models/Product';
 import { Order } from '../models/Order';
 import Inventory from '../models/Inventory';
 import StockMovement from '../models/StockMovement';
@@ -11,6 +11,8 @@ import Promotion from '../models/Promotion';
 import FlashSale from '../models/FlashSale';
 import { ShippingMethod } from '../models/Shipping';
 import { AdminPaymentMethod } from '../models/Payment';
+import Role from '../models/Role';
+import Permission from '../models/Permission';
 
 dotenv.config();
 
@@ -56,7 +58,7 @@ const seedData = async () => {
     await mongoose.connect(MONGODB_URI!);
     console.log('✅ Connected to MongoDB');
 
-    // Clear existing data
+    // Clear existing data (but keep roles and permissions)
     await User.deleteMany({});
     await Category.deleteMany({});
     await Product.deleteMany({});
@@ -67,7 +69,64 @@ const seedData = async () => {
     await FlashSale.deleteMany({});
     await ShippingMethod.deleteMany({});
     await AdminPaymentMethod.deleteMany({});
-    console.log('✅ Cleared existing data');
+    console.log('✅ Cleared existing data (keeping roles and permissions)');
+
+    // Get or create admin role
+    let adminRole = await Role.findOne({ name: 'Admin' });
+    if (!adminRole) {
+      // If no admin role exists, create a basic one
+      adminRole = new Role({
+        name: 'Admin',
+        nameEn: 'Admin',
+        nameJa: '管理者',
+        description: 'Administrative access to most system features',
+        descriptionEn: 'Administrative access to most system features',
+        descriptionJa: 'ほとんどのシステム機能への管理アクセス',
+        level: 90,
+        isSystem: true,
+        isActive: true,
+        permissions: [] // Will be populated by roles seeding script
+      });
+      await adminRole.save();
+      console.log('✅ Created basic admin role');
+    }
+
+    // Get or create customer role
+    let customerRole = await Role.findOne({ name: 'Customer' });
+    if (!customerRole) {
+      customerRole = new Role({
+        name: 'Customer',
+        nameEn: 'Customer',
+        nameJa: '顧客',
+        description: 'Standard customer access',
+        descriptionEn: 'Standard customer access',
+        descriptionJa: '標準的な顧客アクセス',
+        level: 10,
+        isSystem: true,
+        isActive: true,
+        permissions: []
+      });
+      await customerRole.save();
+      console.log('✅ Created basic customer role');
+    }
+
+    // Check if we need to seed roles and permissions
+    const existingPermissions = await Permission.countDocuments();
+    if (existingPermissions === 0) {
+      console.log('🔄 No permissions found, running roles and permissions seeding...');
+      try {
+        // Import and run the roles seeding script
+        const { default: seedRolesAndPermissions } = await import('./seedRolesAndPermissions');
+        await seedRolesAndPermissions();
+        console.log('✅ Roles and permissions seeded successfully');
+        
+        // Refresh role references after seeding
+        adminRole = await Role.findOne({ name: 'Admin' });
+        customerRole = await Role.findOne({ name: 'Customer' });
+      } catch (error) {
+        console.log('⚠️  Could not seed roles and permissions, using basic roles:', error);
+      }
+    }
 
     // Create admin user
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@koshiro.com';
@@ -76,7 +135,7 @@ const seedData = async () => {
       email: adminEmail,
       password: adminPassword, // Don't hash here, User model will hash it
       name: 'Admin Koshiro',
-      role: 'admin',
+      role: adminRole!._id, // Use role reference instead of string
       status: 'active',
       totalOrders: 0,
       totalSpent: 0,
@@ -102,7 +161,7 @@ const seedData = async () => {
       }
     });
     await adminUser.save();
-    console.log('✅ Created admin user');
+    console.log('✅ Created admin user with role');
 
     // Create sample users
     const sampleUsers = [
@@ -111,7 +170,7 @@ const seedData = async () => {
         password: 'password123', // Don't hash here, User model will hash it
         name: 'Nguyễn Văn A',
         phone: '0123456789',
-        role: 'customer',
+        role: customerRole!._id, // Use role reference instead of string
         status: 'active',
         totalOrders: 0,
         totalSpent: 0,
@@ -141,7 +200,7 @@ const seedData = async () => {
         password: 'password123', // Don't hash here, User model will hash it
         name: 'John Smith',
         phone: '+1-555-0123',
-        role: 'customer',
+        role: customerRole!._id, // Use role reference instead of string
         status: 'active',
         totalOrders: 0,
         totalSpent: 0,
@@ -171,7 +230,7 @@ const seedData = async () => {
         password: 'password123', // Don't hash here, User model will hash it
         name: 'Tanaka Hiroshi',
         phone: '+81-3-9876-5432',
-        role: 'customer',
+        role: customerRole!._id, // Use role reference instead of string
         status: 'active',
         totalOrders: 0,
         totalSpent: 0,
@@ -329,6 +388,9 @@ const seedData = async () => {
         isActive: true,
         isFeatured: true,
         onSale: true,
+        isNew: true, // New product
+        isLimitedEdition: false,
+        isBestSeller: false,
         tags: ['kimono', 'truyền thống', 'hoa anh đào', 'thêu tay']
       },
       {
@@ -352,7 +414,10 @@ const seedData = async () => {
         isActive: true,
         isFeatured: true,
         onSale: true,
-        tags: ['furisode', 'kimono', 'nữ trẻ', 'hoa cúc']
+        isNew: false,
+        isLimitedEdition: true, // Limited edition
+        isBestSeller: false,
+        tags: ['furisode', 'kimono', 'nữ trẻ', 'hoa cúc', 'limited']
       },
       
       // ===== YUKATA =====
@@ -377,7 +442,10 @@ const seedData = async () => {
         isActive: true,
         isFeatured: true,
         onSale: true,
-        tags: ['yukata', 'mùa hè', 'hoa cúc', 'cotton']
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: true, // Best seller
+        tags: ['yukata', 'mùa hè', 'hoa cúc', 'cotton', 'bestseller']
       },
       {
         name: 'Yukata Nam',
@@ -400,6 +468,9 @@ const seedData = async () => {
         isActive: true,
         isFeatured: false,
         onSale: true,
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: false,
         tags: ['yukata', 'nam', 'rồng', 'truyền thống']
       },
       
@@ -425,6 +496,9 @@ const seedData = async () => {
         isActive: true,
         isFeatured: false,
         onSale: true,
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: false,
         tags: ['haori', 'áo khoác', 'truyền thống', 'silk']
       },
       
@@ -450,7 +524,10 @@ const seedData = async () => {
         isActive: true,
         isFeatured: true,
         onSale: true,
-        tags: ['hakama', 'nam', 'truyền thống', 'silk']
+        isNew: false,
+        isLimitedEdition: true, // Limited edition
+        isBestSeller: false,
+        tags: ['hakama', 'nam', 'truyền thống', 'silk', 'limited']
       },
       
       // ===== ACCESSORIES =====
@@ -475,6 +552,9 @@ const seedData = async () => {
         isActive: true,
         isFeatured: false,
         onSale: true,
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: false,
         tags: ['geta', 'dép', 'truyền thống', 'gỗ']
       },
       {
@@ -498,7 +578,10 @@ const seedData = async () => {
         isActive: true,
         isFeatured: false,
         onSale: true,
-        tags: ['obi', 'thắt lưng', 'kimono', 'thổ cẩm']
+        isNew: false,
+        isLimitedEdition: false,
+        isBestSeller: true, // Best seller
+        tags: ['obi', 'thắt lưng', 'kimono', 'thổ cẩm', 'bestseller']
       }
     ];
 
@@ -510,7 +593,7 @@ const seedData = async () => {
     const stockMovements = [];
     
     for (let i = 0; i < createdProducts.length; i++) {
-      const product = createdProducts[i];
+      const product = createdProducts[i] as unknown as unknown as IProduct;
       
       // Create inventory for each color and size combination
       for (const color of product.colors) {
@@ -539,7 +622,7 @@ const seedData = async () => {
             lastRestocked: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date within last 30 days
             lastSold: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date within last 7 days
             status: currentStock === 0 ? 'out_of_stock' : currentStock <= minStock ? 'low_stock' : 'in_stock',
-            category: (product.categoryId as any).toString(),
+            category: (product.categoryId as mongoose.Types.ObjectId).toString(),
             size: size,
             color: color,
             notes: `Inventory for ${product.name} - ${color} - ${size}`,
@@ -553,7 +636,7 @@ const seedData = async () => {
           const restockQuantity = Math.floor(currentStock * 1.5); // Initial restock was 150% of current
           stockMovements.push({
             productId: product._id,
-            inventoryId: null as any, // Will be set after inventory is created
+            inventoryId: null as unknown as mongoose.Types.ObjectId, // Will be set after inventory is created
             type: 'in',
             quantity: restockQuantity,
             reason: 'Initial stock setup',
@@ -573,7 +656,7 @@ const seedData = async () => {
 
     // Update stock movements with inventory IDs
     for (let i = 0; i < stockMovements.length; i++) {
-      stockMovements[i].inventoryId = createdInventory[i]._id;
+      stockMovements[i].inventoryId = createdInventory[i]._id as mongoose.Types.ObjectId;
     }
 
     await StockMovement.insertMany(stockMovements);
@@ -587,16 +670,16 @@ const seedData = async () => {
         status: 'completed',
         items: [
           {
-            productId: createdProducts[0]._id,
-            name: createdProducts[0].name,
-            nameVi: createdProducts[0].name,
+            productId: (createdProducts[0] as unknown as unknown as IProduct)._id,
+            name: (createdProducts[0] as unknown as unknown as IProduct).name,
+            nameVi: (createdProducts[0] as unknown as unknown as IProduct).name,
             quantity: 1,
-            price: createdProducts[0].salePrice || createdProducts[0].price,
+            price: (createdProducts[0] as unknown as unknown as IProduct).salePrice || (createdProducts[0] as unknown as unknown as IProduct).price,
             size: 'M',
             color: 'Đỏ'
           }
         ],
-        totalAmount: createdProducts[0].salePrice || createdProducts[0].price,
+        totalAmount: (createdProducts[0] as unknown as IProduct).salePrice || (createdProducts[0] as unknown as IProduct).price,
         shippingAddress: {
           name: 'Nguyễn Văn A',
           phone: '0123456789',
@@ -617,16 +700,16 @@ const seedData = async () => {
         status: 'processing',
         items: [
           {
-            productId: createdProducts[1]._id,
-            name: createdProducts[1].name,
-            nameVi: createdProducts[1].name,
+            productId: (createdProducts[1] as unknown as IProduct)._id,
+            name: (createdProducts[1] as unknown as IProduct).name,
+            nameVi: (createdProducts[1] as unknown as IProduct).name,
             quantity: 1,
-            price: createdProducts[1].salePrice || createdProducts[1].price,
+            price: (createdProducts[1] as unknown as IProduct).salePrice || (createdProducts[1] as unknown as IProduct).price,
             size: 'L',
             color: 'Xanh lá'
           }
         ],
-        totalAmount: createdProducts[1].salePrice || createdProducts[1].price,
+        totalAmount: (createdProducts[1] as unknown as IProduct).salePrice || (createdProducts[1] as unknown as IProduct).price,
         shippingAddress: {
           name: 'John Smith',
           phone: '+1-555-0123',
@@ -647,16 +730,16 @@ const seedData = async () => {
         status: 'pending',
         items: [
           {
-            productId: createdProducts[2]._id,
-            name: createdProducts[2].name,
-            nameVi: createdProducts[2].name,
+            productId: (createdProducts[2] as unknown as IProduct)._id,
+            name: (createdProducts[2] as unknown as IProduct).name,
+            nameVi: (createdProducts[2] as unknown as IProduct).name,
             quantity: 1,
-            price: createdProducts[2].salePrice || createdProducts[2].price,
+            price: (createdProducts[2] as unknown as IProduct).salePrice || (createdProducts[2] as unknown as IProduct).price,
             size: 'M',
             color: 'Đen'
           }
         ],
-        totalAmount: createdProducts[2].salePrice || createdProducts[2].price,
+        totalAmount: (createdProducts[2] as unknown as IProduct).salePrice || (createdProducts[2] as unknown as IProduct).price,
         shippingAddress: {
           name: 'Tanaka Hiroshi',
           phone: '+81-3-9876-5432',
@@ -812,7 +895,7 @@ const seedData = async () => {
         isActive: true,
         maxQuantity: 10,
         soldQuantity: 3,
-        applicableProducts: [createdProducts[0]._id, createdProducts[1]._id], // Kimono products
+        applicableProducts: [(createdProducts[0] as unknown as IProduct)._id, (createdProducts[1] as unknown as IProduct)._id], // Kimono products
         applicableCategories: [createdCategories[0]._id], // Kimono category
         minOrderAmount: 0,
         maxDiscountAmount: 500000,
@@ -838,7 +921,7 @@ const seedData = async () => {
         isActive: true,
         maxQuantity: 20,
         soldQuantity: 8,
-        applicableProducts: [createdProducts[2]._id, createdProducts[3]._id], // Yukata products
+        applicableProducts: [(createdProducts[2] as unknown as IProduct)._id, (createdProducts[3] as unknown as IProduct)._id], // Yukata products
         applicableCategories: [createdCategories[1]._id], // Yukata category
         minOrderAmount: 0,
         maxDiscountAmount: 0,
@@ -864,7 +947,7 @@ const seedData = async () => {
         isActive: true,
         maxQuantity: 50,
         soldQuantity: 15,
-        applicableProducts: [createdProducts[6]._id, createdProducts[7]._id], // Accessories
+        applicableProducts: [(createdProducts[6] as unknown as IProduct)._id, (createdProducts[7] as unknown as IProduct)._id], // Accessories
         applicableCategories: [createdCategories[7]._id], // Accessories category
         minOrderAmount: 0,
         maxDiscountAmount: 100000,
@@ -1081,6 +1164,8 @@ const seedData = async () => {
     console.log('🎉 Database seeded successfully!');
     console.log('📊 Summary:');
     console.log(`   - Users: ${await User.countDocuments()}`);
+    console.log(`   - Roles: ${await Role.countDocuments()}`);
+    console.log(`   - Permissions: ${await Permission.countDocuments()}`);
     console.log(`   - Categories: ${await Category.countDocuments()}`);
     console.log(`   - Products: ${await Product.countDocuments()}`);
     console.log(`   - Orders: ${await Order.countDocuments()}`);
@@ -1092,11 +1177,13 @@ const seedData = async () => {
     console.log(`   - Payment Methods: ${await AdminPaymentMethod.countDocuments()}`);
     console.log('🔑 Admin credentials: admin@koshiro.com / admin123');
     console.log('👥 Customer credentials: customer1@example.com / password123');
+    console.log('👑 Role & Permission System: Ready with RBAC');
     console.log('📦 Inventory Management: Ready with stock tracking and movements');
     console.log('🎯 Promotions: Ready with discount codes and campaigns');
     console.log('⚡ Flash Sales: Ready with time-limited offers');
     console.log('🚚 Shipping: Ready with multiple delivery options');
     console.log('💳 Payments: Ready with various payment methods');
+    console.log('🏷️  Product Badges: NEW, Limited Edition, Best Seller support');
 
   } catch (error) {
     console.error('❌ Error seeding data:', error);

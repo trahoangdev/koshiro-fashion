@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 
@@ -85,6 +85,24 @@ export default function AdminLogin() {
     <div className="min-h-screen bg-gradient-zen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          {/* Logo */}
+          <div className="mb-6 flex justify-center">
+            <div className="relative">
+              {/* Light mode: dark logo, Dark mode: light logo */}
+              <img
+                src="/koshino_logo_dark.png"
+                alt="Koshino Fashion Logo"
+                className="h-12 w-auto opacity-90 hover:opacity-100 transition-all duration-300 dark:hidden"
+                loading="lazy"
+              />
+              <img
+                src="/koshino_logo.png"
+                alt="Koshino Fashion Logo"
+                className="h-12 w-auto opacity-90 hover:opacity-100 transition-all duration-300 hidden dark:block"
+                loading="lazy"
+              />
+            </div>
+          </div>
           <div className="flex items-center justify-between mb-2">
             <CardTitle className="text-2xl font-bold flex-1">{t.title}</CardTitle>
             <DropdownMenu>

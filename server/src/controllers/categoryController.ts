@@ -1,13 +1,55 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../middleware/auth';
-import { Category } from '../models/Category';
+import { Category, ICategory } from '../models/Category';
 import { Product } from '../models/Product';
 
-// Get all categories
-export const getCategories = asyncHandler(async (req: Request, res: Response) => {
-  const { isActive, parentId } = req.query;
+// Types for better type safety
+type CategoryTreeNode = ICategory & {
+  children: CategoryTreeNode[];
+};
 
-    const filter: any = {};
+interface CategoryResponse {
+  success: boolean;
+  message?: string;
+  category?: ICategory;
+  categories?: (ICategory & { productCount?: number })[];
+  error?: unknown;
+}
+
+interface CategoryTreeResponse {
+  success: boolean;
+  categories?: CategoryTreeNode[];
+  message?: string;
+  error?: unknown;
+}
+
+interface CategoryWithProductsResponse {
+  success: boolean;
+  category?: ICategory;
+  products?: unknown[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  message?: string;
+  error?: unknown;
+}
+
+/**
+ * Get all categories with optional filtering
+ * @param req - Express request object
+ * @param res - Express response object
+ * @returns JSON response with categories array and product counts
+ */
+export const getCategories = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { isActive, parentId } = req.query;
+
+    const filter: Record<string, unknown> = {};
     
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
@@ -18,34 +60,123 @@ export const getCategories = asyncHandler(async (req: Request, res: Response) =>
     }
 
     const categories = await Category.find(filter)
-      .sort({ name: 1 });
+      .sort({ name: 1 })
+      .lean();
 
-    res.json({ categories });});
-// Get single category by ID
+    // Calculate product count for each category
+    const categoriesWithCount = await Promise.all(
+      categories.map(async (category) => {
+        const productCount = await Product.countDocuments({ 
+          categoryId: category._id,
+          isActive: true 
+        });
+        return {
+          ...category,
+          productCount
+        };
+      })
+    );
+
+    res.json({ 
+      success: true,
+      categories: categoriesWithCount 
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+/**
+ * Get a single category by ID
+ * @param req - Express request object with category ID in params
+ * @param res - Express response object
+ * @returns JSON response with category data
+ */
 export const getCategory = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
     
-    const category = await Category.findById(id);
+    if (!id || id.length !== 24) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid category ID format' 
+      });
+    }
+    
+    const category = await Category.findById(id).lean();
     
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Category not found' 
+      });
     }
 
-    res.json({ category });});
-// Get category by slug
+    res.json({ 
+      success: true,
+      category 
+    });
+  } catch (error) {
+    console.error('Error fetching category:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+/**
+ * Get a category by slug
+ * @param req - Express request object with category slug in params
+ * @param res - Express response object
+ * @returns JSON response with category data
+ */
 export const getCategoryBySlug = asyncHandler(async (req: Request, res: Response) => {
-  const { slug } = req.params;
+  try {
+    const { slug } = req.params;
     
-    const category = await Category.findOne({ slug });
+    if (!slug || typeof slug !== 'string') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid slug parameter' 
+      });
+    }
+    
+    const category = await Category.findOne({ slug }).lean();
     
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Category not found' 
+      });
     }
 
-    res.json({ category });});
-// Create new category
+    res.json({ 
+      success: true,
+      category 
+    });
+  } catch (error) {
+    console.error('Error fetching category by slug:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+/**
+ * Create a new category
+ * @param req - Express request object with category data in body
+ * @param res - Express response object
+ * @returns JSON response with created category data
+ */
 export const createCategory = asyncHandler(async (req: Request, res: Response) => {
-  const {
+  try {
+    const {
       name,
       nameEn,
       nameJa,
@@ -58,29 +189,58 @@ export const createCategory = asyncHandler(async (req: Request, res: Response) =
       parentId
     } = req.body;
 
+    // Validate required fields
+    if (!name || !slug) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Name and slug are required' 
+      });
+    }
+
+    // Validate slug format
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Slug must contain only lowercase letters, numbers, and hyphens' 
+      });
+    }
+
     // Check if slug already exists
     const existingCategory = await Category.findOne({ slug });
     if (existingCategory) {
-      return res.status(400).json({ message: 'Slug already exists' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Slug already exists' 
+      });
     }
 
     // Validate parent category if provided
     if (parentId) {
+      if (parentId.length !== 24) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Invalid parent category ID format' 
+        });
+      }
+      
       const parentCategory = await Category.findById(parentId);
       if (!parentCategory) {
-        return res.status(400).json({ message: 'Parent category not found' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'Parent category not found' 
+        });
       }
     }
 
     const category = new Category({
-      name,
-      nameEn,
-      nameJa,
-      description,
-      descriptionEn,
-      descriptionJa,
-      slug,
-      image,
+      name: name.trim(),
+      nameEn: nameEn?.trim(),
+      nameJa: nameJa?.trim(),
+      description: description?.trim(),
+      descriptionEn: descriptionEn?.trim(),
+      descriptionJa: descriptionJa?.trim(),
+      slug: slug.trim(),
+      image: image?.trim(),
       isActive: isActive !== undefined ? isActive : true,
       parentId
     });
@@ -88,59 +248,175 @@ export const createCategory = asyncHandler(async (req: Request, res: Response) =
     await category.save();
 
     res.status(201).json({
+      success: true,
       message: 'Category created successfully',
       category
-    });});
-// Update category
+    });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+/**
+ * Update an existing category
+ * @param req - Express request object with category ID in params and update data in body
+ * @param res - Express response object
+ * @returns JSON response with updated category data
+ */
 export const updateCategory = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
     const updateData = req.body;
 
-    // Check if slug is being updated and if it already exists
+    // Validate ID format
+    if (!id || id.length !== 24) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid category ID format' 
+      });
+    }
+
+    // Check if category exists
+    const existingCategory = await Category.findById(id);
+    if (!existingCategory) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Category not found' 
+      });
+    }
+
+    // Validate slug format if being updated
     if (updateData.slug) {
-      const existingCategory = await Category.findOne({ 
+      if (!/^[a-z0-9-]+$/.test(updateData.slug)) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Slug must contain only lowercase letters, numbers, and hyphens' 
+        });
+      }
+
+      // Check if slug already exists (excluding current category)
+      const slugExists = await Category.findOne({ 
         slug: updateData.slug, 
         _id: { $ne: id } 
       });
-      if (existingCategory) {
-        return res.status(400).json({ message: 'Slug already exists' });
+      if (slugExists) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Slug already exists' 
+        });
       }
     }
 
     // Validate parent category if being updated
     if (updateData.parentId) {
+      if (updateData.parentId.length !== 24) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Invalid parent category ID format' 
+        });
+      }
+
       const parentCategory = await Category.findById(updateData.parentId);
       if (!parentCategory) {
-        return res.status(400).json({ message: 'Parent category not found' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'Parent category not found' 
+        });
       }
+
       // Prevent circular reference
       if (updateData.parentId === id) {
-        return res.status(400).json({ message: 'Category cannot be its own parent' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'Category cannot be its own parent' 
+        });
+      }
+
+      // Check for circular reference in hierarchy
+      const checkCircularReference = async (categoryId: string, targetId: string): Promise<boolean> => {
+        const category = await Category.findById(categoryId);
+        if (!category || !category.parentId) return false;
+        if (category.parentId.toString() === targetId) return true;
+        return checkCircularReference(category.parentId.toString(), targetId);
+      };
+
+      if (await checkCircularReference(updateData.parentId, id)) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Cannot set parent: would create circular reference' 
+        });
       }
     }
+
+    // Clean and prepare update data
+    const cleanedUpdateData: Record<string, unknown> = {};
+    if (updateData.name) cleanedUpdateData.name = updateData.name.trim();
+    if (updateData.nameEn) cleanedUpdateData.nameEn = updateData.nameEn.trim();
+    if (updateData.nameJa) cleanedUpdateData.nameJa = updateData.nameJa.trim();
+    if (updateData.description) cleanedUpdateData.description = updateData.description.trim();
+    if (updateData.descriptionEn) cleanedUpdateData.descriptionEn = updateData.descriptionEn.trim();
+    if (updateData.descriptionJa) cleanedUpdateData.descriptionJa = updateData.descriptionJa.trim();
+    if (updateData.slug) cleanedUpdateData.slug = updateData.slug.trim();
+    if (updateData.image) cleanedUpdateData.image = updateData.image.trim();
+    if (updateData.isActive !== undefined) cleanedUpdateData.isActive = updateData.isActive;
+    if (updateData.parentId !== undefined) cleanedUpdateData.parentId = updateData.parentId;
 
     const category = await Category.findByIdAndUpdate(
       id,
-      updateData,
+      cleanedUpdateData,
       { new: true, runValidators: true }
     );
 
-    if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
-
     res.json({
+      success: true,
       message: 'Category updated successfully',
       category
-    });});
-// Delete category
+    });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+/**
+ * Delete a category
+ * @param req - Express request object with category ID in params
+ * @param res - Express response object
+ * @returns JSON response with deletion confirmation
+ */
 export const deleteCategory = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
     
+    // Validate ID format
+    if (!id || id.length !== 24) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid category ID format' 
+      });
+    }
+
+    // Check if category exists
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Category not found' 
+      });
+    }
+
     // Check if category has products
     const productCount = await Product.countDocuments({ categoryId: id });
     if (productCount > 0) {
       return res.status(400).json({ 
+        success: false,
         message: `Cannot delete category with ${productCount} products. Please move or delete products first.` 
       });
     }
@@ -149,53 +425,97 @@ export const deleteCategory = asyncHandler(async (req: Request, res: Response) =
     const subcategoryCount = await Category.countDocuments({ parentId: id });
     if (subcategoryCount > 0) {
       return res.status(400).json({ 
+        success: false,
         message: `Cannot delete category with ${subcategoryCount} subcategories. Please delete subcategories first.` 
       });
     }
     
-    const category = await Category.findByIdAndDelete(id);
-    
-    if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
+    await Category.findByIdAndDelete(id);
 
-    res.json({ message: 'Category deleted successfully' });});
-// Get category tree (hierarchical)
+    res.json({ 
+      success: true,
+      message: 'Category deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+/**
+ * Get category tree (hierarchical structure)
+ * @param req - Express request object with optional isActive filter
+ * @param res - Express response object
+ * @returns JSON response with hierarchical category tree
+ */
 export const getCategoryTree = asyncHandler(async (req: Request, res: Response) => {
-  const { isActive } = req.query;
+  try {
+    const { isActive } = req.query;
 
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
     }
 
-    const categories = await Category.find(filter).sort({ name: 1 });
+    const categories = await Category.find(filter).sort({ name: 1 }).lean();
 
-    // Build tree structure
-    const buildTree = (parentId: string | null = null): any[] => {
+    // Build tree structure with proper typing
+    const buildTree = (parentId: string | null = null): CategoryTreeNode[] => {
       return categories
         .filter(cat => cat.parentId?.toString() === parentId)
-        .map((cat: any) => ({
-          ...cat.toObject(),
+        .map((cat) => ({
+          ...cat,
           children: buildTree(cat._id.toString())
-        }));
+        } as unknown as CategoryTreeNode));
     };
 
     const categoryTree = buildTree();
 
-    res.json({ categories: categoryTree });});
-// Get category with products
+    res.json({ 
+      success: true,
+      categories: categoryTree 
+    });
+  } catch (error) {
+    console.error('Error fetching category tree:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+/**
+ * Get category with its products (paginated)
+ * @param req - Express request object with category ID in params and pagination query params
+ * @param res - Express response object
+ * @returns JSON response with category data, products array, and pagination info
+ */
 export const getCategoryWithProducts = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    // Validate ID format
+    if (!id || id.length !== 24) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid category ID format' 
+      });
+    }
+
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 10));
     const skip = (pageNum - 1) * limitNum;
 
-    const category = await Category.findById(id);
+    const category = await Category.findById(id).lean();
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Category not found' 
+      });
     }
 
     const products = await Product.find({ 
@@ -205,7 +525,8 @@ export const getCategoryWithProducts = asyncHandler(async (req: Request, res: Re
       .populate('categoryId', 'name nameEn nameJa slug')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .lean();
 
     const total = await Product.countDocuments({ 
       categoryId: id, 
@@ -213,12 +534,24 @@ export const getCategoryWithProducts = asyncHandler(async (req: Request, res: Re
     });
 
     res.json({
+      success: true,
       category,
       products,
       pagination: {
         page: pageNum,
         limit: limitNum,
         total,
-        pages: Math.ceil(total / limitNum)
+        pages: Math.ceil(total / limitNum),
+        hasNext: pageNum < Math.ceil(total / limitNum),
+        hasPrev: pageNum > 1
       }
-    });});
+    });
+  } catch (error) {
+    console.error('Error fetching category with products:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});

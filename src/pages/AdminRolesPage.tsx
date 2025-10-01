@@ -1,38 +1,42 @@
-import { useState, useEffect } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Search,
+  Users,
+  Loader2,
+  Filter,
+  Copy,
+  Shield,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  MoreHorizontal,
+  Grid3X3,
+  List,
+  RefreshCw,
+  CheckSquare,
+  Square,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  Settings,
+  UserCheck,
+  Lock,
+  Unlock
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { 
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger 
 } from "@/components/ui/dialog";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -42,808 +46,741 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+import RoleForm from "@/components/RoleForm";
 import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
-  Shield,
-  Users,
-  Settings,
-  Eye,
-  Copy,
-  UserCheck,
-  UserX,
-  Key,
-  Lock,
-  Unlock,
-  Crown,
-  User,
-  UserPlus,
-  UserMinus,
-  Download,
-  Upload,
-  RefreshCw,
-  Loader2
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth, getUserRoleName } from "@/contexts";
+import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
+import { api, Role, Permission } from "@/lib/api";
 
-interface Permission {
-  id: string;
-  name: string;
-  nameEn?: string;
-  nameJa?: string;
-  description: string;
-  descriptionEn?: string;
-  descriptionJa?: string;
-  category: string;
-  resource: string;
-  action: string;
-}
 
-interface Role {
-  _id: string;
-  name: string;
-  nameEn?: string;
-  nameJa?: string;
-  description: string;
-  descriptionEn?: string;
-  descriptionJa?: string;
-  permissions: string[];
-  isSystem: boolean;
-  isActive: boolean;
-  userCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  lastLogin?: string;
-  createdAt: string;
+interface RoleStats {
+  total: number;
+  active: number;
+  system: number;
+  userCreated: number;
+  distribution: Array<{
+    _id: string;
+    name: string;
+    userCount: number;
+    level: number;
+    isActive: boolean;
+  }>;
 }
 
 export default function AdminRolesPage() {
-  const { language } = useLanguage();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { language } = useLanguage();
   
   const [roles, setRoles] = useState<Role[]>([]);
   const [filteredRoles, setFilteredRoles] = useState<Role[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [isCreateRoleDialogOpen, setIsCreateRoleDialogOpen] = useState(false);
-  const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("level");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
-  const [isAssignUserDialogOpen, setIsAssignUserDialogOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<RoleStats | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isCloning, setIsCloning] = useState<string | null>(null);
 
   const translations = {
-    en: {
-      title: "Role & Permission Management",
-      subtitle: "Manage user roles, permissions, and access control",
-      createRole: "Create Role",
-      search: "Search roles...",
-      roleName: "Role Name",
-      description: "Description",
-      permissions: "Permissions",
-      users: "Users",
-      status: "Status",
-      actions: "Actions",
-      active: "Active",
-      inactive: "Inactive",
-      system: "System",
-      custom: "Custom",
-      noRoles: "No roles found",
-      totalRoles: "Total Roles",
-      activeRoles: "Active Roles",
-      totalUsers: "Total Users",
-      systemRoles: "System Roles",
-      assignUsers: "Assign Users",
-      managePermissions: "Manage Permissions",
-      copyRole: "Copy Role",
-      deleteRole: "Delete Role",
-      edit: "Edit",
-      delete: "Delete",
-      save: "Save",
-      cancel: "Cancel",
-      selectUsers: "Select Users",
-      assign: "Assign",
-      unassign: "Unassign",
-      permissionCategories: {
-        dashboard: "Dashboard",
-        products: "Products",
-        orders: "Orders",
-        users: "Users",
-        analytics: "Analytics",
-        settings: "Settings",
-        inventory: "Inventory",
-        shipping: "Shipping",
-        payments: "Payments",
-        promotions: "Promotions"
-      }
-    },
     vi: {
-      title: "Quản lý Vai trò & Phân quyền",
-      subtitle: "Quản lý vai trò người dùng, quyền hạn và kiểm soát truy cập",
-      createRole: "Tạo Vai trò",
+      title: "Quản lý Vai trò",
+      subtitle: "Quản lý vai trò và quyền hạn của người dùng",
+      addRole: "Thêm Vai trò",
       search: "Tìm kiếm vai trò...",
-      roleName: "Tên vai trò",
-      description: "Mô tả",
-      permissions: "Quyền hạn",
-      users: "Người dùng",
-      status: "Trạng thái",
-      actions: "Thao tác",
+      all: "Tất cả",
       active: "Hoạt động",
       inactive: "Không hoạt động",
       system: "Hệ thống",
-      custom: "Tùy chỉnh",
-      noRoles: "Không tìm thấy vai trò",
-      totalRoles: "Tổng vai trò",
-      activeRoles: "Vai trò hoạt động",
-      totalUsers: "Tổng người dùng",
-      systemRoles: "Vai trò hệ thống",
-      assignUsers: "Gán Người dùng",
-      managePermissions: "Quản lý Quyền hạn",
-      copyRole: "Sao chép Vai trò",
-      deleteRole: "Xóa Vai trò",
+      userCreated: "Người dùng tạo",
+      level: "Cấp độ",
+      users: "Người dùng",
+      permissions: "Quyền hạn",
+      actions: "Hành động",
       edit: "Chỉnh sửa",
       delete: "Xóa",
-      save: "Lưu",
-      cancel: "Hủy",
-      selectUsers: "Chọn Người dùng",
-      assign: "Gán",
-      unassign: "Bỏ gán",
-      permissionCategories: {
-        dashboard: "Bảng điều khiển",
-        products: "Sản phẩm",
-        orders: "Đơn hàng",
-        users: "Người dùng",
-        analytics: "Phân tích",
-        settings: "Cài đặt",
-        inventory: "Tồn kho",
-        shipping: "Vận chuyển",
-        payments: "Thanh toán",
-        promotions: "Khuyến mãi"
+      clone: "Sao chép",
+      activate: "Kích hoạt",
+      deactivate: "Vô hiệu hóa",
+      noRoles: "Không có vai trò nào",
+      loading: "Đang tải...",
+      error: "Lỗi",
+      success: "Thành công",
+      createSuccess: "Vai trò đã được tạo thành công",
+      updateSuccess: "Vai trò đã được cập nhật thành công",
+      deleteSuccess: "Vai trò đã được xóa thành công",
+      createError: "Lỗi khi tạo vai trò",
+      updateError: "Lỗi khi cập nhật vai trò",
+      deleteError: "Lỗi khi xóa vai trò",
+      loadError: "Lỗi khi tải dữ liệu",
+      confirmDelete: "Xác nhận xóa",
+      deleteConfirmMessage: "Bạn có chắc chắn muốn xóa vai trò này? Hành động này không thể hoàn tác.",
+      deleteAction: "Xóa",
+      cancelAction: "Hủy",
+      cannotDeleteSystem: "Không thể xóa vai trò hệ thống",
+      cannotDeleteWithUsers: "Không thể xóa vai trò có người dùng",
+      createRole: "Tạo vai trò",
+      editRole: "Chỉnh sửa vai trò",
+      viewRole: "Xem chi tiết",
+      cloneSuccess: "Sao chép thành công",
+      cloneSuccessDesc: "Vai trò đã được sao chép",
+      cloneError: "Lỗi sao chép",
+      cloneErrorDesc: "Không thể sao chép vai trò",
+      stats: {
+        total: "Tổng số",
+        active: "Hoạt động",
+        system: "Hệ thống",
+        userCreated: "Người dùng tạo"
+      }
+    },
+    en: {
+      title: "Role Management",
+      subtitle: "Manage user roles and permissions",
+      addRole: "Add Role",
+      search: "Search roles...",
+      all: "All",
+      active: "Active",
+      inactive: "Inactive",
+      system: "System",
+      userCreated: "User Created",
+      level: "Level",
+      users: "Users",
+      permissions: "Permissions",
+      actions: "Actions",
+      edit: "Edit",
+      delete: "Delete",
+      clone: "Clone",
+      activate: "Activate",
+      deactivate: "Deactivate",
+      noRoles: "No roles found",
+      loading: "Loading...",
+      error: "Error",
+      success: "Success",
+      createSuccess: "Role created successfully",
+      updateSuccess: "Role updated successfully",
+      deleteSuccess: "Role deleted successfully",
+      createError: "Error creating role",
+      updateError: "Error updating role",
+      deleteError: "Error deleting role",
+      loadError: "Error loading data",
+      confirmDelete: "Confirm Delete",
+      deleteConfirmMessage: "Are you sure you want to delete this role? This action cannot be undone.",
+      deleteAction: "Delete",
+      cancelAction: "Cancel",
+      cannotDeleteSystem: "Cannot delete system role",
+      cannotDeleteWithUsers: "Cannot delete role with users",
+      createRole: "Create Role",
+      editRole: "Edit Role",
+      viewRole: "View Details",
+      cloneSuccess: "Clone Successful",
+      cloneSuccessDesc: "Role has been cloned",
+      cloneError: "Clone Error",
+      cloneErrorDesc: "Failed to clone role",
+      stats: {
+        total: "Total",
+        active: "Active",
+        system: "System",
+        userCreated: "User Created"
       }
     },
     ja: {
-      title: "ロール・権限管理",
-      subtitle: "ユーザーロール、権限、アクセス制御の管理",
-      createRole: "ロール作成",
-      search: "ロール検索...",
-      roleName: "ロール名",
-      description: "説明",
-      permissions: "権限",
-      users: "ユーザー",
-      status: "ステータス",
-      actions: "アクション",
+      title: "ロール管理",
+      subtitle: "ユーザーロールと権限の管理",
+      addRole: "ロール追加",
+      search: "ロールを検索...",
+      all: "すべて",
       active: "アクティブ",
       inactive: "非アクティブ",
       system: "システム",
-      custom: "カスタム",
-      noRoles: "ロールが見つかりません",
-      totalRoles: "総ロール数",
-      activeRoles: "アクティブロール",
-      totalUsers: "総ユーザー数",
-      systemRoles: "システムロール",
-      assignUsers: "ユーザー割り当て",
-      managePermissions: "権限管理",
-      copyRole: "ロールコピー",
-      deleteRole: "ロール削除",
+      userCreated: "ユーザー作成",
+      level: "レベル",
+      users: "ユーザー",
+      permissions: "権限",
+      actions: "アクション",
       edit: "編集",
       delete: "削除",
-      save: "保存",
-      cancel: "キャンセル",
-      selectUsers: "ユーザー選択",
-      assign: "割り当て",
-      unassign: "割り当て解除",
-      permissionCategories: {
-        dashboard: "ダッシュボード",
-        products: "商品",
-        orders: "注文",
-        users: "ユーザー",
-        analytics: "分析",
-        settings: "設定",
-        inventory: "在庫",
-        shipping: "配送",
-        payments: "支払い",
-        promotions: "プロモーション"
+      clone: "複製",
+      activate: "有効化",
+      deactivate: "無効化",
+      noRoles: "ロールが見つかりません",
+      loading: "読み込み中...",
+      error: "エラー",
+      success: "成功",
+      createSuccess: "ロールが正常に作成されました",
+      updateSuccess: "ロールが正常に更新されました",
+      deleteSuccess: "ロールが正常に削除されました",
+      createError: "ロール作成エラー",
+      updateError: "ロール更新エラー",
+      deleteError: "ロール削除エラー",
+      loadError: "データ読み込みエラー",
+      confirmDelete: "削除確認",
+      deleteConfirmMessage: "このロールを削除してもよろしいですか？この操作は元に戻せません。",
+      deleteAction: "削除",
+      cancelAction: "キャンセル",
+      cannotDeleteSystem: "システムロールは削除できません",
+      cannotDeleteWithUsers: "ユーザーがいるロールは削除できません",
+      createRole: "ロール作成",
+      editRole: "ロール編集",
+      viewRole: "詳細表示",
+      cloneSuccess: "クローン成功",
+      cloneSuccessDesc: "ロールがクローンされました",
+      cloneError: "クローンエラー",
+      cloneErrorDesc: "ロールのクローンに失敗しました",
+      stats: {
+        total: "合計",
+        active: "アクティブ",
+        system: "システム",
+        userCreated: "ユーザー作成"
       }
     }
   };
 
   const t = translations[language as keyof typeof translations] || translations.en;
 
-  // Mock data for demonstration
+  // Authentication check
   useEffect(() => {
-    const mockPermissions: Permission[] = [
-      // Dashboard permissions
-      { id: "dashboard.view", name: "Xem bảng điều khiển", nameEn: "View Dashboard", nameJa: "ダッシュボード表示", description: "Xem thống kê tổng quan", descriptionEn: "View overview statistics", descriptionJa: "概要統計の表示", category: "dashboard", resource: "dashboard", action: "view" },
-      
-      // Product permissions
-      { id: "products.view", name: "Xem sản phẩm", nameEn: "View Products", nameJa: "商品表示", description: "Xem danh sách sản phẩm", descriptionEn: "View product list", descriptionJa: "商品一覧の表示", category: "products", resource: "products", action: "view" },
-      { id: "products.create", name: "Tạo sản phẩm", nameEn: "Create Products", nameJa: "商品作成", description: "Tạo sản phẩm mới", descriptionEn: "Create new products", descriptionJa: "新商品の作成", category: "products", resource: "products", action: "create" },
-      { id: "products.edit", name: "Chỉnh sửa sản phẩm", nameEn: "Edit Products", nameJa: "商品編集", description: "Chỉnh sửa sản phẩm", descriptionEn: "Edit products", descriptionJa: "商品の編集", category: "products", resource: "products", action: "edit" },
-      { id: "products.delete", name: "Xóa sản phẩm", nameEn: "Delete Products", nameJa: "商品削除", description: "Xóa sản phẩm", descriptionEn: "Delete products", descriptionJa: "商品の削除", category: "products", resource: "products", action: "delete" },
-      
-      // Order permissions
-      { id: "orders.view", name: "Xem đơn hàng", nameEn: "View Orders", nameJa: "注文表示", description: "Xem danh sách đơn hàng", descriptionEn: "View order list", descriptionJa: "注文一覧の表示", category: "orders", resource: "orders", action: "view" },
-      { id: "orders.edit", name: "Chỉnh sửa đơn hàng", nameEn: "Edit Orders", nameJa: "注文編集", description: "Chỉnh sửa đơn hàng", descriptionEn: "Edit orders", descriptionJa: "注文の編集", category: "orders", resource: "orders", action: "edit" },
-      { id: "orders.cancel", name: "Hủy đơn hàng", nameEn: "Cancel Orders", nameJa: "注文キャンセル", description: "Hủy đơn hàng", descriptionEn: "Cancel orders", descriptionJa: "注文のキャンセル", category: "orders", resource: "orders", action: "cancel" },
-      
-      // User permissions
-      { id: "users.view", name: "Xem người dùng", nameEn: "View Users", nameJa: "ユーザー表示", description: "Xem danh sách người dùng", descriptionEn: "View user list", descriptionJa: "ユーザー一覧の表示", category: "users", resource: "users", action: "view" },
-      { id: "users.create", name: "Tạo người dùng", nameEn: "Create Users", nameJa: "ユーザー作成", description: "Tạo người dùng mới", descriptionEn: "Create new users", descriptionJa: "新ユーザーの作成", category: "users", resource: "users", action: "create" },
-      { id: "users.edit", name: "Chỉnh sửa người dùng", nameEn: "Edit Users", nameJa: "ユーザー編集", description: "Chỉnh sửa người dùng", descriptionEn: "Edit users", descriptionJa: "ユーザーの編集", category: "users", resource: "users", action: "edit" },
-      { id: "users.delete", name: "Xóa người dùng", nameEn: "Delete Users", nameJa: "ユーザー削除", description: "Xóa người dùng", descriptionEn: "Delete users", descriptionJa: "ユーザーの削除", category: "users", resource: "users", action: "delete" },
-      
-      // Analytics permissions
-      { id: "analytics.view", name: "Xem phân tích", nameEn: "View Analytics", nameJa: "分析表示", description: "Xem báo cáo phân tích", descriptionEn: "View analytics reports", descriptionJa: "分析レポートの表示", category: "analytics", resource: "analytics", action: "view" },
-      { id: "analytics.export", name: "Xuất báo cáo", nameEn: "Export Reports", nameJa: "レポートエクスポート", description: "Xuất báo cáo phân tích", descriptionEn: "Export analytics reports", descriptionJa: "分析レポートのエクスポート", category: "analytics", resource: "analytics", action: "export" },
-      
-      // Settings permissions
-      { id: "settings.view", name: "Xem cài đặt", nameEn: "View Settings", nameJa: "設定表示", description: "Xem cài đặt hệ thống", descriptionEn: "View system settings", descriptionJa: "システム設定の表示", category: "settings", resource: "settings", action: "view" },
-      { id: "settings.edit", name: "Chỉnh sửa cài đặt", nameEn: "Edit Settings", nameJa: "設定編集", description: "Chỉnh sửa cài đặt hệ thống", descriptionEn: "Edit system settings", descriptionJa: "システム設定の編集", category: "settings", resource: "settings", action: "edit" }
-    ];
-
-    const mockRoles: Role[] = [
-      {
-        _id: "1",
-        name: "Quản trị viên",
-        nameEn: "Administrator",
-        nameJa: "管理者",
-        description: "Toàn quyền truy cập hệ thống",
-        descriptionEn: "Full system access",
-        descriptionJa: "システム全体へのアクセス",
-        permissions: mockPermissions.map(p => p.id),
-        isSystem: true,
-        isActive: true,
-        userCount: 2,
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "2",
-        name: "Quản lý sản phẩm",
-        nameEn: "Product Manager",
-        nameJa: "商品管理者",
-        description: "Quản lý sản phẩm và danh mục",
-        descriptionEn: "Manage products and categories",
-        descriptionJa: "商品とカテゴリの管理",
-        permissions: [
-          "dashboard.view",
-          "products.view",
-          "products.create",
-          "products.edit",
-          "products.delete",
-          "orders.view",
-          "analytics.view"
-        ],
-        isSystem: false,
-        isActive: true,
-        userCount: 3,
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "3",
-        name: "Nhân viên bán hàng",
-        nameEn: "Sales Staff",
-        nameJa: "営業スタッフ",
-        description: "Xử lý đơn hàng và khách hàng",
-        descriptionEn: "Handle orders and customers",
-        descriptionJa: "注文と顧客の処理",
-        permissions: [
-          "dashboard.view",
-          "orders.view",
-          "orders.edit",
-          "orders.cancel",
-          "users.view",
-          "analytics.view"
-        ],
-        isSystem: false,
-        isActive: true,
-        userCount: 5,
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "4",
-        name: "Xem báo cáo",
-        nameEn: "Report Viewer",
-        nameJa: "レポート閲覧者",
-        description: "Chỉ xem báo cáo và thống kê",
-        descriptionEn: "View reports and statistics only",
-        descriptionJa: "レポートと統計の閲覧のみ",
-        permissions: [
-          "dashboard.view",
-          "analytics.view",
-          "analytics.export"
-        ],
-        isSystem: false,
-        isActive: false,
-        userCount: 1,
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
+    if (!authLoading) {
+      const userRole = getUserRoleName(user);
+      if (!isAuthenticated || (userRole !== 'Admin' && userRole !== 'Super Admin')) {
+        navigate("/admin/login");
       }
-    ];
-
-    const mockUsers: User[] = [
-      {
-        _id: "1",
-        name: "Admin User",
-        email: "admin@koshiro.com",
-        role: "Quản trị viên",
-        isActive: true,
-        lastLogin: "2024-01-22T10:30:00Z",
-        createdAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "2",
-        name: "Product Manager",
-        email: "product@koshiro.com",
-        role: "Quản lý sản phẩm",
-        isActive: true,
-        lastLogin: "2024-01-21T15:45:00Z",
-        createdAt: "2024-01-01T00:00:00Z"
-      },
-      {
-        _id: "3",
-        name: "Sales Staff 1",
-        email: "sales1@koshiro.com",
-        role: "Nhân viên bán hàng",
-        isActive: true,
-        lastLogin: "2024-01-22T09:15:00Z",
-        createdAt: "2024-01-01T00:00:00Z"
-      }
-    ];
-
-    setPermissions(mockPermissions);
-    setRoles(mockRoles);
-    setFilteredRoles(mockRoles);
-    setUsers(mockUsers);
-    setIsLoading(false);
-  }, []);
-
-  // Filter roles
-  useEffect(() => {
-    let filtered = roles;
-
-    if (searchTerm) {
-      filtered = filtered.filter(role => 
-        role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (role.nameEn && role.nameEn.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (role.nameJa && role.nameJa.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        role.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
     }
+  }, [authLoading, isAuthenticated, user, navigate]);
 
-    if (filterStatus !== "all") {
-      filtered = filtered.filter(role => 
-        filterStatus === "active" ? role.isActive : !role.isActive
-      );
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const [rolesResponse, statsResponse] = await Promise.all([
+        api.getRoles(),
+        api.getRoleStats()
+      ]);
+      setRoles(rolesResponse.roles);
+      setStats(statsResponse.stats as unknown as RoleStats);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast({
+        title: t.loadError,
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
+  }, [t.loadError, toast]);
 
-    setFilteredRoles(filtered);
-  }, [roles, searchTerm, filterStatus]);
-
-  const getRoleName = (role: Role) => {
-    switch (language) {
-      case 'vi': return role.name;
-      case 'ja': return role.nameJa || role.name;
-      default: return role.nameEn || role.name;
-    }
-  };
-
-  const getRoleDescription = (role: Role) => {
-    switch (language) {
-      case 'vi': return role.description;
-      case 'ja': return role.descriptionJa || role.description;
-      default: return role.descriptionEn || role.description;
-    }
-  };
-
-  const getPermissionName = (permission: Permission) => {
-    switch (language) {
-      case 'vi': return permission.name;
-      case 'ja': return permission.nameJa || permission.name;
-      default: return permission.nameEn || permission.name;
-    }
-  };
-
-  const getStatusBadge = (role: Role) => {
-    if (role.isSystem) {
-      return <Badge variant="default" className="bg-purple-500"><Crown className="h-3 w-3 mr-1" />{t.system}</Badge>;
-    }
-    return role.isActive ? 
-      <Badge variant="default" className="bg-green-500"><UserCheck className="h-3 w-3 mr-1" />{t.active}</Badge> :
-      <Badge variant="secondary"><UserX className="h-3 w-3 mr-1" />{t.inactive}</Badge>;
-  };
-
-  const getPermissionsByCategory = (permissionIds: string[]) => {
-    const rolePermissions = permissions.filter(p => permissionIds.includes(p.id));
-    const grouped = rolePermissions.reduce((acc, permission) => {
-      if (!acc[permission.category]) {
-        acc[permission.category] = [];
-      }
-      acc[permission.category].push(permission);
-      return acc;
-    }, {} as Record<string, Permission[]>);
-    return grouped;
-  };
-
+  // CRUD Functions
   const handleCreateRole = () => {
-    setIsCreateRoleDialogOpen(true);
+    setEditingRole(null);
+    setIsCreateDialogOpen(true);
   };
 
   const handleEditRole = (role: Role) => {
     setEditingRole(role);
-    setIsEditRoleDialogOpen(true);
+    setIsEditDialogOpen(true);
   };
 
-  const handleDeleteRole = (role: Role) => {
-    setRoleToDelete(role);
-    setIsDeleteDialogOpen(true);
+  const handleDeleteRole = async (roleId: string) => {
+    try {
+      setIsDeleting(roleId);
+      await api.deleteRole(roleId);
+      toast({
+        title: t.deleteSuccess,
+        description: t.deleteSuccess,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error deleting role:', error);
+      toast({
+        title: t.deleteError,
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(null);
+    }
   };
 
-  const handleAssignUsers = (role: Role) => {
-    setSelectedRole(role);
-    setIsAssignUserDialogOpen(true);
+  const handleCloneRole = async (role: Role) => {
+    try {
+      setIsCloning(role._id);
+      const response = await api.cloneRole(role._id, {
+        name: `${role.name} (Copy)`,
+        nameEn: role.nameEn ? `${role.nameEn} (Copy)` : undefined,
+        nameJa: role.nameJa ? `${role.nameJa} (Copy)` : undefined,
+        level: role.level
+      });
+      
+      toast({
+        title: t.cloneSuccess,
+        description: t.cloneSuccessDesc,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error cloning role:', error);
+      toast({
+        title: t.cloneError,
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCloning(null);
+    }
   };
 
-  const handleCopyRole = (role: Role) => {
-    const newRole = {
-      ...role,
-      _id: Date.now().toString(),
-      name: `${role.name} (Copy)`,
-      nameEn: `${role.nameEn || role.name} (Copy)`,
-      nameJa: `${role.nameJa || role.name} (Copy)`,
-      isSystem: false,
-      userCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setRoles(prev => [...prev, newRole]);
-    toast({
-      title: "Role Copied",
-      description: `Role "${getRoleName(role)}" has been copied.`,
+  const handleViewRole = (role: Role) => {
+    navigate(`/admin/roles/${role._id}`);
+  };
+
+  const handleFormSuccess = () => {
+    setIsCreateDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setEditingRole(null);
+    loadData();
+  };
+
+  const handleFormCancel = () => {
+    setIsCreateDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setEditingRole(null);
+  };
+
+  // Load data
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      const userRole = getUserRoleName(user);
+      if (userRole === 'Admin' || userRole === 'Super Admin') {
+        loadData();
+      }
+    }
+  }, [authLoading, isAuthenticated, user, loadData]);
+
+  // Filter and sort roles
+  useEffect(() => {
+    let filtered = roles;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(role => 
+        role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        role.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      switch (statusFilter) {
+        case "active":
+          filtered = filtered.filter(role => role.isActive);
+          break;
+        case "inactive":
+          filtered = filtered.filter(role => !role.isActive);
+          break;
+        case "system":
+          filtered = filtered.filter(role => role.isSystem);
+          break;
+        case "userCreated":
+          filtered = filtered.filter(role => !role.isSystem);
+          break;
+      }
+    }
+
+    // Filter by level
+    if (levelFilter !== "all") {
+      const level = parseInt(levelFilter);
+      filtered = filtered.filter(role => role.level >= level);
+    }
+
+    // Sort roles
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "level":
+          comparison = a.level - b.level;
+          break;
+        case "users":
+          comparison = (a.userCount || 0) - (b.userCount || 0);
+          break;
+        case "permissions":
+          comparison = a.permissions.length - b.permissions.length;
+          break;
+        case "createdAt":
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        default:
+          comparison = a.level - b.level;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
     });
+
+    setFilteredRoles(filtered);
+  }, [roles, searchTerm, statusFilter, levelFilter, sortBy, sortOrder]);
+
+
+  const handleToggleRoleStatus = async (roleId: string, isActive: boolean) => {
+    try {
+      await api.updateRole(roleId, { isActive });
+      toast({
+        title: t.updateSuccess,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error updating role status:', error);
+      toast({
+        title: t.updateError,
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
   };
 
-  const stats = {
-    total: roles.length,
-    active: roles.filter(r => r.isActive).length,
-    system: roles.filter(r => r.isSystem).length,
-    totalUsers: users.length
+
+  const openEditDialog = (role: Role) => {
+    setEditingRole(role);
+    setIsEditDialogOpen(true);
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">{t.loading}</p>
+          </div>
         </div>
       </AdminLayout>
     );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+  
+  const userRole = typeof user?.role === 'string' ? user.role : (user?.role as { name: string })?.name;
+  if (userRole !== 'Admin' && userRole !== 'Super Admin') {
+    return null;
   }
 
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{t.title}</h1>
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button onClick={handleCreateRole}>
+          <Button onClick={handleCreateRole}>
               <Plus className="h-4 w-4 mr-2" />
-              {t.createRole}
+            {t.addRole}
             </Button>
-          </div>
         </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {stats && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Shield className="h-8 w-8 text-primary" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">{t.totalRoles}</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-            </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t.stats.total}</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <UserCheck className="h-8 w-8 text-green-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">{t.activeRoles}</p>
-                <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-              </div>
-            </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t.stats.active}</CardTitle>
+                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.active}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Crown className="h-8 w-8 text-purple-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">{t.systemRoles}</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.system}</p>
-              </div>
-            </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t.stats.system}</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.system}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">{t.totalUsers}</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.totalUsers}</p>
-              </div>
-            </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t.stats.userCreated}</CardTitle>
+                <UserCheck className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.userCreated}</div>
           </CardContent>
         </Card>
       </div>
+        )}
 
-      {/* Filters */}
+        {/* Filters and Search */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <CardHeader>
+            <CardTitle>Filters & Search</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder={t.search}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="w-full"
                 />
               </div>
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by status" />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="all">{t.all}</SelectItem>
                 <SelectItem value="active">{t.active}</SelectItem>
                 <SelectItem value="inactive">{t.inactive}</SelectItem>
+                  <SelectItem value="system">{t.system}</SelectItem>
+                  <SelectItem value="userCreated">{t.userCreated}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={levelFilter} onValueChange={setLevelFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t.all}</SelectItem>
+                  <SelectItem value="90">90+ (Admin)</SelectItem>
+                  <SelectItem value="80">80+ (Manager)</SelectItem>
+                  <SelectItem value="70">70+ (Editor)</SelectItem>
+                  <SelectItem value="60">60+ (Viewer)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="level">{t.level}</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="users">{t.users}</SelectItem>
+                  <SelectItem value="permissions">{t.permissions}</SelectItem>
+                  <SelectItem value="createdAt">Created</SelectItem>
               </SelectContent>
             </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              >
+                {sortOrder === "asc" ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Roles Table */}
+        {/* Roles Grid/List */}
+        {filteredRoles.length === 0 ? (
       <Card>
-        <CardHeader>
-          <CardTitle>Roles</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredRoles.length === 0 ? (
-            <div className="text-center py-8">
-              <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">{t.noRoles}</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t.roleName}</TableHead>
-                  <TableHead>{t.description}</TableHead>
-                  <TableHead>{t.permissions}</TableHead>
-                  <TableHead>{t.users}</TableHead>
-                  <TableHead>{t.status}</TableHead>
-                  <TableHead>{t.actions}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <CardContent className="p-12 text-center">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">{t.noRoles}</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchTerm || statusFilter !== "all" || levelFilter !== "all"
+                  ? "Try adjusting your filters"
+                  : "Get started by creating your first role"}
+              </p>
+              <Button onClick={handleCreateRole}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t.addRole}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredRoles.map((role) => (
-                  <TableRow key={role._id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{getRoleName(role)}</div>
+              <Card key={role._id} className="relative">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">{role.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Level {role.level}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
                         {role.isSystem && (
-                          <Badge variant="outline" className="mt-1">
-                            {t.system}
+                        <Badge variant="secondary" className="text-xs">
+                          <Shield className="h-3 w-3 mr-1" />
+                          System
                           </Badge>
+                      )}
+                      <Badge variant={role.isActive ? "default" : "secondary"}>
+                        {role.isActive ? (
+                          <><Unlock className="h-3 w-3 mr-1" /> Active</>
+                        ) : (
+                          <><Lock className="h-3 w-3 mr-1" /> Inactive</>
                         )}
+                      </Badge>
+                    </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs">
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {role.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {getRoleDescription(role)}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {Object.entries(getPermissionsByCategory(role.permissions)).slice(0, 3).map(([category, perms]) => (
-                          <Badge key={category} variant="outline" className="text-xs">
-                            {t.permissionCategories[category as keyof typeof t.permissionCategories] || category}: {perms.length}
-                          </Badge>
-                        ))}
-                        {Object.keys(getPermissionsByCategory(role.permissions)).length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{Object.keys(getPermissionsByCategory(role.permissions)).length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+                      {role.description}
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{role.userCount}</span>
+                        <span>{role.userCount || 0} users</span>
                       </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(role)}</TableCell>
-                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Settings className="h-4 w-4 text-muted-foreground" />
+                        <span>{role.permissions.length} permissions</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                        <Button variant="outline" size="sm">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditRole(role)}>
+                        <DropdownMenuLabel>{t.actions}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleViewRole(role)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            {t.viewRole}
+                          </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditRole(role)}>
                             <Edit className="h-4 w-4 mr-2" />
                             {t.edit}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleAssignUsers(role)}>
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            {t.assignUsers}
+                        <DropdownMenuItem onClick={() => handleCloneRole(role)}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          {t.clone}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleToggleRoleStatus(role._id, !role.isActive)}
+                        >
+                          {role.isActive ? (
+                            <>
+                              <EyeOff className="h-4 w-4 mr-2" />
+                              {t.deactivate}
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-4 w-4 mr-2" />
+                              {t.activate}
+                            </>
+                          )}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleCopyRole(role)}>
-                            <Copy className="h-4 w-4 mr-2" />
-                            {t.copyRole}
-                          </DropdownMenuItem>
-                          {!role.isSystem && (
+                        <DropdownMenuSeparator />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
                             <DropdownMenuItem 
-                              onClick={() => handleDeleteRole(role)}
-                              className="text-destructive"
+                              onSelect={(e) => e.preventDefault()}
+                              disabled={role.isSystem || (role.userCount && role.userCount > 0)}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               {t.delete}
                             </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                          </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t.deleteRole}</AlertDialogTitle>
+                              <AlertDialogTitle>{t.confirmDelete}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the role "{roleToDelete && getRoleName(roleToDelete)}"? 
-              This action cannot be undone and will affect all users assigned to this role.
+                                {role.isSystem 
+                                  ? t.cannotDeleteSystem
+                                  : role.userCount && role.userCount > 0
+                                  ? t.cannotDeleteWithUsers
+                                  : t.deleteConfirmMessage
+                                }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                              <AlertDialogCancel>{t.cancelAction}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (roleToDelete) {
-                  setRoles(prev => prev.filter(r => r._id !== roleToDelete._id));
-                  setFilteredRoles(prev => prev.filter(r => r._id !== roleToDelete._id));
-                  toast({
-                    title: "Role deleted",
-                    description: `Role "${getRoleName(roleToDelete)}" has been deleted.`,
-                  });
-                }
-                setIsDeleteDialogOpen(false);
-                setRoleToDelete(null);
-              }}
+                                onClick={() => handleDeleteRole(role._id)}
+                                className="bg-destructive hover:bg-destructive/90"
             >
               {t.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Assign Users Dialog */}
-      <Dialog open={isAssignUserDialogOpen} onOpenChange={setIsAssignUserDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t.assignUsers}</DialogTitle>
-          </DialogHeader>
-          {selectedRole && (
-            <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-medium">{getRoleName(selectedRole)}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {getRoleDescription(selectedRole)}
-                </p>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t.selectUsers}</label>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {users.map((user) => (
-                    <div key={user._id} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={user._id}
-                        checked={user.role === selectedRole.name}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            // Assign user to role
-                            setUsers(prev => prev.map(u => 
-                              u._id === user._id ? { ...u, role: selectedRole.name } : u
-                            ));
-                          } else {
-                            // Unassign user from role
-                            setUsers(prev => prev.map(u => 
-                              u._id === user._id ? { ...u, role: "No Role" } : u
-                            ));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={user._id}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {user.name} ({user.email})
-                      </label>
-                    </div>
+                </CardContent>
+              </Card>
                   ))}
                 </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAssignUserDialogOpen(false)}>
-                  {t.cancel}
-                </Button>
-                <Button onClick={() => {
-                  toast({
-                    title: "Users Assigned",
-                    description: `Users have been assigned to role "${getRoleName(selectedRole)}".`,
-                  });
-                  setIsAssignUserDialogOpen(false);
-                }}>
-                  {t.save}
-                </Button>
-              </div>
-            </div>
-          )}
+        )}
+
+        {/* Create/Edit Role Dialog */}
+        <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
+          setIsCreateDialogOpen(open);
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setEditingRole(null);
+          }
+        }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingRole ? t.editRole : t.createRole}
+              </DialogTitle>
+            </DialogHeader>
+            <RoleForm
+              role={editingRole || undefined}
+              mode={editingRole ? 'edit' : 'create'}
+              onSuccess={handleFormSuccess}
+              onCancel={handleFormCancel}
+            />
         </DialogContent>
       </Dialog>
       </div>

@@ -8,7 +8,7 @@ export interface IUser extends Document {
   phone?: string;
   address?: string;
   status: 'active' | 'inactive' | 'blocked';
-  role: 'customer' | 'admin';
+  role: mongoose.Types.ObjectId; // Reference to Role model
   totalOrders: number;
   totalSpent: number;
   lastActive?: Date;
@@ -69,9 +69,9 @@ const userSchema = new Schema<IUser>({
     default: 'active'
   },
   role: {
-    type: String,
-    enum: ['customer', 'admin'],
-    default: 'customer'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+    required: true
   },
   totalOrders: {
     type: Number,

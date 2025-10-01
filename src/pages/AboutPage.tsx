@@ -110,7 +110,7 @@ const AboutPage = () => {
             {/* Banner Background */}
             <div className="absolute inset-0">
               <img 
-                src="/images/categories/kimono.jpg" 
+                src="/images/banners/banner-04.png" 
                 alt="About Us Banner"
                 className="w-full h-full object-cover"
               />

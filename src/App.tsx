@@ -50,176 +50,260 @@ import AdminInventoryPage from "./pages/AdminInventoryPage";
 import AdminShippingPage from "./pages/AdminShippingPage";
 import AdminPaymentsPage from "./pages/AdminPaymentsPage";
 import AdminRolesPage from "./pages/AdminRolesPage";
+import RoleDetailPage from "./pages/RoleDetailPage";
+import PermissionDetailPage from "./pages/PermissionDetailPage";
 import AdminApiPage from "./pages/AdminApiPage";
-import NotFound from "./pages/NotFound";
+import ProductFormPage from "./pages/ProductFormPage";
 
-const queryClient = new QueryClient();
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <AuthProvider>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem
+        disableTransitionOnChange
+      >
         <LanguageProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Router>
-              <ScrollToTop />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/category/:slug" element={<CategoryPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/wishlist" element={<WishlistPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/sale" element={<SalePage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/categories" element={<CategoriesPage />} />
-                <Route path="/info/:pageType" element={<InfoPage />} />
-                <Route path="/search" element={<SearchPage />} />
-                <Route path="/order-tracking" element={<OrderTrackingPage />} />
-                <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
-                <Route path="/compare" element={<ComparePage />} />
-                <Route path="/reviews" element={<ReviewsPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/size-guide" element={<SizeGuidePage />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <AuthProvider>
+            <NotificationsProvider>
+              <TooltipProvider>
+                <Router>
+                  <ScrollToTop />
+                  <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<Index />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/product/:id" element={<ProductDetail />} />
+                      <Route path="/category/:id" element={<CategoryPage />} />
+                      <Route path="/categories" element={<CategoriesPage />} />
+                      <Route path="/cart" element={<CartPage />} />
+                      <Route path="/wishlist" element={<WishlistPage />} />
+                      <Route path="/checkout" element={<CheckoutPage />} />
+                      <Route path="/sale" element={<SalePage />} />
+                      <Route path="/about" element={<AboutPage />} />
+                      <Route path="/contact" element={<ContactPage />} />
+                      <Route path="/info" element={<InfoPage />} />
+                      <Route path="/search" element={<SearchPage />} />
+                      <Route path="/order-tracking" element={<OrderTrackingPage />} />
+                      <Route path="/compare" element={<ComparePage />} />
+                      <Route path="/reviews" element={<ReviewsPage />} />
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/register" element={<RegisterPage />} />
+                      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                      <Route path="/reset-password" element={<ResetPasswordPage />} />
+                      <Route path="/size-guide" element={<SizeGuidePage />} />
+                      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
-                {/* Admin Routes - Wrapped with NotificationsProvider */}
-                <Route path="/admin/login" element={<AdminLogin />} />
-                <Route path="/admin" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminDashboard />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/analytics" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminAnalyticsPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/reports" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminReportsPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/notifications" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminNotificationsPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/products" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminProducts />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/categories" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminCategories />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/orders" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminOrders />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/users" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminUsers />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/activity" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminActivity />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/reviews" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminReviews />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/settings" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminSettings />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/promotions" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminPromotionsPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/inventory" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminInventoryPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/shipping" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminShippingPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/payments" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminPaymentsPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/roles" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminRolesPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                <Route path="/admin/api" element={
-                  <NotificationsProvider>
-                    <ProtectedAdminRoute>
-                      <AdminApiPage />
-                    </ProtectedAdminRoute>
-                  </NotificationsProvider>
-                } />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Router>
-          </TooltipProvider>
+                      {/* Admin Routes */}
+                      <Route path="/admin/login" element={<AdminLogin />} />
+                      <Route
+                        path="/admin"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminDashboard />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/analytics"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminAnalyticsPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/reports"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminReportsPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/notifications"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminNotificationsPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/products"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminProducts />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/products/new"
+                        element={
+                          <ProtectedAdminRoute>
+                            <ProductFormPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/products/:id/edit"
+                        element={
+                          <ProtectedAdminRoute>
+                            <ProductFormPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/categories"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminCategories />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/orders"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminOrders />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/users"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminUsers />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/activity"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminActivity />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/reviews"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminReviews />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/settings"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminSettings />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/promotions"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminPromotionsPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/inventory"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminInventoryPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/shipping"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminShippingPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/payments"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminPaymentsPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/roles"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminRolesPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/roles/:id"
+                        element={
+                          <ProtectedAdminRoute>
+                            <RoleDetailPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/roles/:id/edit"
+                        element={
+                          <ProtectedAdminRoute>
+                            <RoleDetailPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/permissions/:id"
+                        element={
+                          <ProtectedAdminRoute>
+                            <PermissionDetailPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/permissions/:id/edit"
+                        element={
+                          <ProtectedAdminRoute>
+                            <PermissionDetailPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/api"
+                        element={
+                          <ProtectedAdminRoute>
+                            <AdminApiPage />
+                          </ProtectedAdminRoute>
+                        }
+                      />
+                  </Routes>
+                </Router>
+              </TooltipProvider>
+            </NotificationsProvider>
+          </AuthProvider>
         </LanguageProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+      </ThemeProvider>
+      <Toaster />
+      <Sonner />
+    </QueryClientProvider>
+  );
+}
 
 export default App;

@@ -328,7 +328,7 @@ export default function SizeGuidePage() {
             {/* Banner Background */}
             <div className="absolute inset-0">
               <img 
-                src="/images/categories/obi.jpg" 
+                src="/images/banners/banner-04.png" 
                 alt="Size Guide Banner"
                 className="w-full h-full object-cover"
               />

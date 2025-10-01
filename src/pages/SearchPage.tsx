@@ -312,7 +312,7 @@ const SearchPage: React.FC = () => {
               {/* Banner Background */}
               <div className="absolute inset-0">
                 <img 
-                  src="/images/categories/bottoms.jpg" 
+                  src="/images/banners/banner-04.png" 
                   alt="Search Banner"
                   className="w-full h-full object-cover"
                 />

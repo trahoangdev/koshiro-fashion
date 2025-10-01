@@ -18,7 +18,7 @@ import ProfilePayment from "@/components/ProfilePayment";
 import ProfileNotifications from "@/components/ProfileNotifications";
 import ProfileSettings from "@/components/ProfileSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts";
 import { api, User as UserType } from "@/lib/api";
 import { formatCurrency } from "@/lib/currency";
 

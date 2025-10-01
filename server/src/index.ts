@@ -22,6 +22,8 @@ import inventoryRoutes from './routes/inventory';
 import adminShippingRoutes from './routes/adminShipping';
 import adminPaymentsRoutes from './routes/adminPayments';
 import flashSaleRoutes from './routes/flashSale';
+import roleRoutes from './routes/roles';
+import permissionRoutes from './routes/permissions';
 
 // Load environment variables
 dotenv.config();
@@ -65,6 +67,8 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/admin/shipping', adminShippingRoutes);
 app.use('/api/admin/payments', adminPaymentsRoutes);
 app.use('/api/flash-sales', flashSaleRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/permissions', permissionRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

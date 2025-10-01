@@ -414,7 +414,7 @@ export const deleteOrder = async (req: AuthRequest, res: Response) => {
     const userRole = req.user.role;
     
     // Only admin can delete orders
-    if (userRole !== 'admin') {
+    if (userRole !== 'Admin' && userRole !== 'Super Admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
 

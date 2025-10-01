@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Save,
   X,
@@ -55,6 +55,9 @@ interface ProductFormData {
   isActive: boolean;
   isFeatured: boolean;
   onSale: boolean;
+  isNew: boolean;
+  isLimitedEdition: boolean;
+  isBestSeller: boolean;
   metaTitle: string;
   metaDescription: string;
   weight: number;
@@ -74,6 +77,7 @@ interface ProductFormProps {
   onCancel: () => void;
   isSubmitting: boolean;
   mode: 'create' | 'edit';
+  onFormChange?: (data: ProductFormData) => void;
 }
 
 const defaultSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -96,7 +100,8 @@ export default function ProductForm({
   onSubmit,
   onCancel,
   isSubmitting,
-  mode
+  mode,
+  onFormChange
 }: ProductFormProps) {
   const { toast } = useToast();
   const { language } = useLanguage();
@@ -157,7 +162,7 @@ export default function ProductForm({
   };
 
   // Helper function to convert string colors to color objects
-  const convertColorsToObjects = (colors: string[]): Array<string | { name: string; value: string }> => {
+  const convertColorsToObjects = useCallback((colors: string[]): Array<string | { name: string; value: string }> => {
     return colors.map(color => {
       // Check if it's already an object
       if (typeof color === 'object') {
@@ -174,7 +179,7 @@ export default function ProductForm({
       const hexValue = getColorHex(color);
       return { name: color, value: hexValue };
     });
-  };
+  }, []);
 
   const [formData, setFormData] = useState<ProductFormData>(() => {
     const baseData = {
@@ -195,6 +200,9 @@ export default function ProductForm({
       isActive: true,
       isFeatured: false,
       onSale: false,
+      isNew: mode === 'create', // New products are automatically new
+      isLimitedEdition: false,
+      isBestSeller: false,
       metaTitle: '',
       metaDescription: '',
       weight: 0,
@@ -225,6 +233,18 @@ export default function ProductForm({
   const [newColorName, setNewColorName] = useState('');
   const [displayValue, setDisplayValue] = useState('');
 
+  // Auto-detect badge statuses from tags
+  const detectBadgeFromTags = (tags: string[]) => {
+    const isLimitedEdition = tags.some(tag => 
+      /limited|giới hạn|限定|limited edition|phiên bản giới hạn|限定版/i.test(tag)
+    );
+    const isBestSeller = tags.some(tag => 
+      /bestseller|bán chạy|ベストセラー|best seller|top seller|bán nhiều|人気/i.test(tag)
+    );
+    
+    return { isLimitedEdition, isBestSeller };
+  };
+
   // Update formData when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData) {
@@ -234,7 +254,14 @@ export default function ProductForm({
         colors: initialData.colors ? convertColorsToObjects(initialData.colors as string[]) : prev.colors
       }));
     }
-  }, [initialData]);
+  }, [initialData, convertColorsToObjects]);
+
+  // Call onFormChange callback when form data changes
+  useEffect(() => {
+    if (onFormChange && formData) {
+      onFormChange(formData);
+    }
+  }, [formData, onFormChange]);
 
   const translations = {
     en: {
@@ -256,6 +283,9 @@ export default function ProductForm({
       isActive: 'Active',
       isFeatured: 'Featured',
       onSale: 'On Sale',
+      isNew: 'New Product',
+      isLimitedEdition: 'Limited Edition',
+      isBestSeller: 'Best Seller',
       metaTitle: 'Meta Title',
       metaDescription: 'Meta Description',
       weight: 'Weight (kg)',
@@ -303,6 +333,9 @@ export default function ProductForm({
       isActive: 'Hoạt Động',
       isFeatured: 'Nổi Bật',
       onSale: 'Đang Giảm Giá',
+      isNew: 'Sản Phẩm Mới',
+      isLimitedEdition: 'Phiên Bản Giới Hạn',
+      isBestSeller: 'Bán Chạy',
       metaTitle: 'Meta Title',
       metaDescription: 'Meta Description',
       weight: 'Trọng Lượng (kg)',
@@ -350,6 +383,9 @@ export default function ProductForm({
       isActive: 'アクティブ',
       isFeatured: 'おすすめ',
       onSale: 'セール中',
+      isNew: '新商品',
+      isLimitedEdition: '限定版',
+      isBestSeller: 'ベストセラー',
       metaTitle: 'メタタイトル',
       metaDescription: 'メタ説明',
       weight: '重量（kg）',
@@ -452,18 +488,28 @@ export default function ProductForm({
 
   const addTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      const updatedTags = [...formData.tags, newTag.trim()];
+      const badgeStatus = detectBadgeFromTags(updatedTags);
+      
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()]
+        tags: updatedTags,
+        isLimitedEdition: badgeStatus.isLimitedEdition,
+        isBestSeller: badgeStatus.isBestSeller
       }));
       setNewTag('');
     }
   };
 
   const removeTag = (tagToRemove: string) => {
+    const updatedTags = formData.tags.filter(tag => tag !== tagToRemove);
+    const badgeStatus = detectBadgeFromTags(updatedTags);
+    
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: updatedTags,
+      isLimitedEdition: badgeStatus.isLimitedEdition,
+      isBestSeller: badgeStatus.isBestSeller
     }));
   };
 
@@ -757,6 +803,36 @@ export default function ProductForm({
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, onSale: checked }))}
                 />
               </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t.isNew}</Label>
+                  <p className="text-sm text-muted-foreground">Mark as new product</p>
+                </div>
+                <Switch
+                  checked={formData.isNew}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNew: checked }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t.isLimitedEdition}</Label>
+                  <p className="text-sm text-muted-foreground">Mark as limited edition</p>
+                </div>
+                <Switch
+                  checked={formData.isLimitedEdition}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isLimitedEdition: checked }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t.isBestSeller}</Label>
+                  <p className="text-sm text-muted-foreground">Mark as best seller</p>
+                </div>
+                <Switch
+                  checked={formData.isBestSeller}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isBestSeller: checked }))}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -922,7 +998,7 @@ export default function ProductForm({
                                      'Enter hex code (e.g., #FF0000)'}
                           value={displayValue}
                           onChange={(e) => {
-                            let inputValue = e.target.value;
+                            const inputValue = e.target.value;
                             
                             // If user is typing a hex code
                             if (inputValue.startsWith('#') || /^[0-9A-Fa-f]/.test(inputValue)) {
@@ -1073,6 +1149,44 @@ export default function ProductForm({
             <Separator />
             <div className="space-y-4">
               <div className="space-y-2">
+                <Label>Badge Preview</Label>
+                <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
+                  {formData.stock <= 0 && (
+                    <Badge variant="secondary" className="bg-stone-500/90 text-white">
+                      {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
+                    </Badge>
+                  )}
+                  {formData.stock > 0 && formData.onSale && formData.originalPrice > formData.price && (
+                    <Badge variant="destructive" className="bg-red-500/90 text-white">
+                      -{Math.round(((formData.originalPrice - formData.price) / formData.originalPrice) * 100)}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
+                    </Badge>
+                  )}
+                  {formData.stock > 0 && !formData.onSale && formData.isFeatured && (
+                    <Badge variant="default" className="bg-stone-800/90 dark:bg-stone-200/90 text-white dark:text-stone-800">
+                      {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
+                    </Badge>
+                  )}
+                  {formData.stock > 0 && !formData.onSale && formData.isNew && (
+                    <Badge className="bg-green-500/90 text-white">
+                      {language === 'vi' ? 'MỚI' : language === 'ja' ? '新着' : 'NEW'}
+                    </Badge>
+                  )}
+                  {formData.stock > 0 && formData.isLimitedEdition && (
+                    <Badge className="bg-purple-500/90 text-white">
+                      {language === 'vi' ? 'Phiên bản giới hạn' : language === 'ja' ? '限定版' : 'Limited Edition'}
+                    </Badge>
+                  )}
+                  {formData.stock > 0 && formData.isBestSeller && (
+                    <Badge className="bg-orange-500/90 text-white">
+                      {language === 'vi' ? 'Bán chạy' : language === 'ja' ? 'ベストセラー' : 'Best Seller'}
+                    </Badge>
+                  )}
+                  {formData.stock > 0 && !formData.onSale && !formData.isFeatured && !formData.isNew && !formData.isLimitedEdition && !formData.isBestSeller && (
+                    <span className="text-sm text-muted-foreground">No badges will be displayed</span>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label>{t.tags}</Label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.tags.map(tag => (
@@ -1081,16 +1195,42 @@ export default function ProductForm({
                     </Badge>
                   ))}
                 </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add tag"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  />
-                  <Button type="button" variant="outline" onClick={addTag}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add tag"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    />
+                    <Button type="button" variant="outline" onClick={addTag}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Suggested tags:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        'limited', 'bestseller', 'new', 'featured', 'sale', 'premium', 'organic', 'eco-friendly',
+                        'giới hạn', 'bán chạy', 'mới', 'nổi bật', 'giảm giá', 'cao cấp', 'hữu cơ', 'thân thiện môi trường',
+                        '限定', 'ベストセラー', '新着', 'おすすめ', 'セール', 'プレミアム', 'オーガニック', 'エコフレンドリー'
+                      ].map(suggestedTag => (
+                        <Badge
+                          key={suggestedTag}
+                          variant="outline"
+                          className="cursor-pointer text-xs hover:bg-primary hover:text-primary-foreground"
+                          onClick={() => {
+                            if (!formData.tags.includes(suggestedTag)) {
+                              setNewTag(suggestedTag);
+                              addTag();
+                            }
+                          }}
+                        >
+                          {suggestedTag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

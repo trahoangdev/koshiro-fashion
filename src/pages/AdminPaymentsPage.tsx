@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, isAdminUser } from "@/contexts";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,7 +106,7 @@ interface Transaction {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
-  gatewayResponse?: any;
+  gatewayResponse?: Record<string, unknown>;
   gatewayTransactionId?: string;
   refundAmount?: number;
   refundReason?: string;
@@ -303,7 +303,7 @@ export default function AdminPaymentsPage() {
 
   // Load data from API
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'admin') {
+    if (!isAuthenticated || !isAdminUser(user)) {
       return;
     }
 
@@ -337,7 +337,7 @@ export default function AdminPaymentsPage() {
     };
 
     loadData();
-  }, [isAuthenticated, user?.role, toast]);
+  }, [isAuthenticated, user, toast]);
 
   // Filter transactions
   useEffect(() => {
@@ -570,16 +570,35 @@ export default function AdminPaymentsPage() {
         updatedAt: transaction.updatedAt
       }));
 
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      const fileName = `transactions_${new Date().toISOString().split('T')[0]}`;
       
-      const extension = format === 'excel' ? 'xlsx' : format;
-      const exportFileDefaultName = `transactions_${new Date().toISOString().split('T')[0]}.${extension}`;
-      
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
+      if (format === 'excel') {
+        const blob = await exportImportService.exportToExcel(exportData);
+        const url = URL.createObjectURL(blob);
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', url);
+        linkElement.setAttribute('download', `${fileName}.xlsx`);
+        linkElement.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'csv') {
+        const csvContent = await exportImportService.exportToCSV(exportData);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', url);
+        linkElement.setAttribute('download', `${fileName}.csv`);
+        linkElement.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // JSON export
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', `${fileName}.json`);
+        linkElement.click();
+      }
       
       toast({
         title: "Export Successful",
@@ -595,7 +614,21 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  const handleCreateMethod = async (methodData: any) => {
+  interface CreateMethodData {
+    name: string;
+    nameEn?: string;
+    nameJa?: string;
+    description: string;
+    type: 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto';
+    provider: string;
+    processingFee: number;
+    minAmount: number;
+    maxAmount: number;
+    supportedCurrencies: string[];
+    isActive: boolean;
+  }
+
+  const handleCreateMethod = async (methodData: CreateMethodData) => {
     try {
       setIsSubmitting(true);
       const response = await api.createPaymentMethod(methodData);
@@ -607,7 +640,7 @@ export default function AdminPaymentsPage() {
         nameEn: response.method?.nameEn || methodData.nameEn || '',
         nameJa: response.method?.nameJa || methodData.nameJa || '',
         description: response.method?.description || methodData.description || '',
-        type: response.method?.type || methodData.type || 'credit_card',
+        type: (response.method?.type || methodData.type || 'credit_card') as 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto',
         provider: response.method?.provider || methodData.provider || 'Unknown',
         processingFee: response.method?.processingFee || methodData.processingFee || 0,
         minAmount: response.method?.minAmount || methodData.minAmount || 0,
@@ -636,7 +669,7 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  const handleUpdateMethod = async (id: string, methodData: any) => {
+  const handleUpdateMethod = async (id: string, methodData: CreateMethodData) => {
     try {
       setIsSubmitting(true);
       const response = await api.updatePaymentMethod(id, methodData);
@@ -708,10 +741,10 @@ export default function AdminPaymentsPage() {
 
   // Authentication check
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
+    if (!authLoading && (!isAuthenticated || !isAdminUser(user))) {
       window.location.href = '/admin/login';
     }
-  }, [authLoading, isAuthenticated, user?.role]);
+  }, [authLoading, isAuthenticated, user]);
 
   if (authLoading || isLoading) {
     return (
@@ -723,7 +756,7 @@ export default function AdminPaymentsPage() {
     );
   }
 
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || !isAdminUser(user)) {
     return null;
   }
 
@@ -1240,19 +1273,19 @@ export default function AdminPaymentsPage() {
 
       {/* Create Payment Method Dialog */}
       <Dialog open={isCreateMethodDialogOpen} onOpenChange={setIsCreateMethodDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Payment Method</DialogTitle>
           </DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
             const formData = new FormData(e.currentTarget);
-            const methodData = {
+            const methodData: CreateMethodData = {
               name: formData.get('name') as string,
               nameEn: formData.get('nameEn') as string,
               nameJa: formData.get('nameJa') as string,
               description: formData.get('description') as string,
-              type: formData.get('type') as string,
+              type: formData.get('type') as 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto',
               provider: formData.get('provider') as string,
               processingFee: parseFloat(formData.get('processingFee') as string),
               minAmount: parseFloat(formData.get('minAmount') as string),
@@ -1262,72 +1295,96 @@ export default function AdminPaymentsPage() {
             };
             handleCreateMethod(methodData);
           }}>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Name (VI)</label>
-                <Input name="name" placeholder="Enter payment method name" required />
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Name (VI) *</label>
+                    <Input name="name" placeholder="Enter payment method name" required />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Name (EN)</label>
+                    <Input name="nameEn" placeholder="Enter English name" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Name (JA)</label>
+                    <Input name="nameJa" placeholder="Enter Japanese name" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Description</label>
+                    <Input name="description" placeholder="Enter description" />
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Name (EN)</label>
-                <Input name="nameEn" placeholder="Enter English name" />
+
+              {/* Payment Configuration */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Payment Configuration</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Type *</label>
+                    <Select name="type" required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="credit_card">Credit Card</SelectItem>
+                        <SelectItem value="debit_card">Debit Card</SelectItem>
+                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="e_wallet">Digital Wallet</SelectItem>
+                        <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                        <SelectItem value="cod">Cash on Delivery</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Provider *</label>
+                    <Input name="provider" placeholder="Enter provider name" required />
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Name (JA)</label>
-                <Input name="nameJa" placeholder="Enter Japanese name" />
+
+              {/* Financial Settings */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Financial Settings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Processing Fee (%)</label>
+                    <Input name="processingFee" type="number" step="0.01" placeholder="0.00" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Min Amount</label>
+                    <Input name="minAmount" type="number" step="0.01" placeholder="0.00" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Max Amount</label>
+                    <Input name="maxAmount" type="number" step="0.01" placeholder="0.00" />
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
-                <Input name="description" placeholder="Enter description" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Type</label>
-                <Select name="type" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="credit_card">Credit Card</SelectItem>
-                    <SelectItem value="debit_card">Debit Card</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="digital_wallet">Digital Wallet</SelectItem>
-                    <SelectItem value="cryptocurrency">Cryptocurrency</SelectItem>
-                    <SelectItem value="cash_on_delivery">Cash on Delivery</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Provider</label>
-                <Input name="provider" placeholder="Enter provider name" required />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Processing Fee (%)</label>
-                <Input name="processingFee" type="number" step="0.01" placeholder="Enter processing fee" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Min Amount</label>
-                <Input name="minAmount" type="number" step="0.01" placeholder="Enter minimum amount" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Max Amount</label>
-                <Input name="maxAmount" type="number" step="0.01" placeholder="Enter maximum amount" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Supported Currencies</label>
-                <Input name="supportedCurrencies" placeholder="USD, VND, JPY" defaultValue="USD" />
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <input name="isActive" type="checkbox" defaultChecked />
-                <label className="text-sm font-medium">Active</label>
+
+              {/* Additional Settings */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Additional Settings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Supported Currencies</label>
+                    <Input name="supportedCurrencies" placeholder="USD, VND, JPY" defaultValue="USD" />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 pt-6">
+                    <input name="isActive" type="checkbox" defaultChecked className="h-4 w-4" />
+                    <label className="text-sm font-medium">Active</label>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -1358,12 +1415,12 @@ export default function AdminPaymentsPage() {
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              const methodData = {
+              const methodData: CreateMethodData = {
                 name: formData.get('name') as string,
                 nameEn: formData.get('nameEn') as string,
                 nameJa: formData.get('nameJa') as string,
                 description: formData.get('description') as string,
-                type: formData.get('type') as string,
+                type: formData.get('type') as 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet' | 'cod' | 'crypto',
                 provider: formData.get('provider') as string,
                 processingFee: parseFloat(formData.get('processingFee') as string),
                 minAmount: parseFloat(formData.get('minAmount') as string),
