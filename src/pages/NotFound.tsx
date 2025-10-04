@@ -47,24 +47,54 @@ const NotFound = () => {
       {/* Banner Background */}
       <div className="absolute inset-0">
         <img 
-          src="/images/banners/banner-04.png" 
+          src="/images/banners/banner-05.png" 
           alt="404 Banner"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/60"></div>
+        <div className="absolute inset-0 bg-black/50 dark:bg-black/70"></div>
+      </div>
+      
+      {/* Background Pattern Overlay */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.3)_1px,transparent_0)] bg-[length:24px_24px]"></div>
       </div>
       
       {/* Content */}
-      <div className="relative z-10 text-center max-w-md mx-auto px-4 text-white">
-        <h1 className="text-8xl font-bold text-white mb-4">{t.title}</h1>
-        <h2 className="text-2xl font-semibold mb-4">{t.subtitle}</h2>
-        <p className="text-white/90 mb-8">{t.description}</p>
-        <Link to="/">
-          <Button className="flex items-center gap-2 bg-white text-black hover:bg-white/90">
-            <Home className="h-4 w-4" />
-            {t.returnHome}
-          </Button>
-        </Link>
+      <div className="relative z-10 text-center max-w-lg mx-auto px-6">
+        {/* 404 Number */}
+        <div className="mb-8">
+          <h1 className="text-9xl font-bold bg-gradient-to-r from-white to-stone-200 bg-clip-text text-transparent mb-4 drop-shadow-2xl">
+            {t.title}
+          </h1>
+        </div>
+        
+        {/* Main Content */}
+        <div className="space-y-6">
+          <h2 className="text-3xl font-semibold text-white drop-shadow-lg">
+            {t.subtitle}
+          </h2>
+          
+          <p className="text-lg text-white/90 leading-relaxed drop-shadow-md">
+            {t.description}
+          </p>
+          
+          {/* Action Button */}
+          <div className="pt-4">
+            <Link to="/">
+              <Button 
+                size="lg"
+                className="flex items-center gap-3 bg-white/90 hover:bg-white text-stone-800 px-8 py-3 rounded-full transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl backdrop-blur-sm border border-white/20"
+              >
+                <Home className="h-5 w-5" />
+                {t.returnHome}
+              </Button>
+            </Link>
+          </div>
+        </div>
+        
+        {/* Decorative Elements */}
+        <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
       </div>
     </div>
   );

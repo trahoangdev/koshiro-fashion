@@ -18,6 +18,47 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ShoppingBag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CartItem } from "@/types/cart";
+import CloudinaryImage from "@/components/CloudinaryImage";
+
+// Helper function to render category image
+const renderCategoryImage = (category: Category) => {
+  // Priority: Cloudinary images > Legacy image > Placeholder
+  if (category.cloudinaryImages && category.cloudinaryImages.length > 0) {
+    const cloudinaryImage = category.cloudinaryImages[0];
+    return (
+      <CloudinaryImage
+        publicId={cloudinaryImage.publicId}
+        secureUrl={cloudinaryImage.secureUrl}
+        responsiveUrls={cloudinaryImage.responsiveUrls}
+        alt={category.name}
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        size="medium"
+        loading="lazy"
+      />
+    );
+  }
+  
+  if (category.image) {
+    return (
+      <img
+        src={category.image}
+        alt={category.name}
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        loading="lazy"
+      />
+    );
+  }
+  
+  // Fallback to placeholder
+  return (
+    <img
+      src="/placeholder.svg"
+      alt={category.name}
+      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      loading="lazy"
+    />
+  );
+};
 
 const Index = () => {
   const navigate = useNavigate();
@@ -709,11 +750,7 @@ const Index = () => {
                 >
                   <div className="relative overflow-hidden bg-white dark:glassmorphism-dark border border-stone-200 dark:border-stone-700 transition-all duration-500 modern-hover modern-shadow">
                     <div className="aspect-[4/3] relative">
-                      <img
-                        src={category.image || '/placeholder.svg'}
-                        alt={category.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
+                      {renderCategoryImage(category)}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                       <div className="absolute bottom-6 left-6 right-6">
                         <h3 className="text-white text-xl font-light mb-2">

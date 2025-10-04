@@ -26,8 +26,24 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Category } from "@/lib/api";
+import CloudinaryImageUpload from './CloudinaryImageUpload';
 
-interface CategoryFormData {
+interface CloudinaryImage {
+  publicId: string;
+  secureUrl: string;
+  width: number;
+  height: number;
+  format: string;
+  bytes: number;
+  responsiveUrls: {
+    thumbnail: string;
+    medium: string;
+    large: string;
+    original: string;
+  };
+}
+
+export interface CategoryFormData {
   name: string;
   nameEn: string;
   nameJa: string;
@@ -36,7 +52,10 @@ interface CategoryFormData {
   descriptionJa: string;
   slug: string;
   parentId: string;
-  image: string;
+  image: string; // Legacy field for backward compatibility
+  cloudinaryImages: CloudinaryImage[]; // New Cloudinary images
+  bannerImage: string; // Legacy field for backward compatibility
+  cloudinaryBannerImages: CloudinaryImage[]; // New Cloudinary banner images
   status: 'active' | 'inactive';
   metaTitle: string;
   metaDescription: string;
@@ -47,7 +66,6 @@ interface CategoryFormData {
   displayType: 'grid' | 'list' | 'carousel';
   color: string;
   icon: string;
-  bannerImage: string;
   seoUrl: string;
   canonicalUrl: string;
   schemaMarkup: string;
@@ -81,7 +99,10 @@ export default function CategoryForm({
     descriptionJa: '',
     slug: '',
     parentId: '',
-    image: '',
+    image: '', // Legacy field
+    cloudinaryImages: [], // New Cloudinary images
+    bannerImage: '', // Legacy field
+    cloudinaryBannerImages: [], // New Cloudinary banner images
     status: 'active',
     metaTitle: '',
     metaDescription: '',
@@ -92,7 +113,6 @@ export default function CategoryForm({
     displayType: 'grid',
     color: '#3B82F6',
     icon: '',
-    bannerImage: '',
     seoUrl: '',
     canonicalUrl: '',
     schemaMarkup: '',
@@ -221,6 +241,35 @@ export default function CategoryForm({
       const imageUrl = URL.createObjectURL(file);
       setFormData(prev => ({ ...prev, image: imageUrl }));
     }
+  };
+
+  // Cloudinary image handlers
+  const handleCloudinaryImagesUploaded = (newImages: CloudinaryImage[]) => {
+    setFormData(prev => ({
+      ...prev,
+      cloudinaryImages: [...prev.cloudinaryImages, ...newImages]
+    }));
+  };
+
+  const handleCloudinaryImagesRemoved = (publicIds: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      cloudinaryImages: prev.cloudinaryImages.filter(img => !publicIds.includes(img.publicId))
+    }));
+  };
+
+  const handleCloudinaryBannerImagesUploaded = (newImages: CloudinaryImage[]) => {
+    setFormData(prev => ({
+      ...prev,
+      cloudinaryBannerImages: [...prev.cloudinaryBannerImages, ...newImages]
+    }));
+  };
+
+  const handleCloudinaryBannerImagesRemoved = (publicIds: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      cloudinaryBannerImages: prev.cloudinaryBannerImages.filter(img => !publicIds.includes(img.publicId))
+    }));
   };
 
   const generateSlug = (name: string) => {
@@ -581,7 +630,7 @@ export default function CategoryForm({
             </CardContent>
           </Card>
 
-          {/* Image */}
+          {/* Category Images */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -590,43 +639,34 @@ export default function CategoryForm({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {formData.image && (
-                <div className="relative">
-                  <img
-                    src={formData.image}
-                    alt="Category"
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-4">{t.dragDrop}</p>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => document.getElementById('category-image-upload')?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {t.uploadImage}
-                </Button>
-                <input
-                  id="category-image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </div>
+              <CloudinaryImageUpload
+                onImagesUploaded={handleCloudinaryImagesUploaded}
+                onImagesRemoved={handleCloudinaryImagesRemoved}
+                existingImages={formData.cloudinaryImages}
+                maxFiles={5}
+                maxSize={10 * 1024 * 1024} // 10MB
+                acceptedTypes={['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Banner Images */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Banner Images
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CloudinaryImageUpload
+                onImagesUploaded={handleCloudinaryBannerImagesUploaded}
+                onImagesRemoved={handleCloudinaryBannerImagesRemoved}
+                existingImages={formData.cloudinaryBannerImages}
+                maxFiles={3}
+                maxSize={10 * 1024 * 1024} // 10MB
+                acceptedTypes={['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']}
+              />
             </CardContent>
           </Card>
         </div>

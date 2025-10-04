@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { User } from '../models/User';
-import { IRole } from '../models/Role';
+import Role, { IRole } from '../models/Role';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -41,20 +41,45 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Create new user
+    // Get or create Customer role
+    let customerRole = await Role.findOne({ name: 'Customer' });
+    if (!customerRole) {
+      customerRole = new Role({
+        name: 'Customer',
+        nameEn: 'Customer',
+        nameJa: '顧客',
+        description: 'Standard customer access',
+        descriptionEn: 'Standard customer access',
+        descriptionJa: '標準的な顧客アクセス',
+        level: 10,
+        isSystem: true,
+        isActive: true,
+        permissions: []
+      });
+      await customerRole.save();
+    }
+
+    // Create new user with Customer role
     const user = new User({
       email,
       password,
       name,
       phone,
-      address
+      address,
+      role: customerRole._id
     });
 
     await user.save();
 
+    // Populate role for response
+    await user.populate('role');
+
+    // Get user role name
+    const userRole = typeof user.role === 'string' ? user.role : (user.role as unknown as IRole)?.name || 'Customer';
+
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
+      { userId: user._id, email: user.email, role: userRole, name: user.name },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -66,7 +91,7 @@ export const register = async (req: Request, res: Response) => {
         id: user._id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: userRole
       }
     });
   } catch (error) {

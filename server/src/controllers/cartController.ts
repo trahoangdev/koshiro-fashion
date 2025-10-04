@@ -3,8 +3,17 @@ import { asyncHandler } from '../middleware/auth';
 import { Cart } from '../models/Cart';
 import { Product } from '../models/Product';
 
+// Type for populated product in cart
+interface PopulatedProduct {
+  _id: string;
+  name: string;
+  price: number;
+  images?: string[];
+  [key: string]: unknown;
+}
+
 export const getCart = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as Request & { user: { userId: string } }).user.userId;
+  const userId = (req as Request & { user: { id: string } }).user.id;
     
     let cart = await Cart.findOne({ userId }).populate({
       path: 'items.productId',
@@ -21,7 +30,7 @@ export const getCart = asyncHandler(async (req: Request, res: Response) => {
     const activeItems = cart.items
       .filter(item => item.productId)
       .map(item => {
-        const product = item.productId as any;
+        const product = item.productId as unknown as PopulatedProduct;
         return {
           productId: item.productId._id || item.productId,
           product: product,
@@ -40,7 +49,7 @@ export const getCart = asyncHandler(async (req: Request, res: Response) => {
       total
     });});
 export const addToCart = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as Request & { user: { userId: string } }).user.userId;
+  const userId = (req as Request & { user: { id: string } }).user.id;
     const { productId, quantity = 1, size, color } = req.body;
 
     if (!productId) {
@@ -91,7 +100,7 @@ export const addToCart = asyncHandler(async (req: Request, res: Response) => {
 
     res.status(201).json({ message: 'Product added to cart successfully' });});
 export const updateCartItem = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as Request & { user: { userId: string } }).user.userId;
+  const userId = (req as Request & { user: { id: string } }).user.id;
     const { productId } = req.params;
     const { quantity, size, color } = req.body;
 
@@ -133,7 +142,7 @@ export const updateCartItem = asyncHandler(async (req: Request, res: Response) =
 
     res.json({ message: 'Cart item updated successfully' });});
 export const removeFromCart = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as Request & { user: { userId: string } }).user.userId;
+  const userId = (req as Request & { user: { id: string } }).user.id;
     const { productId } = req.params;
 
     const cart = await Cart.findOne({ userId });
@@ -154,7 +163,7 @@ export const removeFromCart = asyncHandler(async (req: Request, res: Response) =
 
     res.json({ message: 'Product removed from cart successfully' });});
 export const clearCart = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as Request & { user: { userId: string } }).user.userId;
+  const userId = (req as Request & { user: { id: string } }).user.id;
 
     let cart = await Cart.findOne({ userId });
     if (!cart) {

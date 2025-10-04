@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Search,
   Filter,
@@ -70,6 +70,52 @@ import { useNavigate } from "react-router-dom";
 import { Category } from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
+import CloudinaryImage from "@/components/CloudinaryImage";
+import CloudinaryImageUpload from "@/components/CloudinaryImageUpload";
+import CategoryFormSimple from "@/components/CategoryFormSimple";
+import { CategoryFormData } from "@/components/CategoryFormSimple";
+
+// Helper function to render category image
+const renderCategoryImage = (category: Category, className: string = "w-10 h-10") => {
+  // Priority: Cloudinary images > Legacy image > Placeholder
+  if (category.cloudinaryImages && category.cloudinaryImages.length > 0) {
+    const cloudinaryImage = category.cloudinaryImages[0];
+    return (
+      <div className={`${className} rounded-lg overflow-hidden bg-muted`}>
+        <CloudinaryImage
+          publicId={cloudinaryImage.publicId}
+          secureUrl={cloudinaryImage.secureUrl}
+          responsiveUrls={cloudinaryImage.responsiveUrls}
+          alt={category.name}
+          className="w-full h-full object-cover"
+          size="thumbnail"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+  
+  // Fallback to legacy image
+  if (category.image) {
+    return (
+      <div className={`${className} rounded-lg overflow-hidden bg-muted`}>
+        <img
+          src={category.image}
+          alt={category.name}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+  
+  // Placeholder when no images
+  return (
+    <div className={`${className} bg-primary/10 rounded-lg flex items-center justify-center`}>
+      <Folder className="h-5 w-5 text-primary" />
+    </div>
+  );
+};
 
 interface CategoryStats {
   total: number;
@@ -106,16 +152,6 @@ export default function AdminCategories() {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const { language } = useLanguage();
 
-  const [newCategory, setNewCategory] = useState({
-    name: "",
-    description: "",
-    slug: "",
-    parentId: "",
-    status: "active",
-    image: "",
-    metaTitle: "",
-    metaDescription: ""
-  });
 
   const translations = {
     vi: {
@@ -248,20 +284,12 @@ export default function AdminCategories() {
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
-        navigate("/admin/login");
-      }
+      navigate("/admin/login");
+    }
     }
   }, [authLoading, isAuthenticated, user, navigate]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    filterAndSortCategories();
-  }, [categories, searchTerm, selectedStatus, sortBy, sortOrder]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await api.getCategories();
@@ -293,9 +321,9 @@ export default function AdminCategories() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t.errorLoading, t.errorLoadingDesc, toast]);
 
-  const filterAndSortCategories = () => {
+  const filterAndSortCategories = useCallback(() => {
     let filtered = categories;
 
     // Filter by search term
@@ -345,30 +373,31 @@ export default function AdminCategories() {
     });
 
     setFilteredCategories(filtered);
-  };
+  }, [categories, searchTerm, selectedStatus, sortBy, sortOrder]);
 
-  const handleCreateCategory = async () => {
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    filterAndSortCategories();
+  }, [filterAndSortCategories]);
+
+  const handleCreateCategory = async (categoryData: CategoryFormData) => {
     try {
       setIsSaving(true);
-      const categoryData = {
-        ...newCategory,
-        parentId: newCategory.parentId === "none" ? "" : newCategory.parentId
+      
+      // Clean up the data before sending
+      const cleanData = {
+        ...categoryData,
+        parentId: categoryData.parentId && categoryData.parentId !== "" ? categoryData.parentId : undefined
       };
-      await api.createCategory(categoryData);
+      
+      await api.createCategory(cleanData);
       toast({
         title: "Category created successfully",
       });
       setShowCreateDialog(false);
-      setNewCategory({
-        name: "",
-        description: "",
-        slug: "",
-        parentId: "",
-        status: "active",
-        image: "",
-        metaTitle: "",
-        metaDescription: ""
-      });
       loadData();
     } catch (error) {
       console.error('Error creating category:', error);
@@ -382,16 +411,19 @@ export default function AdminCategories() {
     }
   };
 
-  const handleUpdateCategory = async () => {
+  const handleUpdateCategory = async (categoryData: CategoryFormData) => {
     if (!editingCategory) return;
     
     try {
       setIsSaving(true);
-      const categoryData = {
-        ...editingCategory,
-        parentId: editingCategory.parentId === "none" ? "" : editingCategory.parentId
+      
+      // Clean up the data before sending
+      const cleanData = {
+        ...categoryData,
+        parentId: categoryData.parentId && categoryData.parentId !== "" ? categoryData.parentId : undefined
       };
-      await api.updateCategory(editingCategory._id, categoryData);
+      
+      await api.updateCategory(editingCategory._id, cleanData);
       toast({
         title: "Category updated successfully",
       });
@@ -595,9 +627,7 @@ export default function AdminCategories() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Folder className="h-5 w-5 text-primary" />
-                    </div>
+                    {renderCategoryImage(category)}
                     <div>
                       <CardTitle className="text-lg">{category.name}</CardTitle>
                       <p className="text-sm text-muted-foreground">{category.slug}</p>
@@ -683,165 +713,36 @@ export default function AdminCategories() {
 
         {/* Create Category Dialog */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t.createCategory}</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">{t.name}</Label>
-                  <Input
-                    id="name"
-                    value={newCategory.name}
-                    onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="slug">{t.slug}</Label>
-                  <Input
-                    id="slug"
-                    value={newCategory.slug}
-                    onChange={(e) => setNewCategory(prev => ({ ...prev, slug: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">{t.description}</Label>
-                <textarea
-                  id="description"
-                  className="w-full min-h-[100px] p-3 border rounded-md"
-                  value={newCategory.description}
-                  onChange={(e) => setNewCategory(prev => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="parentId">{t.parentCategory}</Label>
-                  <Select
-                    value={newCategory.parentId || "none"}
-                    onValueChange={(value) => setNewCategory(prev => ({ ...prev, parentId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t.noParent} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t.noParent}</SelectItem>
-                      {categories.map(cat => (
-                        <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">{t.status}</Label>
-                  <Select
-                    value={newCategory.status}
-                    onValueChange={(value) => setNewCategory(prev => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">{t.active}</SelectItem>
-                      <SelectItem value="inactive">{t.inactive}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                {t.cancel}
-              </Button>
-              <Button onClick={handleCreateCategory} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                {t.save}
-              </Button>
-            </DialogFooter>
+            <CategoryFormSimple
+              categories={categories}
+              onSubmit={handleCreateCategory}
+              onCancel={() => setShowCreateDialog(false)}
+              isSubmitting={isSaving}
+              mode="create"
+            />
           </DialogContent>
         </Dialog>
 
         {/* Edit Category Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t.editCategory}</DialogTitle>
             </DialogHeader>
             {editingCategory && (
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-name">{t.name}</Label>
-                    <Input
-                      id="edit-name"
-                      value={editingCategory.name}
-                      onChange={(e) => setEditingCategory(prev => prev ? { ...prev, name: e.target.value } : null)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-slug">{t.slug}</Label>
-                    <Input
-                      id="edit-slug"
-                      value={editingCategory.slug}
-                      onChange={(e) => setEditingCategory(prev => prev ? { ...prev, slug: e.target.value } : null)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-description">{t.description}</Label>
-                  <textarea
-                    id="edit-description"
-                    className="w-full min-h-[100px] p-3 border rounded-md"
-                    value={editingCategory.description || ""}
-                    onChange={(e) => setEditingCategory(prev => prev ? { ...prev, description: e.target.value } : null)}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-parentId">{t.parentCategory}</Label>
-                    <Select
-                      value={editingCategory.parentId || "none"}
-                      onValueChange={(value) => setEditingCategory(prev => prev ? { ...prev, parentId: value } : null)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t.noParent} />
-                      </SelectTrigger>
-                                          <SelectContent>
-                      <SelectItem value="none">{t.noParent}</SelectItem>
-                      {categories.filter(cat => cat._id !== editingCategory._id).map(cat => (
-                        <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-status">{t.status}</Label>
-                    <Select
-                      value={editingCategory.isActive ? 'active' : 'inactive'}
-                      onValueChange={(value) => setEditingCategory(prev => prev ? { ...prev, isActive: value === 'active' } : null)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">{t.active}</SelectItem>
-                        <SelectItem value="inactive">{t.inactive}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
+              <CategoryFormSimple
+                initialData={editingCategory}
+                categories={categories}
+                onSubmit={handleUpdateCategory}
+                onCancel={() => setShowEditDialog(false)}
+                isSubmitting={isSaving}
+                mode="edit"
+              />
             )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-                {t.cancel}
-              </Button>
-              <Button onClick={handleUpdateCategory} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                {t.save}
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 

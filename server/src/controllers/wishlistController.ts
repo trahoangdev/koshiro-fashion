@@ -5,7 +5,7 @@ import { Product } from '../models/Product';
 
 export const getWishlist = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     
     const wishlistItems = await Wishlist.find({ userId })
       .populate({
@@ -29,7 +29,7 @@ export const getWishlist = asyncHandler(async (req: Request, res: Response) => {
 
 export const addToWishlist = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     const { productId } = req.body;
 
     if (!productId) {
@@ -56,9 +56,9 @@ export const addToWishlist = asyncHandler(async (req: Request, res: Response) =>
     await wishlistItem.save();
 
     res.status(201).json({ message: 'Product added to wishlist successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Add to wishlist error:', error);
-    if (error.code === 11000) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
       return res.status(400).json({ message: 'Product already in wishlist' });
     }
     return res.status(500).json({ message: 'Internal server error' });
@@ -67,7 +67,7 @@ export const addToWishlist = asyncHandler(async (req: Request, res: Response) =>
 
 export const removeFromWishlist = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     const { productId } = req.params;
 
     const wishlistItem = await Wishlist.findOneAndDelete({ userId, productId });
@@ -85,7 +85,7 @@ export const removeFromWishlist = asyncHandler(async (req: Request, res: Respons
 
 export const clearWishlist = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const userId = (req as Request & { user: { userId: string } }).user.userId;
+    const userId = (req as Request & { user: { id: string } }).user.id;
 
     await Wishlist.deleteMany({ userId });
 

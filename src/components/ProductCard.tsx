@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import MarkdownRenderer from "./MarkdownRenderer";
+import { CloudinaryImage } from "./CloudinaryImage";
 
 interface ProductCardProps {
   product: Product;
@@ -16,6 +17,62 @@ interface ProductCardProps {
   onAddToWishlist?: (product: Product) => void;
   onAddToCompare?: (product: Product) => void;
 }
+
+// Helper function to get image source (Cloudinary or legacy)
+const getImageSource = (product: Product, index: number = 0): string => {
+  // Check if product has Cloudinary images
+  if (product.cloudinaryImages && product.cloudinaryImages.length > index) {
+    return product.cloudinaryImages[index].responsiveUrls.medium;
+  }
+  
+  // Fallback to legacy images
+  if (product.images && product.images.length > index) {
+    return product.images[index];
+  }
+  
+  return '/placeholder.svg';
+};
+
+// Helper function to render image with Cloudinary support
+const renderProductImage = (product: Product, index: number, alt: string, className: string) => {
+  // Check if product has Cloudinary images
+  if (product.cloudinaryImages && product.cloudinaryImages.length > index) {
+    const cloudinaryImage = product.cloudinaryImages[index];
+    return (
+      <CloudinaryImage
+        publicId={cloudinaryImage.publicId}
+        secureUrl={cloudinaryImage.secureUrl}
+        responsiveUrls={cloudinaryImage.responsiveUrls}
+        alt={alt}
+        size="medium"
+        className={className}
+        loading="lazy"
+      />
+    );
+  }
+  
+  // Fallback to legacy images
+  if (product.images && product.images.length > index) {
+    return (
+      <img
+        src={product.images[index]}
+        alt={alt}
+        className={className}
+        loading="lazy"
+      />
+    );
+  }
+  
+  // Placeholder
+  return (
+    <img
+      src="/placeholder.svg"
+      alt={alt}
+      className={className}
+      loading="lazy"
+    />
+  );
+};
 
 // Helper function to get hex color from color name
 const getColorHex = (colorName: string): string => {
@@ -160,64 +217,67 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
         <div className="flex">
           <div className="relative w-48 h-48 flex-shrink-0 rounded-l-md overflow-hidden">
             {/* Primary Image - Default */}
-            <img
-              src={product.images[0] || '/placeholder.svg'}
-              alt={getName()}
-              className="w-full h-full object-cover transition-all duration-500 group-hover:opacity-0"
-            />
+            {renderProductImage(product, 0, getName(), "w-full h-full object-cover transition-all duration-500 group-hover:opacity-0")}
             
             {/* Secondary Image - On Hover */}
-            {product.images[1] && (
-              <img
-                src={product.images[1]}
-                alt={getName()}
-                className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 group-hover:opacity-100"
-              />
+            {getImageSource(product, 1) !== '/placeholder.svg' && (
+              <div className="absolute inset-0 w-full h-full transition-all duration-500 opacity-0 group-hover:opacity-100">
+                {renderProductImage(product, 1, getName(), "w-full h-full object-cover")}
+              </div>
             )}
             
             {/* Fallback: If no second image, show zoom effect on first image */}
-            {!product.images[1] && (
-            <img
-              src={product.images[0] || '/placeholder.svg'}
-              alt={getName()}
-                className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-110"
-            />
-            )}
-            {/* Stock Status - Higher priority */}
-            {product.stock <= 0 && (
-              <Badge variant="secondary" className="absolute top-3 left-3 z-10 bg-stone-500/90 text-white border-0 backdrop-blur-sm">
-                {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
-              </Badge>
+            {getImageSource(product, 1) === '/placeholder.svg' && (
+              <div className="absolute inset-0 w-full h-full transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-110">
+                {renderProductImage(product, 0, getName(), "w-full h-full object-cover")}
+              </div>
             )}
             
-            {/* Sale Badge - Show when on sale and in stock */}
-            {product.stock > 0 && isOnSale && discountPercentage > 0 && (
-              <Badge variant="destructive" className="absolute top-3 left-3 z-10 bg-red-500/90 text-white border-0 backdrop-blur-sm font-medium">
-                -{discountPercentage}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
-              </Badge>
-            )}
-            
-            {/* Featured Badge - Show when not on sale and in stock */}
-            {product.stock > 0 && !isOnSale && product.isFeatured && (
-              <Badge variant="default" className="absolute top-3 right-3 bg-stone-800/90 dark:bg-stone-200/90 text-white dark:text-stone-800 border-0 backdrop-blur-sm font-medium">
-                {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
-              </Badge>
-            )}
-            
-            {/* New Badge - Show for new products */}
-            {product.stock > 0 && !isOnSale && product.isNew && (
-              <Badge className={`absolute ${product.isFeatured ? 'top-12' : 'top-3'} right-3 bg-green-500/90 text-white border-0 backdrop-blur-sm font-medium`}>
-                {language === 'vi' ? 'MỚI' : language === 'ja' ? '新着' : 'NEW'}
-              </Badge>
-            )}
-            
-            {/* Limited Edition Badge */}
-            {product.stock > 0 && product.isLimitedEdition && (
-              <Badge className="absolute top-3 left-3 z-10 bg-purple-500/90 text-white border-0 backdrop-blur-sm font-medium">
-                {language === 'vi' ? 'Phiên bản giới hạn' : language === 'ja' ? '限定版' : 'Limited Edition'}
-              </Badge>
-            )}
-            
+            {/* Badges Container - Left side only to avoid covering action buttons */}
+            <div className="absolute top-3 left-3 z-10 flex flex-col gap-1 max-w-[120px]">
+              {/* Stock Status - Highest priority */}
+              {product.stock <= 0 && (
+                <Badge variant="secondary" className="bg-stone-500/90 text-white border-0 backdrop-blur-sm text-xs w-fit">
+                  {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
+                </Badge>
+              )}
+              
+              {/* Sale Badge - Show when on sale and in stock */}
+              {product.stock > 0 && isOnSale && discountPercentage > 0 && (
+                <Badge variant="destructive" className="bg-red-500/90 text-white border-0 backdrop-blur-sm font-medium text-xs w-fit">
+                  -{discountPercentage}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
+                </Badge>
+              )}
+              
+              {/* Limited Edition Badge - When not on sale and not stock issue */}
+              {product.stock > 0 && !isOnSale && product.isLimitedEdition && (
+                <Badge className="bg-purple-500/90 text-white border-0 backdrop-blur-sm font-medium text-xs w-fit">
+                  {language === 'vi' ? 'Giới hạn' : language === 'ja' ? '限定' : 'Limited'}
+                </Badge>
+              )}
+              
+              {/* Featured Badge - When not on sale and not stock issue */}
+              {product.stock > 0 && !isOnSale && product.isFeatured && (
+                <Badge variant="default" className="bg-stone-800/90 dark:bg-stone-200/90 text-white dark:text-stone-800 border-0 backdrop-blur-sm font-medium text-xs w-fit">
+                  {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
+                </Badge>
+              )}
+              
+              {/* New Badge - When not on sale and not stock issue */}
+              {product.stock > 0 && !isOnSale && product.isNew && (
+                <Badge className="bg-green-500/90 text-white border-0 backdrop-blur-sm font-medium text-xs w-fit">
+                  {language === 'vi' ? 'MỚI' : language === 'ja' ? '新着' : 'NEW'}
+                </Badge>
+              )}
+              
+              {/* Best Seller Badge - When not on sale and not stock issue */}
+              {product.stock > 0 && !isOnSale && product.isBestSeller && (
+                <Badge className="bg-orange-500/90 text-white border-0 backdrop-blur-sm font-medium text-xs w-fit">
+                  {language === 'vi' ? 'Bán chạy' : language === 'ja' ? 'ベストセラー' : 'Best Seller'}
+                </Badge>
+              )}
+            </div>
+
             {/* Action Icons - Zen Style */}
             <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
               {onAddToWishlist && (
@@ -361,71 +421,66 @@ const ProductCard = ({ product, viewMode = 'grid', onAddToCart, onAddToWishlist,
       {/* Image Section - Fixed height for consistency */}
       <div className="relative overflow-hidden rounded-t-md h-[280px] flex-shrink-0">
         {/* Primary Image - Default */}
-        <img
-          src={product.images[0] || '/placeholder.svg'}
-          alt={getName()}
-          className="w-full h-full object-cover transition-all duration-500 group-hover:opacity-0"
-        />
+        {renderProductImage(product, 0, getName(), "w-full h-full object-cover transition-all duration-500 group-hover:opacity-0")}
         
         {/* Secondary Image - On Hover */}
-        {product.images[1] && (
-          <img
-            src={product.images[1]}
-            alt={getName()}
-            className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 group-hover:opacity-100"
-          />
+        {getImageSource(product, 1) !== '/placeholder.svg' && (
+          <div className="absolute inset-0 w-full h-full transition-all duration-500 opacity-0 group-hover:opacity-100">
+            {renderProductImage(product, 1, getName(), "w-full h-full object-cover")}
+          </div>
         )}
         
         {/* Fallback: If no second image, show zoom effect on first image */}
-        {!product.images[1] && (
-        <img
-          src={product.images[0] || '/placeholder.svg'}
-          alt={getName()}
-            className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-110"
-        />
+        {getImageSource(product, 1) === '/placeholder.svg' && (
+          <div className="absolute inset-0 w-full h-full transition-all duration-500 opacity-0 group-hover:opacity-100 group-hover:scale-110">
+            {renderProductImage(product, 0, getName(), "w-full h-full object-cover")}
+          </div>
         )}
         
-        {/* Stock Status - Higher priority */}
-        {product.stock <= 0 && (
-          <Badge variant="secondary" className="absolute top-3 left-3 z-10 bg-stone-500/90 text-white border-0 backdrop-blur-sm">
-            {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
-          </Badge>
-        )}
-        
-        {/* Sale Badge - Show when on sale and in stock */}
-        {product.stock > 0 && isOnSale && discountPercentage > 0 && (
-          <Badge variant="destructive" className="absolute top-3 left-3 z-10 bg-red-500/90 text-white border-0 backdrop-blur-sm font-medium">
-            -{discountPercentage}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
-          </Badge>
-        )}
-        
-        {/* Featured Badge - Show when not on sale and in stock */}
-        {product.stock > 0 && !isOnSale && product.isFeatured && (
-          <Badge variant="default" className="absolute top-3 right-3 bg-stone-800/90 dark:bg-stone-200/90 text-white dark:text-stone-800 border-0 backdrop-blur-sm font-medium">
-            {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
-          </Badge>
-        )}
-        
-        {/* New Badge - Show for new products */}
-        {product.stock > 0 && !isOnSale && product.isNew && (
-          <Badge className={`absolute ${product.isFeatured ? 'top-12' : 'top-3'} right-3 bg-green-500/90 text-white border-0 backdrop-blur-sm font-medium`}>
-            {language === 'vi' ? 'MỚI' : language === 'ja' ? '新着' : 'NEW'}
-          </Badge>
-        )}
-        
-        {/* Limited Edition Badge */}
-        {product.stock > 0 && product.isLimitedEdition && (
-          <Badge className="absolute top-3 left-3 z-10 bg-purple-500/90 text-white border-0 backdrop-blur-sm font-medium">
-            {language === 'vi' ? 'Phiên bản giới hạn' : language === 'ja' ? '限定版' : 'Limited Edition'}
-          </Badge>
-        )}
-        
-        {/* Best Seller Badge */}
-        {product.stock > 0 && product.isBestSeller && (
-          <Badge className="absolute top-3 right-3 bg-orange-500/90 text-white border-0 backdrop-blur-sm font-medium">
-            {language === 'vi' ? 'Bán chạy' : language === 'ja' ? 'ベストセラー' : 'Best Seller'}
-          </Badge>
-        )}
+        {/* Badges Container - Left side only to avoid covering action buttons */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+          {/* Stock Status - Highest priority */}
+          {product.stock <= 0 && (
+            <Badge variant="secondary" className="bg-stone-500/90 text-white border-0 backdrop-blur-sm text-xs">
+              {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
+            </Badge>
+          )}
+          
+          {/* Sale Badge - Show when on sale and in stock */}
+          {product.stock > 0 && isOnSale && discountPercentage > 0 && (
+            <Badge variant="destructive" className="bg-red-500/90 text-white border-0 backdrop-blur-sm font-medium text-xs">
+              -{discountPercentage}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
+            </Badge>
+          )}
+          
+          {/* Limited Edition Badge - When not on sale */}
+          {product.stock > 0 && !isOnSale && product.isLimitedEdition && (
+            <Badge className="bg-purple-500/90 text-white border-0 backdrop-blur-sm font-medium text-xs">
+              {language === 'vi' ? 'Giới hạn' : language === 'ja' ? '限定' : 'Limited'}
+            </Badge>
+          )}
+          
+          {/* Featured Badge */}
+          {product.stock > 0 && product.isFeatured && (
+            <Badge variant="default" className="bg-stone-800/90 dark:bg-stone-200/90 text-white dark:text-stone-800 border-0 backdrop-blur-sm font-medium text-xs">
+              {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
+            </Badge>
+          )}
+          
+          {/* New Badge */}
+          {product.stock > 0 && product.isNew && (
+            <Badge className="bg-green-500/90 text-white border-0 backdrop-blur-sm font-medium text-xs">
+              {language === 'vi' ? 'MỚI' : language === 'ja' ? '新着' : 'NEW'}
+            </Badge>
+          )}
+          
+          {/* Best Seller Badge */}
+          {product.stock > 0 && product.isBestSeller && (
+            <Badge className="bg-orange-500/90 text-white border-0 backdrop-blur-sm font-medium text-xs">
+              {language === 'vi' ? 'Bán chạy' : language === 'ja' ? 'ベストセラー' : 'Best Seller'}
+            </Badge>
+          )}
+        </div>
         
         {/* Action Icons - Zen Style */}
         <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">

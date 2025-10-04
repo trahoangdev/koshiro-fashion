@@ -227,6 +227,11 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
 
         {/* Desktop Navigation - Better spacing */}
         <nav className="hidden lg:flex items-center space-x-6 flex-1 justify-center max-w-[480px] mx-8">
+          <Link to="/products">
+            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-3 py-2">
+              {language === 'vi' ? 'Sản Phẩm' : language === 'ja' ? '商品' : 'Products'}
+            </Button>
+          </Link>
           <div className="relative group">
             <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-3 py-2">
               {t.categories}
@@ -266,9 +271,6 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
           </Link>
           <Link to="/about">
             <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">{t.about}</Button>
-          </Link>
-          <Link to="/contact">
-            <Button variant="ghost" className="font-medium text-base hover:text-primary transition-colors duration-300 px-4 py-2">{t.contact}</Button>
           </Link>
         </nav>
 
@@ -446,6 +448,11 @@ const Header = ({ cartItemsCount, onSearch, refreshWishlistTrigger }: HeaderProp
       <div className="lg:hidden border-t bg-background/95 backdrop-blur">
         <div className="container px-4 lg:px-6 py-4">
           <nav className="flex items-center justify-between space-x-2">
+            <Link to="/products">
+              <Button variant="ghost" size="sm" className="text-sm hover:text-primary transition-colors px-3">
+                {language === 'vi' ? 'Sản Phẩm' : language === 'ja' ? '商品' : 'Products'}
+              </Button>
+            </Link>
             <Link to="/categories">
               <Button variant="ghost" size="sm" className="text-sm hover:text-primary transition-colors px-3">
                 {t.categories}

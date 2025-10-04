@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "@/contexts";
+import { useAuth, isAdminUser } from "@/contexts";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { api, Category } from "@/lib/api";
@@ -30,6 +30,20 @@ interface ProductFormData {
   originalPrice: number;
   categoryId: string;
   images: string[];
+  cloudinaryImages: Array<{
+    publicId: string;
+    secureUrl: string;
+    width: number;
+    height: number;
+    format: string;
+    bytes: number;
+    responsiveUrls: {
+      thumbnail: string;
+      medium: string;
+      large: string;
+      original: string;
+    };
+  }>;
   sizes: string[];
   colors: Array<string | { name: string; value: string }>;
   stock: number;
@@ -66,6 +80,9 @@ export default function ProductFormPage() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [formData, setFormData] = useState<ProductFormData | null>(null);
   const [isDraftSaved, setIsDraftSaved] = useState(false);
+  const hasLoadedRef = useRef(false);
+  const navigateRef = useRef(navigate);
+  const toastRef = useRef(toast);
 
   const mode = id ? 'edit' : 'create';
   const isEditMode = mode === 'edit';
@@ -125,146 +142,16 @@ export default function ProductFormPage() {
   };
 
   const t = translations[language as keyof typeof translations] || translations.en;
+  
+  // Update refs
+  navigateRef.current = navigate;
+  toastRef.current = toast;
 
-  // Authentication check
-  useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
-        navigate("/admin/login");
-      }
-    }
-  }, [authLoading, isAuthenticated, user, navigate]);
+  // Authentication check is handled by ProtectedAdminRoute
+  // No need for duplicate authentication logic here
 
-  // Load data
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && user?.role === 'admin') {
-      loadData();
-    }
-  }, [authLoading, isAuthenticated, user, id]);
 
-  // Auto-save draft every 30 seconds
-  useEffect(() => {
-    if (hasUnsavedChanges && formData) {
-      const interval = setInterval(() => {
-        saveDraft();
-      }, 30000); // Auto-save every 30 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [hasUnsavedChanges, formData]);
-
-  // Warn before leaving with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Load categories
-      const categoriesResponse = await api.getCategories();
-      setCategories(categoriesResponse.categories);
-
-      // Load product data if editing
-      if (isEditMode && id) {
-        try {
-          const productResponse = await api.getProduct(id);
-          const product = productResponse.product;
-          
-          // Transform product data to form format
-          const transformedData: ProductFormData = {
-            name: product.name,
-            nameEn: product.nameEn || '',
-            nameJa: product.nameJa || '',
-            description: product.description || '',
-            descriptionEn: product.descriptionEn || '',
-            descriptionJa: product.descriptionJa || '',
-            price: product.price,
-            originalPrice: product.originalPrice || 0,
-            categoryId: typeof product.categoryId === 'string' ? product.categoryId : product.categoryId._id,
-            images: product.images || [],
-            sizes: product.sizes || [],
-            colors: product.colors || [],
-            stock: product.stock,
-            tags: product.tags || [],
-            isActive: product.isActive,
-            isFeatured: product.isFeatured,
-            onSale: product.onSale,
-            isNew: product.isNew,
-            isLimitedEdition: product.isLimitedEdition,
-            isBestSeller: product.isBestSeller,
-            metaTitle: product.metaTitle || '',
-            metaDescription: product.metaDescription || '',
-            weight: product.weight || 0,
-            dimensions: product.dimensions || { length: 0, width: 0, height: 0 },
-            sku: product.sku || '',
-            barcode: product.barcode || ''
-          };
-          
-          setFormData(transformedData);
-        } catch (error) {
-          console.error('Error loading product:', error);
-          toast({
-            title: t.errorLoading,
-            description: t.errorLoadingDesc,
-            variant: "destructive",
-          });
-          navigate('/admin/products');
-        }
-      } else {
-        // Create mode - set default form data
-        const defaultData: ProductFormData = {
-          name: '',
-          nameEn: '',
-          nameJa: '',
-          description: '',
-          descriptionEn: '',
-          descriptionJa: '',
-          price: 0,
-          originalPrice: 0,
-          categoryId: '',
-          images: [],
-          sizes: [],
-          colors: [],
-          stock: 0,
-          tags: [],
-          isActive: true,
-          isFeatured: false,
-          onSale: false,
-          isNew: true, // New products are automatically new
-          isLimitedEdition: false,
-          isBestSeller: false,
-          metaTitle: '',
-          metaDescription: '',
-          weight: 0,
-          dimensions: { length: 0, width: 0, height: 0 },
-          sku: '',
-          barcode: ''
-        };
-        setFormData(defaultData);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: t.errorLoading,
-        description: t.errorLoadingDesc,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const saveDraft = async () => {
+  const saveDraft = useCallback(async () => {
     if (!formData) return;
     
     try {
@@ -280,9 +167,9 @@ export default function ProductFormPage() {
     } catch (error) {
       console.error('Error saving draft:', error);
     }
-  };
+  }, [formData, isEditMode, id]);
 
-  const loadDraft = () => {
+  const loadDraft = useCallback(() => {
     if (isEditMode) return; // Don't load draft for edit mode
     
     try {
@@ -307,7 +194,144 @@ export default function ProductFormPage() {
     } catch (error) {
       console.error('Error loading draft:', error);
     }
-  };
+  }, [isEditMode, language, toast]);
+
+  // Reset load flag when id changes
+  useEffect(() => {
+    hasLoadedRef.current = false;
+  }, [id]);
+
+  // Load data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load categories
+        const categoriesResponse = await api.getCategories();
+        setCategories(categoriesResponse.categories);
+
+        // Load product data if editing
+        if (isEditMode && id) {
+          try {
+            const productResponse = await api.getProduct(id);
+            const product = productResponse.product;
+            
+            // Transform product data to form format
+            const transformedData: ProductFormData = {
+              name: product.name,
+              nameEn: product.nameEn || '',
+              nameJa: product.nameJa || '',
+              description: product.description || '',
+              descriptionEn: product.descriptionEn || '',
+              descriptionJa: product.descriptionJa || '',
+              price: product.price,
+              originalPrice: product.originalPrice || 0,
+              categoryId: typeof product.categoryId === 'string' ? product.categoryId : product.categoryId._id,
+              images: product.images || [],
+              cloudinaryImages: product.cloudinaryImages || [],
+              sizes: product.sizes || [],
+              colors: product.colors || [],
+              stock: product.stock,
+              tags: product.tags || [],
+              isActive: product.isActive,
+              isFeatured: product.isFeatured,
+              onSale: product.onSale,
+              isNew: product.isNew,
+              isLimitedEdition: product.isLimitedEdition,
+              isBestSeller: product.isBestSeller,
+              metaTitle: product.metaTitle || '',
+              metaDescription: product.metaDescription || '',
+              weight: product.weight || 0,
+              dimensions: product.dimensions || { length: 0, width: 0, height: 0 },
+              sku: product.sku || '',
+              barcode: product.barcode || ''
+            };
+            
+            setFormData(transformedData);
+          } catch (error) {
+            console.error('Error loading product:', error);
+            toastRef.current({
+              title: t.errorLoading,
+              description: t.errorLoadingDesc,
+              variant: "destructive",
+            });
+            navigateRef.current('/admin/products');
+          }
+        } else {
+          // Create mode - set default form data
+          const defaultData: ProductFormData = {
+            name: '',
+            nameEn: '',
+            nameJa: '',
+            description: '',
+            descriptionEn: '',
+            descriptionJa: '',
+            price: 0,
+            originalPrice: 0,
+            categoryId: '',
+            images: [],
+            cloudinaryImages: [],
+            sizes: [],
+            colors: [],
+            stock: 0,
+            tags: [],
+            isActive: true,
+            isFeatured: false,
+            onSale: false,
+            isNew: true, // New products are automatically new
+            isLimitedEdition: false,
+            isBestSeller: false,
+            metaTitle: '',
+            metaDescription: '',
+            weight: 0,
+            dimensions: { length: 0, width: 0, height: 0 },
+            sku: '',
+            barcode: ''
+          };
+          setFormData(defaultData);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toastRef.current({
+          title: t.errorLoading,
+          description: t.errorLoadingDesc,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (!authLoading && isAuthenticated && isAdminUser(user) && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      loadData();
+    }
+  }, [authLoading, isAuthenticated, user, id, isEditMode, t.errorLoading, t.errorLoadingDesc]);
+
+  // Auto-save draft every 30 seconds
+  useEffect(() => {
+    if (hasUnsavedChanges && formData) {
+      const interval = setInterval(() => {
+        saveDraft();
+      }, 30000); // Auto-save every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [hasUnsavedChanges, formData, saveDraft]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const clearDraft = () => {
     const draftKey = isEditMode ? `product-draft-${id}` : 'product-draft-new';
@@ -318,10 +342,18 @@ export default function ProductFormPage() {
     try {
       setIsSubmitting(true);
       
+      // Transform colors to string array for API
+      const transformedData = {
+        ...data,
+        colors: data.colors.map(color => 
+          typeof color === 'string' ? color : color.value
+        )
+      };
+      
       if (isEditMode && id) {
-        await api.updateProduct(id, data);
+        await api.updateProduct(id, transformedData);
       } else {
-        await api.createProduct(data);
+        await api.createProduct(transformedData);
       }
       
       // Clear draft after successful save
@@ -369,7 +401,7 @@ export default function ProductFormPage() {
     if (!isEditMode && formData && !hasUnsavedChanges) {
       loadDraft();
     }
-  }, [isEditMode, formData]);
+  }, [isEditMode, formData, hasUnsavedChanges, loadDraft]);
 
   if (authLoading || isLoading) {
     return (
@@ -384,7 +416,7 @@ export default function ProductFormPage() {
     );
   }
 
-  if (!isAuthenticated || (user?.role !== 'Admin' && user?.role !== 'Super Admin')) {
+  if (!isAuthenticated || !isAdminUser(user)) {
     return null;
   }
 

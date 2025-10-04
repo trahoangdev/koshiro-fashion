@@ -36,6 +36,22 @@ import { Category } from "@/lib/api";
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@/styles/markdown-editor.css';
+import CloudinaryImageUpload from './CloudinaryImageUpload';
+
+interface CloudinaryImage {
+  publicId: string;
+  secureUrl: string;
+  width: number;
+  height: number;
+  format: string;
+  bytes: number;
+  responsiveUrls: {
+    thumbnail: string;
+    medium: string;
+    large: string;
+    original: string;
+  };
+}
 
 interface ProductFormData {
   name: string;
@@ -47,7 +63,8 @@ interface ProductFormData {
   price: number;
   originalPrice: number;
   categoryId: string;
-  images: string[];
+  images: string[]; // Legacy field for backward compatibility
+  cloudinaryImages: CloudinaryImage[]; // New Cloudinary images
   sizes: string[];
   colors: Array<string | { name: string; value: string }>;
   stock: number;
@@ -192,7 +209,8 @@ export default function ProductForm({
       price: 0,
       originalPrice: 0,
       categoryId: '',
-      images: [],
+      images: [], // Legacy field
+      cloudinaryImages: [], // New Cloudinary images
       sizes: [],
       colors: [],
       stock: 0,
@@ -243,6 +261,49 @@ export default function ProductForm({
     );
     
     return { isLimitedEdition, isBestSeller };
+  };
+
+  // Helper function to validate form data
+  const validateFormData = (data: ProductFormData): string[] => {
+    const errors: string[] = [];
+    
+    if (!data.name.trim()) {
+      errors.push(language === 'vi' ? 'Tên sản phẩm là bắt buộc' : 
+                 language === 'ja' ? '商品名は必須です' : 
+                 'Product name is required');
+    }
+    
+    if (!data.categoryId) {
+      errors.push(language === 'vi' ? 'Danh mục là bắt buộc' : 
+                 language === 'ja' ? 'カテゴリは必須です' : 
+                 'Category is required');
+    }
+    
+    if (data.price <= 0) {
+      errors.push(language === 'vi' ? 'Giá phải lớn hơn 0' : 
+                 language === 'ja' ? '価格は0より大きくなければなりません' : 
+                 'Price must be greater than 0');
+    }
+    
+    if (data.stock < 0) {
+      errors.push(language === 'vi' ? 'Số lượng tồn kho không được âm' : 
+                 language === 'ja' ? '在庫数量は負の値にできません' : 
+                 'Stock quantity cannot be negative');
+    }
+    
+    if (data.weight < 0) {
+      errors.push(language === 'vi' ? 'Trọng lượng không được âm' : 
+                 language === 'ja' ? '重量は負の値にできません' : 
+                 'Weight cannot be negative');
+    }
+    
+    if (data.dimensions.length < 0 || data.dimensions.width < 0 || data.dimensions.height < 0) {
+      errors.push(language === 'vi' ? 'Kích thước không được âm' : 
+                 language === 'ja' ? 'サイズは負の値にできません' : 
+                 'Dimensions cannot be negative');
+    }
+    
+    return errors;
   };
 
   // Update formData when initialData changes (for edit mode)
@@ -464,6 +525,18 @@ export default function ProductForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data
+    const validationErrors = validateFormData(formData);
+    if (validationErrors.length > 0) {
+      toast({
+        title: t.error,
+        description: validationErrors.join(', '),
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       // Transform colors to string array for backend
       const transformedData = {
@@ -478,6 +551,7 @@ export default function ProductForm({
         title: t.success,
       });
     } catch (error) {
+      console.error('ProductForm submit error:', error);
       toast({
         title: t.error,
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -487,8 +561,9 @@ export default function ProductForm({
   };
 
   const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      const updatedTags = [...formData.tags, newTag.trim()];
+    const trimmedTag = newTag.trim();
+    if (trimmedTag && !formData.tags.includes(trimmedTag)) {
+      const updatedTags = [...formData.tags, trimmedTag];
       const badgeStatus = detectBadgeFromTags(updatedTags);
       
       setFormData(prev => ({
@@ -498,6 +573,25 @@ export default function ProductForm({
         isBestSeller: badgeStatus.isBestSeller
       }));
       setNewTag('');
+      
+      toast({
+        title: language === 'vi' ? 'Thêm tag thành công' : 
+               language === 'ja' ? 'タグを追加しました' : 
+               'Tag added successfully',
+        description: language === 'vi' ? `Đã thêm tag "${trimmedTag}"` :
+                     language === 'ja' ? `タグ"${trimmedTag}"を追加しました` :
+                     `Added tag "${trimmedTag}"`,
+      });
+    } else if (trimmedTag && formData.tags.includes(trimmedTag)) {
+      toast({
+        title: language === 'vi' ? 'Tag đã tồn tại' : 
+               language === 'ja' ? 'タグが既に存在します' : 
+               'Tag already exists',
+        description: language === 'vi' ? 'Tag này đã được thêm vào danh sách' :
+                     language === 'ja' ? 'このタグは既にリストに追加されています' :
+                     'This tag has already been added to the list',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -514,12 +608,32 @@ export default function ProductForm({
   };
 
   const addSize = () => {
-    if (newSize.trim() && !formData.sizes.includes(newSize.trim())) {
+    const trimmedSize = newSize.trim();
+    if (trimmedSize && !formData.sizes.includes(trimmedSize)) {
       setFormData(prev => ({
         ...prev,
-        sizes: [...prev.sizes, newSize.trim()]
+        sizes: [...prev.sizes, trimmedSize]
       }));
       setNewSize('');
+      
+      toast({
+        title: language === 'vi' ? 'Thêm kích thước thành công' : 
+               language === 'ja' ? 'サイズを追加しました' : 
+               'Size added successfully',
+        description: language === 'vi' ? `Đã thêm kích thước "${trimmedSize}"` :
+                     language === 'ja' ? `サイズ"${trimmedSize}"を追加しました` :
+                     `Added size "${trimmedSize}"`,
+      });
+    } else if (trimmedSize && formData.sizes.includes(trimmedSize)) {
+      toast({
+        title: language === 'vi' ? 'Kích thước đã tồn tại' : 
+               language === 'ja' ? 'サイズが既に存在します' : 
+               'Size already exists',
+        description: language === 'vi' ? 'Kích thước này đã được thêm vào danh sách' :
+                     language === 'ja' ? 'このサイズは既にリストに追加されています' :
+                     'This size has already been added to the list',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -533,16 +647,17 @@ export default function ProductForm({
   const addColor = () => {
     // Validate hex color format
     const isValidHex = /^#[0-9A-Fa-f]{6}$/.test(newColor) || /^#[0-9A-Fa-f]{3}$/.test(newColor);
+    const colorName = newColorName.trim() || getColorName(newColor);
     
-    if (newColorName.trim() && newColor.trim() && isValidHex) {
+    if (colorName && newColor.trim() && isValidHex) {
       const colorExists = formData.colors.some(color => 
-        typeof color === 'string' ? color === newColorName.trim() : color.name === newColorName.trim()
+        typeof color === 'string' ? color === colorName : color.name === colorName
       );
       
       if (!colorExists) {
         setFormData(prev => ({
           ...prev,
-          colors: [...prev.colors, { name: newColorName.trim(), value: newColor.trim() }]
+          colors: [...prev.colors, { name: colorName, value: newColor.trim() }]
         }));
         setNewColorName('');
         setNewColor('#000000'); // Reset to default color
@@ -551,9 +666,9 @@ export default function ProductForm({
           title: language === 'vi' ? 'Thêm màu thành công' : 
                  language === 'ja' ? '色を追加しました' : 
                  'Color added successfully',
-          description: language === 'vi' ? `Đã thêm màu ${newColorName.trim()}` :
-                       language === 'ja' ? `${newColorName.trim()}色を追加しました` :
-                       `Added color ${newColorName.trim()}`,
+          description: language === 'vi' ? `Đã thêm màu ${colorName}` :
+                       language === 'ja' ? `${colorName}色を追加しました` :
+                       `Added color ${colorName}`,
         });
       } else {
         toast({
@@ -568,7 +683,7 @@ export default function ProductForm({
       }
     } else {
       let errorMessage = '';
-      if (!newColorName.trim()) {
+      if (!colorName) {
         errorMessage = language === 'vi' ? 'Vui lòng nhập tên màu' :
                       language === 'ja' ? '色名を入力してください' :
                       'Please enter color name';
@@ -613,6 +728,21 @@ export default function ProductForm({
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Cloudinary image handlers
+  const handleCloudinaryImagesUploaded = (newImages: CloudinaryImage[]) => {
+    setFormData(prev => ({
+      ...prev,
+      cloudinaryImages: [...prev.cloudinaryImages, ...newImages]
+    }));
+  };
+
+  const handleCloudinaryImagesRemoved = (publicIds: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      cloudinaryImages: prev.cloudinaryImages.filter(img => !publicIds.includes(img.publicId))
     }));
   };
 
@@ -757,8 +887,13 @@ export default function ProductForm({
               <Input
                 id="price"
                 type="number"
+                min="0"
+                step="0.01"
                 value={formData.price}
-                onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setFormData(prev => ({ ...prev, price: isNaN(value) ? 0 : value }));
+                }}
                 required
               />
             </div>
@@ -767,8 +902,13 @@ export default function ProductForm({
               <Input
                 id="originalPrice"
                 type="number"
+                min="0"
+                step="0.01"
                 value={formData.originalPrice}
-                onChange={(e) => setFormData(prev => ({ ...prev, originalPrice: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setFormData(prev => ({ ...prev, originalPrice: isNaN(value) ? 0 : value }));
+                }}
               />
             </div>
             <Separator />
@@ -851,8 +991,12 @@ export default function ProductForm({
               <Input
                 id="stock"
                 type="number"
+                min="0"
                 value={formData.stock}
-                onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  setFormData(prev => ({ ...prev, stock: isNaN(value) ? 0 : value }));
+                }}
                 required
               />
             </div>
@@ -1078,45 +1222,15 @@ export default function ProductForm({
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>{t.images}</Label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-4">{t.dragDrop}</p>
-                <Button type="button" variant="outline" onClick={() => document.getElementById('image-upload')?.click()}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  {t.uploadImage}
-                </Button>
-                <input
-                  id="image-upload"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </div>
+              <CloudinaryImageUpload
+                onImagesUploaded={handleCloudinaryImagesUploaded}
+                onImagesRemoved={handleCloudinaryImagesRemoved}
+                existingImages={formData.cloudinaryImages}
+                maxFiles={10}
+                maxSize={10 * 1024 * 1024} // 10MB
+                acceptedTypes={['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']}
+              />
             </div>
-            {formData.images.length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
-                {formData.images.map((image, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={image}
-                      alt={`Product ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(index)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -1251,9 +1365,13 @@ export default function ProductForm({
               <Input
                 id="weight"
                 type="number"
+                min="0"
                 step="0.1"
                 value={formData.weight}
-                onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setFormData(prev => ({ ...prev, weight: isNaN(value) ? 0 : value }));
+                }}
               />
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -1262,11 +1380,16 @@ export default function ProductForm({
                 <Input
                   id="length"
                   type="number"
+                  min="0"
+                  step="0.1"
                   value={formData.dimensions.length}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    dimensions: { ...prev.dimensions, length: parseFloat(e.target.value) || 0 }
-                  }))}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      dimensions: { ...prev.dimensions, length: isNaN(value) ? 0 : value }
+                    }));
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -1274,11 +1397,16 @@ export default function ProductForm({
                 <Input
                   id="width"
                   type="number"
+                  min="0"
+                  step="0.1"
                   value={formData.dimensions.width}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    dimensions: { ...prev.dimensions, width: parseFloat(e.target.value) || 0 }
-                  }))}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      dimensions: { ...prev.dimensions, width: isNaN(value) ? 0 : value }
+                    }));
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -1286,11 +1414,16 @@ export default function ProductForm({
                 <Input
                   id="height"
                   type="number"
+                  min="0"
+                  step="0.1"
                   value={formData.dimensions.height}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    dimensions: { ...prev.dimensions, height: parseFloat(e.target.value) || 0 }
-                  }))}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      dimensions: { ...prev.dimensions, height: isNaN(value) ? 0 : value }
+                    }));
+                  }}
                 />
               </div>
             </div>
