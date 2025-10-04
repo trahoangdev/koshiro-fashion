@@ -44,6 +44,21 @@ export interface ProductVideo {
   duration?: number;
 }
 
+export interface CloudinaryImage {
+  publicId: string;
+  secureUrl: string;
+  width: number;
+  height: number;
+  format: string;
+  bytes: number;
+  responsiveUrls: {
+    thumbnail: string;
+    medium: string;
+    large: string;
+    original: string;
+  };
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -62,7 +77,8 @@ export interface Product {
     nameJa?: string;
     slug: string;
   };
-  images: string[];
+  images: string[]; // Legacy field for backward compatibility
+  cloudinaryImages?: CloudinaryImage[]; // New Cloudinary images
   videos?: ProductVideo[];
   sizes: string[];
   colors: string[];
@@ -74,6 +90,20 @@ export interface Product {
   isLimitedEdition: boolean;
   isBestSeller: boolean;
   tags: string[];
+  // New fields
+  slug?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  weight?: number;
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  materials?: string[];
+  careInstructions?: string;
+  sku?: string;
+  barcode?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -88,7 +118,10 @@ export interface Category {
   descriptionEn?: string;
   descriptionJa?: string;
   slug: string;
-  image?: string;
+  image?: string; // Legacy field
+  cloudinaryImages?: CloudinaryImage[]; // New Cloudinary images
+  bannerImage?: string; // Legacy field
+  cloudinaryBannerImages?: CloudinaryImage[]; // New Cloudinary banner images
   isActive: boolean;
   parentId?: string;
   productCount: number;
@@ -923,13 +956,23 @@ class ApiClient {
     originalPrice?: number;
     categoryId: string;
     images: string[];
+    cloudinaryImages?: CloudinaryImage[];
     sizes: string[];
     colors: string[];
     stock: number;
     isActive?: boolean;
     isFeatured?: boolean;
     onSale?: boolean;
+    isNew?: boolean;
+    isLimitedEdition?: boolean;
+    isBestSeller?: boolean;
     tags?: string[];
+    metaTitle?: string;
+    metaDescription?: string;
+    weight?: number;
+    dimensions?: { length: number; width: number; height: number };
+    sku?: string;
+    barcode?: string;
   }): Promise<{ message: string; product: Product }> {
     return this.request<{ message: string; product: Product }>('/admin/products', {
       method: 'POST',
@@ -948,13 +991,23 @@ class ApiClient {
     originalPrice?: number;
     categoryId?: string;
     images?: string[];
+    cloudinaryImages?: CloudinaryImage[];
     sizes?: string[];
     colors?: string[];
     stock?: number;
     isActive?: boolean;
     isFeatured?: boolean;
     onSale?: boolean;
+    isNew?: boolean;
+    isLimitedEdition?: boolean;
+    isBestSeller?: boolean;
     tags?: string[];
+    metaTitle?: string;
+    metaDescription?: string;
+    weight?: number;
+    dimensions?: { length: number; width: number; height: number };
+    sku?: string;
+    barcode?: string;
   }): Promise<{ message: string; product: Product }> {
     return this.request<{ message: string; product: Product }>(`/admin/products/${id}`, {
       method: 'PUT',
@@ -995,9 +1048,25 @@ class ApiClient {
     descriptionEn?: string;
     descriptionJa?: string;
     slug: string;
-    image?: string;
+    image?: string; // Legacy field
+    cloudinaryImages?: CloudinaryImage[]; // New Cloudinary images
+    bannerImage?: string; // Legacy field
+    cloudinaryBannerImages?: CloudinaryImage[]; // New Cloudinary banner images
     isActive?: boolean;
     parentId?: string;
+    status?: 'active' | 'inactive';
+    metaTitle?: string;
+    metaDescription?: string;
+    metaKeywords?: string;
+    sortOrder?: number;
+    isFeatured?: boolean;
+    isVisible?: boolean;
+    displayType?: 'grid' | 'list' | 'carousel';
+    color?: string;
+    icon?: string;
+    seoUrl?: string;
+    canonicalUrl?: string;
+    schemaMarkup?: string;
   }): Promise<{ message: string; category: Category }> {
     return this.request<{ message: string; category: Category }>('/admin/categories', {
       method: 'POST',
@@ -1013,9 +1082,25 @@ class ApiClient {
     descriptionEn?: string;
     descriptionJa?: string;
     slug?: string;
-    image?: string;
+    image?: string; // Legacy field
+    cloudinaryImages?: CloudinaryImage[]; // New Cloudinary images
+    bannerImage?: string; // Legacy field
+    cloudinaryBannerImages?: CloudinaryImage[]; // New Cloudinary banner images
     isActive?: boolean;
     parentId?: string;
+    status?: 'active' | 'inactive';
+    metaTitle?: string;
+    metaDescription?: string;
+    metaKeywords?: string;
+    sortOrder?: number;
+    isFeatured?: boolean;
+    isVisible?: boolean;
+    displayType?: 'grid' | 'list' | 'carousel';
+    color?: string;
+    icon?: string;
+    seoUrl?: string;
+    canonicalUrl?: string;
+    schemaMarkup?: string;
   }): Promise<{ message: string; category: Category }> {
     return this.request<{ message: string; category: Category }>(`/admin/categories/${id}`, {
       method: 'PUT',

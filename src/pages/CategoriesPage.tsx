@@ -11,6 +11,48 @@ import { api, Category } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Package, Search, Grid, List, SortAsc, SortDesc, Filter, TrendingUp, Star, Eye, Users } from "lucide-react";
+import CloudinaryImage from "@/components/CloudinaryImage";
+
+// Helper function to render category image
+const renderCategoryImage = (category: Category, className: string = "w-12 h-12") => {
+  // Priority: Cloudinary images > Legacy image > Placeholder
+  if (category.cloudinaryImages && category.cloudinaryImages.length > 0) {
+    const cloudinaryImage = category.cloudinaryImages[0];
+    return (
+      <div className={`${className} rounded-lg overflow-hidden bg-muted`}>
+        <CloudinaryImage
+          publicId={cloudinaryImage.publicId}
+          secureUrl={cloudinaryImage.secureUrl}
+          responsiveUrls={cloudinaryImage.responsiveUrls}
+          alt={category.name}
+          className="w-full h-full object-cover"
+          size="thumbnail"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+  
+  if (category.image) {
+    return (
+      <div className={`${className} rounded-lg overflow-hidden bg-muted`}>
+        <img
+          src={category.image}
+          alt={category.name}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+  
+  // Fallback to icon
+  return (
+    <div className={`${className} bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
+      <Package className="h-6 w-6 text-primary" />
+    </div>
+  );
+};
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -320,9 +362,7 @@ const CategoriesPage = () => {
                     {viewMode === 'grid' ? (
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                            <Package className="h-6 w-6 text-primary" />
-                          </div>
+                          {renderCategoryImage(category, "w-12 h-12")}
                           <div className="flex items-center space-x-2">
                             {category.isActive && (
                               <Badge variant="secondary">Active</Badge>
@@ -356,9 +396,7 @@ const CategoriesPage = () => {
                       </CardContent>
                     ) : (
                       <CardContent className="p-6 flex items-center space-x-6 w-full">
-                        <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                          <Package className="h-8 w-8 text-primary" />
-                        </div>
+                        {renderCategoryImage(category, "w-16 h-16 flex-shrink-0")}
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-2">

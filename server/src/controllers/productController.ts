@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Product } from '../models/Product';
 import { Category } from '../models/Category';
+import CloudinaryService from '../services/cloudinaryService';
 
 // Helper function to update badge statuses based on creation date and tags
 const updateBadgeStatuses = async () => {
@@ -216,12 +217,28 @@ export const createProduct = async (req: Request, res: Response) => {
       originalPrice,
       categoryId,
       images,
+      cloudinaryImages: requestCloudinaryImages,
       sizes,
       colors,
       stock,
       isActive,
       isFeatured,
-      tags
+      tags,
+      // New fields
+      slug,
+      metaTitle,
+      metaDescription,
+      weight,
+      dimensions,
+      materials,
+      careInstructions,
+      // Badge fields
+      isNew,
+      isLimitedEdition,
+      isBestSeller,
+      onSale,
+      sku,
+      barcode
     } = req.body;
 
     // Validate category exists
@@ -230,14 +247,51 @@ export const createProduct = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Category not found' });
     }
 
+    // Handle Cloudinary images
+    let cloudinaryImages: Array<{
+      publicId: string;
+      secureUrl: string;
+      width: number;
+      height: number;
+      format: string;
+      bytes: number;
+      responsiveUrls: {
+        thumbnail: string;
+        medium: string;
+        large: string;
+        original: string;
+      };
+    }> = [];
+    
+    // Use existing cloudinary images from request body if provided
+    if (requestCloudinaryImages && Array.isArray(requestCloudinaryImages)) {
+      cloudinaryImages = requestCloudinaryImages;
+    }
+    
+    // Handle new file uploads if any
+    if (req.files && Array.isArray(req.files)) {
+      const uploadResult = await CloudinaryService.uploadProductImages(req.files as Express.Multer.File[]);
+      if (uploadResult.success && uploadResult.data) {
+        cloudinaryImages = [...cloudinaryImages, ...uploadResult.data];
+      } else {
+        return res.status(400).json({
+          message: 'Failed to upload images',
+          errors: uploadResult.errors
+        });
+      }
+    }
+
     // Auto-detect badge statuses from tags
     const productTags = tags || [];
-    const isLimitedEdition = productTags.some((tag: string) => 
+    const productIsLimitedEdition = productTags.some((tag: string) => 
       /limited|giới hạn|限定|limited edition|phiên bản giới hạn|限定版/i.test(tag)
     );
-    const isBestSeller = productTags.some((tag: string) => 
+    const productIsBestSeller = productTags.some((tag: string) => 
       /bestseller|bán chạy|ベストセラー|best seller|top seller|bán nhiều|人気/i.test(tag)
     );
+
+    // Generate slug if not provided
+    const productSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     const product = new Product({
       name,
@@ -249,16 +303,29 @@ export const createProduct = async (req: Request, res: Response) => {
       price,
       originalPrice,
       categoryId,
-      images: images || [],
+      images: images || [], // Legacy field for backward compatibility
+      cloudinaryImages, // New Cloudinary images
       sizes: sizes || [],
       colors: colors || [],
       stock: stock || 0,
       isActive: isActive !== undefined ? isActive : true,
       isFeatured: isFeatured !== undefined ? isFeatured : false,
-      isNew: true, // Automatically set new products as new
-      isLimitedEdition,
-      isBestSeller,
-      tags: productTags
+      onSale: onSale !== undefined ? onSale : false,
+      // Badge fields - use from request or auto-detect from tags
+      isNew: isNew !== undefined ? isNew : true, // Default to true for new products
+      isLimitedEdition: isLimitedEdition !== undefined ? isLimitedEdition : productIsLimitedEdition,
+      isBestSeller: isBestSeller !== undefined ? isBestSeller : productIsBestSeller,
+      tags: productTags,
+      // New fields
+      slug: productSlug,
+      metaTitle: metaTitle || name,
+      metaDescription: metaDescription || description,
+      weight,
+      dimensions,
+      materials: materials || [],
+      careInstructions,
+      sku,
+      barcode
     });
 
     await product.save();
@@ -275,6 +342,69 @@ export const createProduct = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Create product error:', error);
     return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Upload product images
+export const uploadProductImages = async (req: Request, res: Response) => {
+  try {
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No files uploaded'
+      });
+    }
+
+    const uploadResult = await CloudinaryService.uploadProductImages(req.files as Express.Multer.File[]);
+    
+    if (uploadResult.success && uploadResult.data) {
+      res.status(200).json({
+        success: true,
+        message: 'Images uploaded successfully',
+        data: uploadResult.data
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Failed to upload images',
+        errors: uploadResult.errors
+      });
+    }
+  } catch (error) {
+    console.error('Upload product images error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Delete product images
+export const deleteProductImages = async (req: Request, res: Response) => {
+  try {
+    const { publicIds } = req.body;
+    
+    if (!publicIds || !Array.isArray(publicIds) || publicIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No public IDs provided'
+      });
+    }
+
+    const deleteResult = await CloudinaryService.deleteMultipleFiles(publicIds);
+    
+    res.status(200).json({
+      success: deleteResult.success,
+      message: deleteResult.success ? 'Images deleted successfully' : 'Some images could not be deleted',
+      deleted: deleteResult.deleted,
+      errors: deleteResult.errors
+    });
+  } catch (error) {
+    console.error('Delete product images error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
   }
 };
 

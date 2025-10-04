@@ -20,6 +20,7 @@ import SalePage from "./pages/SalePage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import CategoriesPage from "./pages/CategoriesPage";
+import ProductsPage from "./pages/ProductsPage";
 import InfoPage from "./pages/InfoPage";
 import SearchPage from "./pages/SearchPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
@@ -31,6 +32,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SizeGuidePage from "./pages/SizeGuidePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import NotFound from "./pages/NotFound";
 
 // Admin Pages
 import AdminLogin from "./pages/AdminLogin";
@@ -89,6 +91,7 @@ function App() {
                       <Route path="/product/:id" element={<ProductDetail />} />
                       <Route path="/category/:id" element={<CategoryPage />} />
                       <Route path="/categories" element={<CategoriesPage />} />
+                      <Route path="/products" element={<ProductsPage />} />
                       <Route path="/cart" element={<CartPage />} />
                       <Route path="/wishlist" element={<WishlistPage />} />
                       <Route path="/checkout" element={<CheckoutPage />} />
@@ -293,6 +296,9 @@ function App() {
                           </ProtectedAdminRoute>
                         }
                       />
+                      
+                      {/* 404 Not Found Route - Must be last */}
+                      <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Router>
               </TooltipProvider>

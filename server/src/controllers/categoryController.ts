@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { asyncHandler } from '../middleware/auth';
 import { Category, ICategory } from '../models/Category';
 import { Product } from '../models/Product';
+import CloudinaryService from '../services/cloudinaryService';
 
 // Types for better type safety
 type CategoryTreeNode = ICategory & {
@@ -47,7 +48,7 @@ interface CategoryWithProductsResponse {
  */
 export const getCategories = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { isActive, parentId } = req.query;
+  const { isActive, parentId } = req.query;
 
     const filter: Record<string, unknown> = {};
     
@@ -98,7 +99,7 @@ export const getCategories = asyncHandler(async (req: Request, res: Response) =>
  */
 export const getCategory = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     
     if (!id || id.length !== 24) {
       return res.status(400).json({ 
@@ -137,7 +138,7 @@ export const getCategory = asyncHandler(async (req: Request, res: Response) => {
  */
 export const getCategoryBySlug = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+  const { slug } = req.params;
     
     if (!slug || typeof slug !== 'string') {
       return res.status(400).json({ 
@@ -176,7 +177,7 @@ export const getCategoryBySlug = asyncHandler(async (req: Request, res: Response
  */
 export const createCategory = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const {
+  const {
       name,
       nameEn,
       nameJa,
@@ -184,9 +185,26 @@ export const createCategory = asyncHandler(async (req: Request, res: Response) =
       descriptionEn,
       descriptionJa,
       slug,
-      image,
+      image, // Legacy field
+      cloudinaryImages,
+      bannerImage, // Legacy field
+      cloudinaryBannerImages,
       isActive,
-      parentId
+      parentId,
+      // Additional fields
+      status,
+      metaTitle,
+      metaDescription,
+      metaKeywords,
+      sortOrder,
+      isFeatured,
+      isVisible,
+      displayType,
+      color,
+      icon,
+      seoUrl,
+      canonicalUrl,
+      schemaMarkup
     } = req.body;
 
     // Validate required fields
@@ -240,9 +258,28 @@ export const createCategory = asyncHandler(async (req: Request, res: Response) =
       descriptionEn: descriptionEn?.trim(),
       descriptionJa: descriptionJa?.trim(),
       slug: slug.trim(),
+      // Legacy image fields
       image: image?.trim(),
+      bannerImage: bannerImage?.trim(),
+      // Cloudinary image fields
+      cloudinaryImages: cloudinaryImages || [],
+      cloudinaryBannerImages: cloudinaryBannerImages || [],
       isActive: isActive !== undefined ? isActive : true,
-      parentId
+      parentId: parentId && parentId !== "" ? parentId : undefined,
+      // Additional fields
+      status: status || 'active',
+      metaTitle: metaTitle?.trim(),
+      metaDescription: metaDescription?.trim(),
+      metaKeywords: metaKeywords?.trim(),
+      sortOrder: sortOrder || 0,
+      isFeatured: isFeatured || false,
+      isVisible: isVisible !== undefined ? isVisible : true,
+      displayType: displayType || 'grid',
+      color: color || '#3B82F6',
+      icon: icon?.trim(),
+      seoUrl: seoUrl?.trim(),
+      canonicalUrl: canonicalUrl?.trim(),
+      schemaMarkup: schemaMarkup?.trim()
     });
 
     await category.save();
@@ -269,7 +306,7 @@ export const createCategory = asyncHandler(async (req: Request, res: Response) =
  */
 export const updateCategory = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     const updateData = req.body;
 
     // Validate ID format
@@ -393,7 +430,7 @@ export const updateCategory = asyncHandler(async (req: Request, res: Response) =
  */
 export const deleteCategory = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     
     // Validate ID format
     if (!id || id.length !== 24) {
@@ -411,7 +448,7 @@ export const deleteCategory = asyncHandler(async (req: Request, res: Response) =
         message: 'Category not found' 
       });
     }
-
+    
     // Check if category has products
     const productCount = await Product.countDocuments({ categoryId: id });
     if (productCount > 0) {
@@ -453,7 +490,7 @@ export const deleteCategory = asyncHandler(async (req: Request, res: Response) =
  */
 export const getCategoryTree = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { isActive } = req.query;
+  const { isActive } = req.query;
 
     const filter: Record<string, unknown> = {};
     if (isActive !== undefined) {
@@ -495,7 +532,7 @@ export const getCategoryTree = asyncHandler(async (req: Request, res: Response) 
  */
 export const getCategoryWithProducts = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
     // Validate ID format
@@ -549,6 +586,121 @@ export const getCategoryWithProducts = asyncHandler(async (req: Request, res: Re
   } catch (error) {
     console.error('Error fetching category with products:', error);
     res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+
+/**
+ * Upload category images
+ * @param req - Express request object with category ID in params and images in files
+ * @param res - Express response object
+ * @returns JSON response with upload result
+ */
+export const uploadCategoryImagesController = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No images provided'
+      });
+    }
+
+    // Validate category exists
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Upload images to Cloudinary
+    const uploadResult = await CloudinaryService.uploadCategoryImages(files);
+    if (!uploadResult.success || !uploadResult.data) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to upload images',
+        errors: uploadResult.errors
+      });
+    }
+
+    // Add new images to category
+    category.cloudinaryImages = category.cloudinaryImages || [];
+    category.cloudinaryImages.push(...uploadResult.data);
+    await category.save();
+
+    res.json({
+      success: true,
+      message: 'Images uploaded successfully',
+      images: uploadResult.data,
+      category
+    });
+  } catch (error) {
+    console.error('Category image upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+});
+
+/**
+ * Delete category image
+ * @param req - Express request object with category ID and image public ID in params
+ * @param res - Express response object
+ * @returns JSON response with deletion result
+ */
+export const deleteCategoryImageController = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id, publicId } = req.params;
+
+    // Validate category exists
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Find and remove image from category
+    const imageIndex = category.cloudinaryImages?.findIndex(img => img.publicId === publicId);
+    if (imageIndex === undefined || imageIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Image not found in category'
+      });
+    }
+
+    // Delete from Cloudinary
+    const deleteResult = await CloudinaryService.deleteFile(publicId);
+    if (!deleteResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to delete image from Cloudinary',
+        error: deleteResult.error
+      });
+    }
+
+    // Remove from category
+    category.cloudinaryImages?.splice(imageIndex, 1);
+    await category.save();
+
+    res.json({
+      success: true,
+      message: 'Image deleted successfully',
+      category
+    });
+  } catch (error) {
+    console.error('Category image deletion error:', error);
+    res.status(500).json({
       success: false,
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error : undefined

@@ -11,7 +11,7 @@ interface AuthRequest extends Request {
     id: string;
     email: string;
     name: string;
-    role: string;
+    role: string | { name: string; _id: string };
     permissions?: string[];
   };
 }
@@ -56,9 +56,15 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  // Check if user has admin role (Admin or Super Admin)
-  if (req.user.role !== 'Admin' && req.user.role !== 'Super Admin') {
-    return res.status(403).json({ message: 'Admin access required' });
+  // Handle both string and object role formats
+  const userRole = typeof req.user.role === 'string' ? req.user.role : req.user.role?.name;
+  
+  if (userRole !== 'Admin' && userRole !== 'Super Admin') {
+    return res.status(403).json({ 
+      message: 'Admin access required',
+      userRole: userRole,
+      expectedRoles: ['Admin', 'Super Admin']
+    });
   }
 
   next();
@@ -69,8 +75,15 @@ export const requireCustomer = (req: AuthRequest, res: Response, next: NextFunct
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  if (req.user.role !== 'Customer') {
-    return res.status(403).json({ message: 'Customer access required' });
+  // Handle both string and object role formats
+  const userRole = typeof req.user.role === 'string' ? req.user.role : req.user.role?.name;
+  
+  if (userRole !== 'Customer') {
+    return res.status(403).json({ 
+      message: 'Customer access required',
+      userRole: userRole,
+      expectedRole: 'Customer'
+    });
   }
 
   next();
@@ -81,8 +94,15 @@ export const requireCustomerOrAdmin = (req: AuthRequest, res: Response, next: Ne
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  if (req.user.role !== 'Customer' && req.user.role !== 'Admin' && req.user.role !== 'Super Admin') {
-    return res.status(403).json({ message: 'Customer or admin access required' });
+  // Handle both string and object role formats
+  const userRole = typeof req.user.role === 'string' ? req.user.role : req.user.role?.name;
+  
+  if (userRole !== 'Customer' && userRole !== 'Admin' && userRole !== 'Super Admin') {
+    return res.status(403).json({ 
+      message: 'Customer or admin access required',
+      userRole: userRole,
+      expectedRoles: ['Customer', 'Admin', 'Super Admin']
+    });
   }
 
   next();
@@ -93,8 +113,15 @@ export const authorizeRoles = (roles: string[]) => (req: AuthRequest, res: Respo
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ message: 'Insufficient permissions' });
+  // Handle both string and object role formats
+  const userRole = typeof req.user.role === 'string' ? req.user.role : req.user.role?.name;
+  
+  if (!userRole || !roles.includes(userRole)) {
+    return res.status(403).json({ 
+      message: 'Insufficient permissions',
+      userRole: userRole,
+      requiredRoles: roles
+    });
   }
 
   next();

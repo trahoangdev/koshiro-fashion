@@ -65,7 +65,46 @@ import { formatCurrency } from "@/lib/currency";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { exportImportService } from "@/lib/exportImportService";
+import CloudinaryImage from "@/components/CloudinaryImage";
 
+
+// Helper function to render product image
+const renderProductImage = (product: Product, className: string = "w-full h-full object-cover") => {
+  // Priority: Cloudinary images > Legacy images > Placeholder
+  if (product.cloudinaryImages && product.cloudinaryImages.length > 0) {
+    const cloudinaryImage = product.cloudinaryImages[0];
+    return (
+      <CloudinaryImage
+        publicId={cloudinaryImage.publicId}
+        secureUrl={cloudinaryImage.secureUrl}
+        responsiveUrls={cloudinaryImage.responsiveUrls}
+        alt={product.name}
+        className={className}
+        size="thumbnail"
+        loading="lazy"
+      />
+    );
+  }
+  
+  // Fallback to legacy images
+  if (product.images && product.images.length > 0) {
+    return (
+      <img
+        src={product.images[0]}
+        alt={product.name}
+        className={className}
+        loading="lazy"
+      />
+    );
+  }
+  
+  // Placeholder when no images
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-muted">
+      <Package className="w-6 h-6 text-muted-foreground" />
+    </div>
+  );
+};
 
 export default function AdminProducts() {
   const { toast } = useToast();
@@ -916,17 +955,7 @@ export default function AdminProducts() {
                   </div>
                   
                   <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
-                    {product.images && product.images.length > 0 ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="h-12 w-12 text-muted-foreground" />
-                      </div>
-                    )}
+                    {renderProductImage(product)}
                   </div>
                   
                   <div className="space-y-2">
@@ -942,7 +971,11 @@ export default function AdminProducts() {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Stock: {product.stock}</span>
-                      {product.onSale && <Badge variant="secondary" className="text-xs">Sale</Badge>}
+                      {product.onSale && <Badge variant="destructive" className="text-xs">Sale</Badge>}
+                      {product.isFeatured && <Badge variant="default" className="text-xs">Featured</Badge>}
+                      {product.isNew && <Badge className="bg-green-500 text-white text-xs">New</Badge>}
+                      {product.isLimitedEdition && <Badge className="bg-purple-500 text-white text-xs">Limited</Badge>}
+                      {product.isBestSeller && <Badge className="bg-orange-500 text-white text-xs">Best Seller</Badge>}
                     </div>
                   </div>
                 </CardContent>
@@ -982,15 +1015,7 @@ export default function AdminProducts() {
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-muted rounded overflow-hidden">
-                              {product.images && product.images.length > 0 ? (
-                                <img
-                                  src={product.images[0]}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <Package className="w-full h-full p-2 text-muted-foreground" />
-                              )}
+                              {renderProductImage(product, "w-full h-full object-cover")}
                             </div>
                             <div>
                               <div className="font-medium">{product.name}</div>
@@ -1018,8 +1043,11 @@ export default function AdminProducts() {
                             ) : (
                               <Badge variant="secondary">Inactive</Badge>
                             )}
-                            {product.isFeatured && <Star className="h-4 w-4 text-yellow-500" />}
-                            {product.onSale && <Badge variant="secondary">Sale</Badge>}
+                            {product.isFeatured && <Badge variant="default" className="text-xs">Featured</Badge>}
+                            {product.isNew && <Badge className="bg-green-500 text-white text-xs">New</Badge>}
+                            {product.isLimitedEdition && <Badge className="bg-purple-500 text-white text-xs">Limited</Badge>}
+                            {product.isBestSeller && <Badge className="bg-orange-500 text-white text-xs">Best Seller</Badge>}
+                            {product.onSale && <Badge variant="destructive" className="text-xs">Sale</Badge>}
                           </div>
                         </td>
                         <td className="p-4">

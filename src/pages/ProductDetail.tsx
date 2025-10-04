@@ -220,15 +220,27 @@ const ProductDetail: React.FC = () => {
         // Create media items from images and videos
         const media: MediaItem[] = [];
         
-        // Add images
-        response.product.images.forEach((image, index) => {
-          media.push({
-            id: `image-${index}`,
-            type: 'image',
-            url: image,
-            alt: `${response.product.name} ${index + 1}`
+        // Add Cloudinary images first (priority)
+        if (response.product.cloudinaryImages && response.product.cloudinaryImages.length > 0) {
+          response.product.cloudinaryImages.forEach((cloudinaryImage, index) => {
+            media.push({
+              id: `cloudinary-image-${index}`,
+              type: 'image',
+              url: cloudinaryImage.responsiveUrls.large,
+              alt: `${response.product.name} ${index + 1}`
+            });
           });
-        });
+        } else {
+          // Fallback to legacy images
+          response.product.images.forEach((image, index) => {
+            media.push({
+              id: `image-${index}`,
+              type: 'image',
+              url: image,
+              alt: `${response.product.name} ${index + 1}`
+            });
+          });
+        }
         
         // Add videos (if product has videos property)
         if (response.product.videos && Array.isArray(response.product.videos)) {
@@ -639,6 +651,51 @@ const ProductDetail: React.FC = () => {
                   <span className="text-muted-foreground">•</span>
                   <span className="text-sm text-muted-foreground">SKU: {product._id.slice(-8).toUpperCase()}</span>
                 </div>
+              </div>
+              
+              {/* Product Badges */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {/* Stock Status - Highest priority */}
+                {product.stock <= 0 && (
+                  <Badge variant="secondary" className="bg-stone-500/90 text-white">
+                    {language === 'vi' ? 'Hết hàng' : language === 'ja' ? '在庫切れ' : 'Out of Stock'}
+                  </Badge>
+                )}
+                
+                {/* Sale Badge - Show when on sale and in stock */}
+                {product.stock > 0 && product.onSale && product.originalPrice && product.originalPrice > product.price && (
+                  <Badge variant="destructive" className="bg-red-500/90 text-white">
+                    -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% {language === 'vi' ? 'GIẢM' : language === 'ja' ? 'セール' : 'OFF'}
+                  </Badge>
+                )}
+                
+                {/* Limited Edition Badge - Show when in stock */}
+                {product.stock > 0 && product.isLimitedEdition && (
+                  <Badge className="bg-purple-500/90 text-white">
+                    {language === 'vi' ? 'Phiên bản giới hạn' : language === 'ja' ? '限定版' : 'Limited Edition'}
+                  </Badge>
+                )}
+                
+                {/* Featured Badge - Show when in stock */}
+                {product.stock > 0 && product.isFeatured && (
+                  <Badge variant="default" className="bg-stone-800/90 dark:bg-stone-200/90 text-white dark:text-stone-800">
+                    {language === 'vi' ? 'Nổi bật' : language === 'ja' ? 'おすすめ' : 'Featured'}
+                  </Badge>
+                )}
+                
+                {/* New Badge - Show when in stock */}
+                {product.stock > 0 && product.isNew && (
+                  <Badge className="bg-green-500/90 text-white">
+                    {language === 'vi' ? 'MỚI' : language === 'ja' ? '新着' : 'NEW'}
+                  </Badge>
+                )}
+                
+                {/* Best Seller Badge - Show when in stock */}
+                {product.stock > 0 && product.isBestSeller && (
+                  <Badge className="bg-orange-500/90 text-white">
+                    {language === 'vi' ? 'Bán chạy' : language === 'ja' ? 'ベストセラー' : 'Best Seller'}
+                  </Badge>
+                )}
               </div>
               
               {/* Rating & Reviews */}

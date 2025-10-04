@@ -80,11 +80,11 @@ interface RoleStats {
   system: number;
   userCreated: number;
   distribution: Array<{
-    _id: string;
-    name: string;
-    userCount: number;
+  _id: string;
+  name: string;
+  userCount: number;
     level: number;
-    isActive: boolean;
+  isActive: boolean;
   }>;
 }
 
@@ -503,7 +503,7 @@ export default function AdminRolesPage() {
             <h1 className="text-3xl font-bold tracking-tight">{t.title}</h1>
             <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
-          <Button onClick={handleCreateRole}>
+            <Button onClick={handleCreateRole}>
               <Plus className="h-4 w-4 mr-2" />
             {t.addRole}
             </Button>
@@ -648,7 +648,7 @@ export default function AdminRolesPage() {
                           <Shield className="h-3 w-3 mr-1" />
                           System
                           </Badge>
-                      )}
+                        )}
                       <Badge variant={role.isActive ? "default" : "secondary"}>
                         {role.isActive ? (
                           <><Unlock className="h-3 w-3 mr-1" /> Active</>
@@ -676,8 +676,8 @@ export default function AdminRolesPage() {
                         <Settings className="h-4 w-4 text-muted-foreground" />
                         <span>{role.permissions.length} permissions</span>
                       </div>
-                    </div>
-                  </div>
+                      </div>
+                      </div>
 
                   <Separator />
 
@@ -695,14 +695,14 @@ export default function AdminRolesPage() {
                             <Eye className="h-4 w-4 mr-2" />
                             {t.viewRole}
                           </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEditRole(role)}>
+                          <DropdownMenuItem onClick={() => handleEditRole(role)}>
                             <Edit className="h-4 w-4 mr-2" />
                             {t.edit}
                           </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleCloneRole(role)}>
                           <Copy className="h-4 w-4 mr-2" />
                           {t.clone}
-                        </DropdownMenuItem>
+                          </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => handleToggleRoleStatus(role._id, !role.isActive)}
                         >

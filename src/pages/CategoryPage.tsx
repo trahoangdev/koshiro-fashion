@@ -17,6 +17,43 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Loader2, Grid, List, Filter, Search, X, SlidersHorizontal, Tag, Star, Heart, ShoppingCart, ArrowLeft, ChevronDown, Package, TrendingUp } from 'lucide-react';
+import CloudinaryImage from '@/components/CloudinaryImage';
+
+// Helper function to render category image
+const renderCategoryImage = (category: Category, className: string = "w-32 h-32") => {
+  // Priority: Cloudinary images > Legacy image > Placeholder
+  if (category.cloudinaryImages && category.cloudinaryImages.length > 0) {
+    const cloudinaryImage = category.cloudinaryImages[0];
+    return (
+      <div className={`${className} bg-muted rounded-xl overflow-hidden shadow-lg`}>
+        <CloudinaryImage
+          publicId={cloudinaryImage.publicId}
+          secureUrl={cloudinaryImage.secureUrl}
+          responsiveUrls={cloudinaryImage.responsiveUrls}
+          alt={category.name}
+          className="w-full h-full object-cover"
+          size="medium"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+  
+  if (category.image) {
+    return (
+      <div className={`${className} bg-muted rounded-xl overflow-hidden shadow-lg`}>
+        <img
+          src={category.image}
+          alt={category.name}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+  
+  return null;
+};
 
 const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -488,15 +525,7 @@ const CategoryPage: React.FC = () => {
                   </div>
                 </div>
                 
-                {category.image && (
-                  <div className="w-32 h-32 bg-muted rounded-xl overflow-hidden shadow-lg">
-                    <img
-                      src={category.image}
-                      alt={getCategoryName()}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
+                {renderCategoryImage(category, "w-32 h-32")}
               </div>
             </CardContent>
           </Card>
